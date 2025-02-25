@@ -6,9 +6,10 @@ I wanted to try and create my own build system, just for fun.
 - [x] Automatic compilation without build scripts
 - [x] Automatic support for `import std;`
 - [ ] Use response files for compilation variance
-- [ ] Add support for compiling libraries
-- [ ] Add support for compiling unit tests
-- [ ] Add support for fetching external dependencies from github etc.
+- [ ] Support for compiling libraries
+- [ ] Support for compiling unit tests
+- [ ] Support for fetching external dependencies from github etc.
+- [ ] Support clang/gcc/whatever. Only msvc support for now.
 
 ## Note
 Yes, I'm aware of the irony of using CMake to make a build system.
