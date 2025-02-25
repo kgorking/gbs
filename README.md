@@ -9,3 +9,6 @@ I wanted to try and create my own build system, just for fun.
 - [ ] Add support for compiling libraries
 - [ ] Add support for compiling unit tests
 - [ ] Add support for fetching external dependencies from github etc.
+
+## Note
+Yes, I'm aware of the irony of using CMake to make a build system.
