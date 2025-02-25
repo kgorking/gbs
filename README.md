@@ -16,6 +16,7 @@ I wanted to try and create my own build system, just for fun.
 	- [ ] Recursively call `gbs` in lib directories
 - [ ] Support for compiling/running unit tests
 - [ ] Support for fetching dependencies from external sites like GitHub.
+- [ ] Support clang/gcc/whatever. Only msvc support for now.
 - [ ] Support for compiling externally fetched dependencies
 - [ ] Support for running custom build steps before/after compilation
 
