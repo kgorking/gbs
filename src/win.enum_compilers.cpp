@@ -40,8 +40,8 @@ void enum_cl(std::function<void(compiler)> callback) {
 				sv.remove_prefix(sv.find_first_of("0123456789", 0));
 				sv = sv.substr(0, sv.find_first_of(' '));
 
-				comp.major = std::stoi(std::string(sv.substr(0, sv.find('.'))));
-				comp.minor = std::stoi(std::string(sv.substr(sv.find('.') + 1)));
+				comp.major = std::atoi(sv.substr(0, sv.find('.')).data());
+				comp.minor = std::atoi(sv.substr(sv.find('.') + 1).data());
 				callback(comp);
 			}
 		}
@@ -60,8 +60,8 @@ void enum_cl(std::function<void(compiler)> callback) {
 			std::string_view sv(version);
 			sv.remove_prefix(sv.find_first_of("0123456789", 0));
 
-			comp.major = std::stoi(std::string(sv.substr(0, sv.find('.'))));
-			comp.minor = std::stoi(std::string(sv.substr(sv.find('.') + 1)));
+			comp.major = std::atoi(sv.substr(0, sv.find('.')).data());
+			comp.minor = std::atoi(sv.substr(sv.find('.') + 1).data());
 			callback(comp);
 		}
 	}
