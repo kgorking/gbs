@@ -10,6 +10,7 @@ I wanted to try and create my own build system, just for fun.
 	- [ ] Compile GBS with itself
 - [x] Automated support for `import std;`
 - [x] Enumerate supported compilers
+	- [ ] Choose compiler from command `gbs cl=clang-19 build`
 - [ ] Use response files for compilation variance
     - [ ] Create variants for debug/release/analyze/sanitize/library/etc.
 	- [ ] Compile by selecting one-or-more response files, eg. `gbs build=release,analyze,avx2,hardened_stdlib`
