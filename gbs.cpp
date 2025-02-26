@@ -11,9 +11,15 @@
 using namespace std::string_view_literals;
 namespace fs = std::filesystem;
 
+static constexpr auto cl_shared  = "/nologo /EHsc /std:c++23preview /MP /fastfail "sv;
+static constexpr auto cl_debug   = "/D_DEBUG /O0 /ifcOutput out/debug/   /Fo:out/debug/"sv;
+static constexpr auto cl_release = "/DNDEBUG /O2 /ifcOutput out/release/ /Fo:out/release/"sv;
+
+
 bool is_file_up_to_date(fs::path const& in, fs::path const& out) {
 	return fs::exists(out) && (fs::last_write_time(out) > fs::last_write_time(in));
 }
+
 
 bool build(std::string_view args) {
 	std::println("Building...");
@@ -30,28 +36,30 @@ bool build(std::string_view args) {
 	std::filesystem::path vcvars(path, std::filesystem::path::generic_format);
 	vcvars /= "VC/Auxiliary/Build/vcvars64.bat";
 
-	std::filesystem::create_directory("out");
+	std::filesystem::create_directories("out/release/bin");
 
 	// Arguments to the compiler(s)
-	auto cl_args = "/nologo /EHsc /std:c++23preview /MP /fastfail /O2 /ifcOutput out\\ /Foout\\";
+	std::string cl_args;
+	cl_args += cl_shared;
+	cl_args += cl_release;
 
-	std::string cmd = std::format("\"\"{}\" >nul", vcvars.generic_string());
+	std::string cmd = std::format("\"call \"{}\" >nul", vcvars.generic_string());
 
 	// Compile stdlib if needed
-	//#define STDLIB_MODULE R"(%VCToolsInstallDir%/modules/std.ixx)"
-	#define STDLIB_MODULE R"(C:\Program Files\Microsoft Visual Studio\2022\Preview\VC\Tools\MSVC\14.44.34823\modules/std.ixx)"
-	if (!is_file_up_to_date(STDLIB_MODULE, "out\\std.obj")) {
-		cmd += std::format(" && cl {} /c \"{}\"", cl_args, STDLIB_MODULE);
+	#define STDLIB_MODULE R"(%VCToolsInstallDir%/modules/std.ixx)"
+	if (!is_file_up_to_date(STDLIB_MODULE, "out/release/std.obj")) {
+		cmd += " && call copy /y \"%VCToolsInstallDir%modules\\std.ixx\" \"out/release/std.ixx\" 1>nul";
+		cmd += std::format(" && cl {} /c out/release/std.ixx", cl_args);
 	}
 
 	// Add source files
-	cmd += std::format(" && cl {} /reference std=out\\std.ifc /Fe:out\\test.exe", cl_args);
+	cmd += std::format(" && cl {} /reference std=out/release/std.ifc /Fe:out/release/bin/test.exe", cl_args);
 	auto not_dir = [](fs::directory_entry const& dir) { return !dir.is_directory(); };
 
 	for (auto const& dir : fs::directory_iterator("src") | std::views::filter(not_dir)) {
 		fs::path const& path = dir.path();
 
-		auto const out = "out" / path.filename().replace_extension("obj");
+		auto const out = "out/release" / path.filename().replace_extension("obj");
 		cmd += ' ';
 		if (is_file_up_to_date(path, out))
 			cmd += out.generic_string();
@@ -65,13 +73,13 @@ bool build(std::string_view args) {
 
 bool clean(std::string_view args) {
 	std::println("Cleaning...");
-	std::filesystem::remove_all("out");
+	std::filesystem::remove_all("out/release/");
 	return true;
 }
 
 bool run(std::string_view args) {
 	std::println("Running...");
-	return 0 == std::system("out\\test.exe");
+	return 0 == std::system("cd out/release/bin && test.exe");
 }
 
 int main(int argc, char const* argv[]) {
