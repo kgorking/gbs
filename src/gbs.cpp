@@ -77,7 +77,7 @@ bool enum_cl(std::string_view args) {
 
 	extern void enum_cl(std::function<void(compiler)>);
 	enum_cl([](compiler c) {
-		std::println("  Compiler: {:16} {:}.{:<5} {}", c.name, c.major, c.minor, c.path);
+		std::println("  {:12} {:}.{:<5} {}", c.name, c.major, c.minor, c.path);
 		});
 
 	return true;
