@@ -12,8 +12,8 @@ I wanted to try and create my own build system, just for fun.
 - [x] Enumerate supported compilers
 	- [ ] Choose compiler from command `gbs cl=clang-19 build`
 - [ ] Use response files for compilation variance
-    - [ ] Create variants for debug/release/analyze/sanitize/library/etc.
-	- [ ] Compile by selecting one-or-more response files, eg. `gbs build=release,analyze,avx2,hardened_stdlib`
+    - [x] Create variants for debug/release/analyze/sanitize/library/etc.
+	- [x] Compile by selecting one-or-more response files, eg. `gbs build=release,analyze,avx2,hardened_stdlib`
 	- [ ] Halt compilation on conflicting response files
 	- [ ] Allow matrix builds, eg. `gbs build=debug/release,opt1/opt2/opt3` results in 2x3 builds
 - [ ] Support multiple operations, eg. `gbs build=debug unittest build=release unittest`
@@ -21,7 +21,11 @@ I wanted to try and create my own build system, just for fun.
 	- [ ] Recursively call `gbs` in lib directories
 - [ ] Support for compiling/running unit tests
 - [ ] Support for fetching dependencies from external sites like GitHub.
-- [ ] Support clang/gcc/whatever. Only msvc support for now.
+- [ ] Support multiple compilers
+	- [x] msvc
+	- [x] clang-cl
+	- [ ] clang
+	- [ ] gcc
 - [ ] Support for compiling externally fetched dependencies
 - [ ] Support for running custom build steps before/after compilation
 
