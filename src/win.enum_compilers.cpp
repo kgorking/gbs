@@ -16,7 +16,8 @@ void enum_cl(std::function<void(compiler)> callback) {
 		return;
 	}
 
-	std::string line, cmd, version;
+	char cmd[256];
+	std::string line, version;
 	compiler comp;
 	std::ifstream file("instpath.txt");
 
@@ -24,15 +25,15 @@ void enum_cl(std::function<void(compiler)> callback) {
 		std::filesystem::path const path(line);
 
 		// Find msvc compilers
-		auto const msvc_path = path / R"(VC\Tools\MSVC)";
+		auto const msvc_path = path / "VC/Tools/MSVC";
 		if (std::filesystem::exists(msvc_path)) {
 			std::format_to_n(comp.name, sizeof(comp.name), "msvc{}", '\0');
 
-			for (auto const& dir : std::filesystem::directory_iterator(path / R"(VC\Tools\MSVC)")) {
+			for (auto const& dir : std::filesystem::directory_iterator(msvc_path)) {
 				std::format_to_n(comp.path, sizeof(comp.path), "{}\\bin\\HostX64\\x64\\cl.exe{}", dir.path().string(), '\0');
 
-				cmd = std::format(R"("{}" 1>nul 2>version)", comp.path);
-				std::system(cmd.c_str());
+				std::format_to_n(cmd, sizeof(cmd), R"("{}" 1>nul 2>version{})", comp.path, '\0');
+				std::system(cmd);
 
 				std::getline(std::ifstream("version"), version);
 
@@ -47,13 +48,13 @@ void enum_cl(std::function<void(compiler)> callback) {
 		}
 
 		// Find clang compilers
-		auto const llvm_path = path / R"(VC\Tools\LLVM)";
+		auto const llvm_path = path / "VC/Tools/LLVM";
 		if (std::filesystem::exists(llvm_path)) {
 			std::format_to_n(comp.name, sizeof(comp.name), "clang-cl{}", '\0');
-			std::format_to_n(comp.path, sizeof(comp.path), R"({}\bin\clang-cl.exe{})", llvm_path.string(), '\0');
+			std::format_to_n(comp.path, sizeof(comp.path), "{}\\bin\\clang-cl.exe{})", llvm_path.string(), '\0');
 
-			cmd = std::format(R"("{}" -v 2>version)", comp.path);
-			std::system(cmd.c_str());
+			std::format_to_n(cmd, sizeof(cmd), R"("{}" -v 2>version{})", comp.path, '\0');
+			std::system(cmd);
 
 			std::getline(std::ifstream("version"), version);
 
