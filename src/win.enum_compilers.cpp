@@ -47,24 +47,41 @@ void enum_cl(std::function<void(compiler)> callback) {
 			}
 		}
 
-		// Find clang compilers
+		// Find clang-cl compilers
 		auto const llvm_path = path / "VC/Tools/LLVM";
 		if (std::filesystem::exists(llvm_path)) {
 			std::format_to_n(comp.name, sizeof(comp.name), "clang-cl{}", '\0');
 			std::format_to_n(comp.path, sizeof(comp.path), "{}\\bin\\clang-cl.exe{})", llvm_path.string(), '\0');
 
 			std::format_to_n(cmd, sizeof(cmd), R"("{}" -v 2>version{})", comp.path, '\0');
-			std::system(cmd);
+			if (0 == std::system(cmd)) {
+				std::getline(std::ifstream("version"), version);
 
-			std::getline(std::ifstream("version"), version);
+				std::string_view sv(version);
+				sv.remove_prefix(sv.find_first_of("0123456789", 0));
 
-			std::string_view sv(version);
-			sv.remove_prefix(sv.find_first_of("0123456789", 0));
-
-			comp.major = std::atoi(sv.substr(0, sv.find('.')).data());
-			comp.minor = std::atoi(sv.substr(sv.find('.') + 1).data());
-			callback(comp);
+				comp.major = std::atoi(sv.substr(0, sv.find('.')).data());
+				comp.minor = std::atoi(sv.substr(sv.find('.') + 1).data());
+				callback(comp);
+			}
 		}
+	}
+
+	// Find clang compilers
+	// TODO test
+	std::format_to_n(comp.name, sizeof(comp.name), "clang{}", '\0');
+	std::format_to_n(comp.path, sizeof(comp.path), "clang.exe{})", '\0');
+
+	std::format_to_n(cmd, sizeof(cmd), R"("{}" -v 2>version{})", comp.path, '\0');
+	if (0 == std::system(cmd)) {
+		std::getline(std::ifstream("version"), version);
+
+		std::string_view sv(version);
+		sv.remove_prefix(sv.find_first_of("0123456789", 0));
+
+		comp.major = std::atoi(sv.substr(0, sv.find('.')).data());
+		comp.minor = std::atoi(sv.substr(sv.find('.') + 1).data());
+		callback(comp);
 	}
 
 	file.close();
