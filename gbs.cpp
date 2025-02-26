@@ -48,8 +48,7 @@ bool build(std::string_view args) {
 	// Compile stdlib if needed
 	#define STDLIB_MODULE R"(%VCToolsInstallDir%/modules/std.ixx)"
 	if (!is_file_up_to_date(STDLIB_MODULE, "out/release/std.obj")) {
-		cmd += " && call copy /y \"%VCToolsInstallDir%modules\\std.ixx\" \"out/release/std.ixx\" 1>nul";
-		cmd += std::format(" && cl {} /c out/release/std.ixx", cl_args);
+		cmd += std::format(" && call cl {} /c \"{}\"", cl_args, STDLIB_MODULE);
 	}
 
 	// Add source files
