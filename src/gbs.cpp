@@ -24,7 +24,7 @@ std::string_view output_config;
 
 // Default response files
 static std::unordered_map<std::string_view, std::string_view> response_map = {
-	{"_shared", "/nologo /EHsc /std:c++23preview /MP /fastfail "},
+	{"_shared", "/nologo /EHsc /std:c++23preview /MP /fastfail /W4 /WX"},
 	{"debug", "/Od /MDd /ifcOutput out/debug/ /Fo:out/debug/"},
 	{"release", "/DNDEBUG /O2 /MD /ifcOutput out/release/ /Fo:out/release/"},
 	{"analyze", "/analyze:external-"},
