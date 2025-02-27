@@ -174,14 +174,14 @@ bool cl(std::string_view args) {
 		}
 	}
 
-	std::println("Using compiler '{}'", args);
 	selected_cl = get_compiler(args);
+	std::println("Using compiler '{} v{}.{}'", selected_cl.name, selected_cl.major, selected_cl.minor);
 	return true;
 }
 
 
 int main(int argc, char const* argv[]) {
-	std::println("Gorking build system v0.01\n");
+	std::println("Gorking build system v0.02\n");
 
 	static std::unordered_map<std::string_view, std::function<bool(std::string_view)>> const commands = {
 		{"build", build},
