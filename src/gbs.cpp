@@ -118,29 +118,38 @@ bool build(std::string_view args) {
 	std::filesystem::create_directories(output_dir / "bin");
 
 	// Determine reponse file folder
-	std::string resp = std::format("@.gbs/{}", selected_cl.name);
+	std::string const response_folder = std::format("@.gbs/{}", selected_cl.name);
 
 	// Compile stdlib if needed
 	if (!fs::exists(output_dir / "std.obj")) {
 		fs::path const stdlib_module = selected_cl.dir / "modules/std.ixx";
 		if (!is_file_up_to_date(stdlib_module, output_dir / "std.obj"))
-			cmd += std::format(" && call cl {0}/_shared {0}/{1:s} /c \"{2}\"", resp, view_resp, stdlib_module.generic_string());
+			cmd += std::format(" && call cl {0}/_shared {0}/{1:s} /c \"{2}\"", response_folder, view_resp, stdlib_module.generic_string());
 	}
 
 	// Add source files
-	cmd += std::format(" && cl {0}/_shared {0}/{1:s} /reference std={2}/std.ifc /Fe:{2}/bin/{3}", resp, view_resp, output_dir.generic_string(), executable);
+	cmd += std::format(" && cl {0}/_shared {0}/{1:s} /reference std={2}/std.ifc /Fe:{2}/bin/{3}", response_folder, view_resp, output_dir.generic_string(), executable);
 	auto not_dir = [](fs::directory_entry const& dir) { return !dir.is_directory(); };
 
-	for (auto const& dir : fs::directory_iterator("src") | std::views::filter(not_dir)) {
-		fs::path const& path = dir.path();
+	for (auto const& dir : fs::recursive_directory_iterator("src") | std::views::filter(not_dir)) {
+		fs::path path = dir.path();
 
-		auto const out = output_dir / path.filename().replace_extension("obj");
+		// Get the object name
+		auto const out = (output_dir / path.filename()).replace_extension("obj");
+
+		// Add source or object
 		cmd += ' ';
 		if (is_file_up_to_date(path, out))
 			cmd += out.generic_string();
 		else
 			cmd += path.generic_string();
+
+		if (path.extension() == ".ixx") {
+			auto const ifc = (output_dir / path.filename()).replace_extension("ifc");
+			cmd += std::format(" /reference {}", ifc.generic_string());
+		}
 	}
+
 	cmd += "\"";
 
 	return 0 == std::system(cmd.c_str());
@@ -157,7 +166,7 @@ bool run(std::string_view args) {
 		output_config = args.substr(0, args.find_first_of(',', 0));
 
 	if (output_config.empty()) {
-		std::println("Error: run : don't know what to run! Call 'run' after a compilation, or use 'run=release' to run the release build.");
+		std::println("Error: run : don't know what to run! Call 'run' after a compilation, or use eg. 'run=release' to run the release build.");
 		exit(1);
 	}
 

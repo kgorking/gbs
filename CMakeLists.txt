@@ -10,5 +10,5 @@ if (POLICY CMP0141)
 endif()
 
 project ("gbs")
-add_executable (gbs "src/gbs.cpp"   "src/compiler.h" "src/compiler.cpp")
+add_executable (gbs "src/gbs.cpp"   "src/compiler.h" "src/compiler.cpp" "src/enum_sources.cpp")
 set_property(TARGET gbs PROPERTY CXX_STANDARD 26)
