@@ -7,6 +7,8 @@ I wanted to try and create my own build system, just for fun.
 	- [x] Find source files automatically
 	- [x] Don't compile things that don't need it
     - [x] Deduce executable name from current directory
+	- [ ] Compile module sources
+	- [ ] Compile nested sources
 	- [ ] Compile GBS with itself
 - [x] Automated support for `import std;`
 - [x] Enumerate supported compilers
