@@ -1,10 +1,8 @@
 import std;
 
-short extra(short*);
+short extra();
 
 int main() {
 	std::println("Created by the Gorking build system v0.01");
-	return extra(nullptr);
-
-	return 0;
+	return extra();
 }

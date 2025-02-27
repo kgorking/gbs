@@ -16,7 +16,7 @@ I wanted to try and create my own build system, just for fun.
 	- [x] Compile by selecting one-or-more response files, eg. `gbs build=release,analyze,avx2,hardened_stdlib`
 	- [ ] Halt compilation on conflicting response files
 	- [ ] Allow matrix builds, eg. `gbs build=debug/release,opt1/opt2/opt3` results in 2x3 builds
-- [ ] Multiple operations, eg. `gbs build=debug unittest build=release unittest`
+- [x] Multiple operations, eg. `gbs build=debug unittest build=release unittest`
 - [ ] Compiling/linking libraries
 	- [ ] Recursively call `gbs` in lib directories
 - [ ] Compiling/running unit tests
@@ -25,7 +25,7 @@ I wanted to try and create my own build system, just for fun.
 	- [ ] Support for compiling externally fetched dependencies
 - [ ] Support multiple compilers
 	- [x] msvc
-	- [x] clang-cl
+	- [ ] clang-cl
 	- [ ] clang
 	- [ ] gcc
 - [ ] Download compilers, eg. `gbs get_cl=clang:[19,20,21]`
@@ -33,6 +33,8 @@ I wanted to try and create my own build system, just for fun.
 	- [ ] clang
 	- [ ] gcc
 - [ ] Support for running custom build steps before/after compilation
+- [ ] Integrate with Visual Studio [Code]
+- [ ] WSL
 
 ## Note
 Yes, I'm aware of the irony of using CMake to make a build system.

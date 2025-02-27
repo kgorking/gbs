@@ -13,15 +13,20 @@
 using namespace std::string_view_literals;
 namespace fs = std::filesystem;
 
-static const fs::path msvc_folder = ".gbs/msvc/";
-static constexpr std::string_view stdlib_module = "%VCToolsInstallDir%/modules/std.ixx";
+static const fs::path gbs_folder = ".gbs";
 
+// Available compilers
+compiler_collection all_compilers;
+compiler selected_cl;
+
+// Config of last compile (debug, release, etc...)
+std::string_view output_config;
 
 // Default response files
 static std::unordered_map<std::string_view, std::string_view> response_map = {
 	{"_shared", "/nologo /EHsc /std:c++23preview /MP /fastfail "},
-	{"debug", "/D_DEBUG /O0 /ifcOutput out/debug/ /Fo:out/debug/"},
-	{"release", "/DNDEBUG /O2 /ifcOutput out/release/ /Fo:out/release/"},
+	{"debug", "/Od /MDd /ifcOutput out/debug/ /Fo:out/debug/"},
+	{"release", "/DNDEBUG /O2 /MD /ifcOutput out/release/ /Fo:out/release/"},
 	{"analyze", "/analyze:external-"},
 };
 
@@ -38,13 +43,13 @@ bool ensure_response_file_exists(std::string_view resp) {
 	}
 
 	// Check that it is a valid response file
-	if (!fs::exists(msvc_folder / resp)) {
+	if (!fs::exists(gbs_folder / selected_cl.name / resp)) {
 		if (!response_map.contains(resp)) {
 			std::println("Error: unknown response file {}", resp);
 			return false;
 		}
 		else {
-			std::ofstream file(msvc_folder / resp);
+			std::ofstream file(gbs_folder / selected_cl.name / resp);
 			file << response_map[resp];
 		}
 	}
@@ -54,8 +59,13 @@ bool ensure_response_file_exists(std::string_view resp) {
 
 
 bool check_response_files(std::string_view args) {
-	if (!fs::exists(msvc_folder)) {
-		std::filesystem::create_directories(msvc_folder);
+	if (selected_cl.name.empty()) {
+		std::println("Error: select a compiler");
+		exit(1);
+	}
+
+	if (!fs::exists(gbs_folder / selected_cl.name)) {
+		std::filesystem::create_directories(gbs_folder / selected_cl.name);
 	}
 
 	ensure_response_file_exists("_shared"sv);
@@ -68,65 +78,62 @@ bool check_response_files(std::string_view args) {
 }
 
 bool enum_cl(std::string_view args) {
-	std::println("Enumerating compilers...");
+	std::println("Enumerating compilers:");
 
-	extern void enum_cl(std::function<void(compiler)>);
-	std::println("  {:12} {:5} {:<8} {}", "name", "arch", "version", "path");
-	std::println("  {:12} {:5} {:<8} {}", "----", "----", "-------", "----");
-	enum_cl([](compiler const& c) {
-		std::println("  {:12} {:5} {:}.{:<5} {}", c.name, c.arch, c.major, c.minor, c.path);
-		});
+	fill_compiler_collection();
+
+	for(auto& [k, v] : all_compilers) {
+		std::println("{}: ", k);
+		for (auto const &c : v) {
+			std::println("  {}.{} - {}", c.major, c.minor, c.dir.generic_string());
+		}
+	}
 
 	return true;
 }
 
 
 bool build(std::string_view args) {
-	std::println("Building...");
+	// Default build config is 'debug'
+	if (args.empty())
+		args = "debug";
 
 	// Ensure the needed response files are present
-	if (args.starts_with("build="))
-		args.remove_prefix(6);
 	check_response_files(args);
 
-	// TODO store path in env var %vcvars%
-	int const inst = std::system("\">instpath.txt \"%ProgramFiles(x86)%/Microsoft Visual Studio/Installer/vswhere.exe\" -property installationPath 2>nul\"");
-	if (inst != 0) {
-		std::println("Error: msvc not found");
-		return 1;
-	}
-
-	std::string path;
-	std::getline(std::ifstream("instpath.txt"), path);
-	std::filesystem::remove("instpath.txt");
-
-	// + VC\Tools\MSVC
-
-	std::filesystem::path vcvars(path, std::filesystem::path::generic_format);
-	vcvars /= "VC/Auxiliary/Build/vcvars64.bat";
-
-	std::filesystem::create_directories("out/release/bin");
-
 	// Set up the build environment
-	std::string cmd = std::format("\"call \"{}\" >nul", vcvars.generic_string());
+	auto const vcvars = selected_cl.dir / "../../../Auxiliary/Build/vcvars64.bat";
+	std::string cmd = std::format("\"\"{}\" >nul", vcvars.generic_string());
 
 	// Arguments to the compiler(s)
 	auto view_args = args | std::views::split(","sv);				// split args by comma
-	auto view_resp = view_args | std::views::join_with(std::format(" @{}", msvc_folder.generic_string()));		// join args with @
+	auto view_resp = view_args | std::views::join_with(std::format(" @{}", (gbs_folder / selected_cl.name).generic_string()));		// join args with @
+
+	// Build output
+	output_config = std::string_view{ view_args.front() };
+	auto output_dir = fs::path("out") / output_config;
+
+	// Create the build dirs if needed
+	std::filesystem::create_directories(output_dir / "bin");
+
+	// Determine reponse file folder
+	std::string resp = std::format("@.gbs/{}", selected_cl.name);
 
 	// Compile stdlib if needed
-	if (!is_file_up_to_date(stdlib_module, "out/release/std.obj")) {
-		cmd += std::format(" && call cl @.gbs/msvc/_shared @.gbs/msvc/{:s} /c \"{}\"", view_resp, stdlib_module);
+	if (!fs::exists(output_dir / "std.obj")) {
+		fs::path const stdlib_module = selected_cl.dir / "modules/std.ixx";
+		if (!is_file_up_to_date(stdlib_module, output_dir / "std.obj"))
+			cmd += std::format(" && call cl {0}/_shared {0}/{1:s} /c \"{2}\"", resp, view_resp, stdlib_module.generic_string());
 	}
 
 	// Add source files
-	cmd += std::format(" && cl @.gbs/msvc/_shared @.gbs/msvc/{:s} /reference std=out/release/std.ifc /Fe:out/release/bin/test.exe", view_resp);
+	cmd += std::format(" && cl {0}/_shared {0}/{1:s} /reference std={2}/std.ifc /Fe:{2}/bin/test.exe", resp, view_resp, output_dir.generic_string());
 	auto not_dir = [](fs::directory_entry const& dir) { return !dir.is_directory(); };
 
 	for (auto const& dir : fs::directory_iterator("src") | std::views::filter(not_dir)) {
 		fs::path const& path = dir.path();
 
-		auto const out = "out/release" / path.filename().replace_extension("obj");
+		auto const out = output_dir / path.filename().replace_extension("obj");
 		cmd += ' ';
 		if (is_file_up_to_date(path, out))
 			cmd += out.generic_string();
@@ -140,14 +147,38 @@ bool build(std::string_view args) {
 
 bool clean(std::string_view args) {
 	std::println("Cleaning...");
-	std::filesystem::remove_all("out/release/");
+	std::filesystem::remove_all("out");
 	return true;
 }
 
 bool run(std::string_view args) {
-	std::println("Running...");
-	return 0 == std::system("cd out/release/bin && test.exe");
+	if (!args.empty())
+		output_config = args.substr(0, args.find_first_of(',', 0));
+
+	if (output_config.empty()) {
+		std::println("Error: run : don't know what to run! Call 'run' after a compilation, or use 'run=release' to run the release build.");
+		exit(1);
+	}
+
+	std::println("Running '{}'...\n", output_config);
+	return 0 == std::system(std::format("cd out/{}/bin && test.exe", output_config).c_str());
 }
+
+
+bool cl(std::string_view args) {
+	if (all_compilers.empty()) {
+		fill_compiler_collection();
+		if (all_compilers.empty()) {
+			std::println("Error: no compilers found.");
+			exit(1);
+		}
+	}
+
+	std::println("Using compiler '{}'", args);
+	selected_cl = get_compiler(args);
+	return true;
+}
+
 
 int main(int argc, char const* argv[]) {
 	std::println("Gorking build system v0.01\n");
@@ -157,6 +188,7 @@ int main(int argc, char const* argv[]) {
 		{"clean", clean},
 		{"run", run},
 		{"enum_cl", enum_cl},
+		{"cl", cl},
 	};
 
 	auto const args = std::span<char const*>(argv, argc);
@@ -167,6 +199,8 @@ int main(int argc, char const* argv[]) {
 			return 1;
 		}
 
+		arg.remove_prefix(left.size());
+		arg.remove_prefix(!arg.empty() && arg.front() == '=');
 		if (!commands.at(left)(arg))
 			return 1;
 	}
