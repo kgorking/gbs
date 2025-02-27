@@ -16,17 +16,22 @@ I wanted to try and create my own build system, just for fun.
 	- [x] Compile by selecting one-or-more response files, eg. `gbs build=release,analyze,avx2,hardened_stdlib`
 	- [ ] Halt compilation on conflicting response files
 	- [ ] Allow matrix builds, eg. `gbs build=debug/release,opt1/opt2/opt3` results in 2x3 builds
-- [ ] Support multiple operations, eg. `gbs build=debug unittest build=release unittest`
-- [ ] Support for compiling/linking libraries
+- [ ] Multiple operations, eg. `gbs build=debug unittest build=release unittest`
+- [ ] Compiling/linking libraries
 	- [ ] Recursively call `gbs` in lib directories
-- [ ] Support for compiling/running unit tests
-- [ ] Support for fetching dependencies from external sites like GitHub.
+- [ ] Compiling/running unit tests
+- [ ] Fetch dependencies from external sites like GitHub.
+	- [ ] Use installed package managers
+	- [ ] Support for compiling externally fetched dependencies
 - [ ] Support multiple compilers
 	- [x] msvc
 	- [x] clang-cl
 	- [ ] clang
 	- [ ] gcc
-- [ ] Support for compiling externally fetched dependencies
+- [ ] Download compilers, eg. `gbs get_cl=clang:[19,20,21]`
+	- [ ] msvc
+	- [ ] clang
+	- [ ] gcc
 - [ ] Support for running custom build steps before/after compilation
 
 ## Note
