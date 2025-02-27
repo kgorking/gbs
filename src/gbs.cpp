@@ -8,6 +8,7 @@
 #include <ranges>
 #include <functional>
 #include <regex>
+#include "compiler.h"
 
 using namespace std::string_view_literals;
 namespace fs = std::filesystem;
@@ -66,18 +67,14 @@ bool check_response_files(std::string_view args) {
 	return true;
 }
 
-struct compiler {
-	int major, minor;
-	char name[16];
-	char path[232];
-};
-
 bool enum_cl(std::string_view args) {
 	std::println("Enumerating compilers...");
 
 	extern void enum_cl(std::function<void(compiler)>);
-	enum_cl([](compiler c) {
-		std::println("  {:12} {:}.{:<5} {}", c.name, c.major, c.minor, c.path);
+	std::println("  {:12} {:5} {:<8} {}", "name", "arch", "version", "path");
+	std::println("  {:12} {:5} {:<8} {}", "----", "----", "-------", "----");
+	enum_cl([](compiler const& c) {
+		std::println("  {:12} {:5} {:}.{:<5} {}", c.name, c.arch, c.major, c.minor, c.path);
 		});
 
 	return true;
