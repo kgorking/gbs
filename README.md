@@ -17,7 +17,7 @@ I wanted to try and create my own build system, just for fun.
     - [x] Create variants for debug/release/analyze/sanitize/library/etc.
 	- [x] Compile by selecting one-or-more response files, eg. `gbs build=release,analyze,avx2,hardened_stdlib`
 	- [ ] Halt compilation on conflicting response files
-	- [ ] Allow matrix builds, eg. `gbs build=debug/release,opt1/opt2/opt3` results in 2x3 builds
+	- [ ] Allow matrix builds, eg. `gbs build=[debug,release],[opt1,opt2,opt3]` results in 2x3 builds
 - [x] Multiple operations, eg. `gbs build=debug unittest build=release unittest`
 - [ ] Compiling/linking libraries
 	- [ ] Recursively call `gbs` in lib directories
