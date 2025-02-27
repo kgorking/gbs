@@ -6,7 +6,7 @@ I wanted to try and create my own build system, just for fun.
 - [x] Automatic compilation without build scripts
 	- [x] Find source files automatically
 	- [x] Don't compile things that don't need it
-    - [ ] Deduce executable name from current directory
+    - [x] Deduce executable name from current directory
 	- [ ] Compile GBS with itself
 - [x] Automated support for `import std;`
 - [x] Enumerate supported compilers

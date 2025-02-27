@@ -110,6 +110,7 @@ bool build(std::string_view args) {
 	auto view_resp = view_args | std::views::join_with(std::format(" @{}", (gbs_folder / selected_cl.name).generic_string()));		// join args with @
 
 	// Build output
+	std::string const executable = fs::current_path().stem().string() + ".exe";
 	output_config = std::string_view{ view_args.front() };
 	auto output_dir = fs::path("out") / output_config;
 
@@ -127,7 +128,7 @@ bool build(std::string_view args) {
 	}
 
 	// Add source files
-	cmd += std::format(" && cl {0}/_shared {0}/{1:s} /reference std={2}/std.ifc /Fe:{2}/bin/test.exe", resp, view_resp, output_dir.generic_string());
+	cmd += std::format(" && cl {0}/_shared {0}/{1:s} /reference std={2}/std.ifc /Fe:{2}/bin/{3}", resp, view_resp, output_dir.generic_string(), executable);
 	auto not_dir = [](fs::directory_entry const& dir) { return !dir.is_directory(); };
 
 	for (auto const& dir : fs::directory_iterator("src") | std::views::filter(not_dir)) {
@@ -160,8 +161,9 @@ bool run(std::string_view args) {
 		exit(1);
 	}
 
-	std::println("Running '{}'...\n", output_config);
-	return 0 == std::system(std::format("cd out/{}/bin && test.exe", output_config).c_str());
+	std::string const executable = fs::current_path().stem().string() + ".exe";
+	std::println("Running '{}' ({})...\n", executable, output_config);
+	return 0 == std::system(std::format("cd out/{}/bin && {}", output_config, executable).c_str());
 }
 
 
