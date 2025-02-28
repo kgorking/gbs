@@ -25,8 +25,8 @@ std::string_view output_config;
 // Default response files
 static std::unordered_map<std::string_view, std::string_view> response_map = {
 	{"_shared", "/nologo /EHsc /std:c++23preview /fastfail /W4 /WX"},// /MP"},
-	{"debug", "/Od /MDd /ifcOutput out/debug/ /Fo:out/debug/"},
-	{"release", "/DNDEBUG /O2 /MD /ifcOutput out/release/ /Fo:out/release/"},
+	{"debug", "/Od /MDd /ifcOutput gout/debug/ /Fo:gout/debug/"},
+	{"release", "/DNDEBUG /O2 /MD /ifcOutput gout/release/ /Fo:gout/release/"},
 	{"analyze", "/analyze:external-"},
 };
 
@@ -89,9 +89,14 @@ bool enum_cl(std::string_view /*args*/) {
 
 
 bool build(std::string_view args) {
-	// Default build config is 'debug'
+	if (!fs::exists("src/")) {
+		std::println("Error: no 'src' directory found at '{}'", fs::current_path().generic_string());
+		return false;
+	}
+
+	// Default build config is 'release'
 	if (args.empty())
-		args = "debug";
+		args = "release";
 
 	// Ensure the needed response files are present
 	check_response_files(args);
@@ -108,10 +113,10 @@ bool build(std::string_view args) {
 	// Build output
 	std::string const executable = fs::current_path().stem().string() + ".exe";
 	output_config = std::string_view{ view_args.front() };
-	auto output_dir = fs::path("out") / output_config;
+	auto output_dir = fs::path("gout") / output_config;
 
 	// Create the build dirs if needed
-	std::filesystem::create_directories(output_dir / "bin");
+	std::filesystem::create_directories(output_dir);
 
 	// Determine response file folder
 	std::string const response_folder = std::format("@.gbs/{}", selected_cl.name);
@@ -124,22 +129,25 @@ bool build(std::string_view args) {
 	}
 
 	// Add source files
-	cmd += std::format(" && cl {0}/_shared {0}/{1:s} /reference std={2}/std.ifc /Fe:{2}/bin/{3}", response_folder, view_resp, output_dir.generic_string(), executable);
+	cmd += std::format(" && cl {0}/_shared {0}/{1:s} /reference std={2}/std.ifc /Fe:{2}/{3}", response_folder, view_resp, output_dir.generic_string(), executable);
 	auto not_dir = [](fs::directory_entry const& dir) { return !dir.is_directory(); };
 
 	extern void enumerate_sources(std::filesystem::path, std::filesystem::path);
 	enumerate_sources("src", output_dir);
 
-	cmd += " @out/modules @out/sources @out/objects";
+	cmd += " @gout/modules @gout/sources @gout/objects\"";
 
-	cmd += "\"";
-	//std::puts(cmd.c_str());
 	return 0 == std::system(cmd.c_str());
 }
 
 bool clean(std::string_view /*args*/) {
 	std::println("Cleaning...");
-	std::filesystem::remove_all("out");
+	std::error_code ec;
+	std::filesystem::remove_all("gout", ec);
+	if (!ec) {
+		std::println("Error: {}", ec.message());
+		return false;
+	}
 	return true;
 }
 
@@ -154,7 +162,7 @@ bool run(std::string_view args) {
 
 	std::string const executable = fs::current_path().stem().string() + ".exe";
 	std::println("Running '{}' ({})...\n", executable, output_config);
-	return 0 == std::system(std::format("cd out/{}/bin && {}", output_config, executable).c_str());
+	return 0 == std::system(std::format("cd gout/{} && {}", output_config, executable).c_str());
 }
 
 
@@ -201,8 +209,10 @@ int main(int argc, char const* argv[]) {
 
 		arg.remove_prefix(left.size());
 		arg.remove_prefix(!arg.empty() && arg.front() == '=');
-		if (!commands.at(left)(arg))
+		if (!commands.at(left)(arg)) {
+			std::println("gbs: aborting due to command failure.");
 			return 1;
+		}
 	}
 
 	return 0;

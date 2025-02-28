@@ -53,9 +53,9 @@ void enumerate_sources_imp(enum_context& ctx, std::filesystem::path dir, std::fi
 
 void enumerate_sources(std::filesystem::path dir, std::filesystem::path output_dir) {
 	enum_context ctx{
-		std::ofstream("out/modules", std::ios::out | std::ios::trunc),
-		std::ofstream("out/sources", std::ios::out | std::ios::trunc),
-		std::ofstream("out/objects", std::ios::out | std::ios::trunc)
+		std::ofstream("gout/modules", std::ios::out | std::ios::trunc),
+		std::ofstream("gout/sources", std::ios::out | std::ios::trunc),
+		std::ofstream("gout/objects", std::ios::out | std::ios::trunc)
 	};
 
 	enumerate_sources_imp(ctx, dir, output_dir);
