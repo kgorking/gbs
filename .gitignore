@@ -362,3 +362,10 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /.gbs/msvc
+/gout/modules
+/gout/objects
+/gout/sources
+/test/.gbs/msvc/debug
+/test/gout/modules
+/test/gout/objects
+/test/gout/sources
