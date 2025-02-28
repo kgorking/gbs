@@ -34,6 +34,8 @@ I wanted to try and create my own build system, just for fun.
 - [ ] Download compilers, eg. `gbs get_cl=clang:[19,20,21]`
 	- [ ] msvc
 	- [ ] clang
+		- [ ] git ls-remote --exit-code --refs --sort="-version:refname" --tags "https://github.com/llvm/llvm-project" \*19.1\*
+		- [ ] https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.7/clang+llvm-19.1.7-x86_64-pc-windows-msvc.tar.xz
 	- [ ] gcc
 - [ ] Support for running custom build steps before/after compilation
 - [ ] Integrate with Visual Studio [Code]

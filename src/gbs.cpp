@@ -192,6 +192,7 @@ int main(int argc, char const* argv[]) {
 		return !build("release");
 	}
 
+	extern bool get_cl(std::string_view);
 	static std::unordered_map<std::string_view, bool(*)(std::string_view)> const commands = {
 		{"build", build},
 		{"clean", clean},
