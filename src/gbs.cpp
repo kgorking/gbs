@@ -101,8 +101,9 @@ bool build(std::string_view args) {
 	std::string cmd = std::format("\"\"{}\" >nul", vcvars.generic_string());
 
 	// Arguments to the compiler(s)
-	auto view_args = args | std::views::split(","sv);				// split args by comma
-	auto view_resp = view_args | std::views::join_with(std::format(" @{}", (gbs_folder / selected_cl.name).generic_string()));		// join args with @
+	// Converts arguments into response files
+	auto view_args = args | std::views::split(","sv);
+	auto view_resp = view_args | std::views::join_with(std::format(" @{}", (gbs_folder / selected_cl.name).generic_string()));
 
 	// Build output
 	std::string const executable = fs::current_path().stem().string() + ".exe";
@@ -176,7 +177,8 @@ int main(int argc, char const* argv[]) {
 	std::println("Gorking build system v0.03\n");
 
 	if (argc == 1) {
-		fill_compiler_collection();
+		//fill_compiler_collection();
+		enum_cl({});
 		selected_cl = all_compilers.begin()->second.front();
 		std::println("Using compiler '{} v{}.{}'", selected_cl.name, selected_cl.major, selected_cl.minor);
 		return !build("debug");
