@@ -175,6 +175,13 @@ bool cl(std::string_view args) {
 int main(int argc, char const* argv[]) {
 	std::println("Gorking build system v0.03\n");
 
+	if (argc == 1) {
+		fill_compiler_collection();
+		selected_cl = all_compilers.begin()->second.front();
+		std::println("Using compiler '{} v{}.{}'", selected_cl.name, selected_cl.major, selected_cl.minor);
+		return !build("debug");
+	}
+
 	static std::unordered_map<std::string_view, std::function<bool(std::string_view)>> const commands = {
 		{"build", build},
 		{"clean", clean},
