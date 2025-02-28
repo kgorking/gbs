@@ -173,7 +173,7 @@ bool cl(std::string_view args) {
 
 
 int main(int argc, char const* argv[]) {
-	std::println("Gorking build system v0.02\n");
+	std::println("Gorking build system v0.03\n");
 
 	static std::unordered_map<std::string_view, std::function<bool(std::string_view)>> const commands = {
 		{"build", build},
