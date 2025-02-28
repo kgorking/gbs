@@ -1,13 +1,9 @@
 ﻿#include <filesystem>
-#include <array>
-#include <print>
-#include <span>
-#include <cstdlib>
 #include <fstream>
 #include <string_view>
 #include <ranges>
-#include <functional>
-#include <regex>
+#include <print>
+#include <span>
 #include "compiler.h"
 
 using namespace std::string_view_literals;
@@ -24,7 +20,7 @@ std::string_view output_config;
 
 // Default response files
 static std::unordered_map<std::string_view, std::string_view> response_map = {
-	{"_shared", "/nologo /EHsc /std:c++23preview /fastfail /W4 /WX"},// /MP"},
+	{"_shared", "/nologo /EHsc /std:c++23preview /fastfail /W4 /WX /MP"},
 	{"debug", "/Od /MDd /ifcOutput gout/debug/ /Fo:gout/debug/"},
 	{"release", "/DNDEBUG /O2 /MD /ifcOutput gout/release/ /Fo:gout/release/"},
 	{"analyze", "/analyze:external-"},
@@ -108,7 +104,7 @@ bool build(std::string_view args) {
 	// Arguments to the compiler(s)
 	// Converts arguments into response files
 	auto view_args = args | std::views::split(","sv);
-	auto view_resp = view_args | std::views::join_with(std::format(" @{}", (gbs_folder / selected_cl.name).generic_string()));
+	auto view_resp = view_args | std::views::join_with(std::format(" @{}/", (gbs_folder / selected_cl.name).generic_string()));
 
 	// Build output
 	std::string const executable = fs::current_path().stem().string() + ".exe";
@@ -144,6 +140,11 @@ bool clean(std::string_view /*args*/) {
 	std::println("Cleaning...");
 	std::error_code ec;
 	std::filesystem::remove_all("gout", ec);
+	if (ec) {
+		std::println("Error: {}", ec.message());
+		return false;
+	}
+	std::filesystem::remove_all(gbs_folder, ec);
 	if (ec) {
 		std::println("Error: {}", ec.message());
 		return false;
@@ -191,7 +192,7 @@ int main(int argc, char const* argv[]) {
 		return !build("release");
 	}
 
-	static std::unordered_map<std::string_view, std::function<bool(std::string_view)>> const commands = {
+	static std::unordered_map<std::string_view, bool(*)(std::string_view)> const commands = {
 		{"build", build},
 		{"clean", clean},
 		{"run", run},
