@@ -125,7 +125,7 @@ bool build(std::string_view args) {
 	if (!fs::exists(output_dir / "std.obj")) {
 		fs::path const stdlib_module = selected_cl.dir / "modules/std.ixx";
 		if (!is_file_up_to_date(stdlib_module, output_dir / "std.obj"))
-			cmd += std::format(" && call cl {0}/_shared {0}/{1:s} /c \"{2}\"", response_folder, view_resp, stdlib_module.generic_string());
+			cmd += std::format(" && cl {0}/_shared {0}/{1:s} /c \"{2}\"", response_folder, view_resp, stdlib_module.generic_string());
 	}
 
 	// Add source files
@@ -144,7 +144,7 @@ bool clean(std::string_view /*args*/) {
 	std::println("Cleaning...");
 	std::error_code ec;
 	std::filesystem::remove_all("gout", ec);
-	if (!ec) {
+	if (ec) {
 		std::println("Error: {}", ec.message());
 		return false;
 	}
