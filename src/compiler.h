@@ -5,7 +5,7 @@
 #include <vector>
 
 struct compiler {
-	int major, minor;
+	int major = 0, minor = 0;
 	std::string_view name;
 	std::string_view arch;
 	std::filesystem::path dir;
