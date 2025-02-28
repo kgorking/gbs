@@ -10,7 +10,7 @@ I wanted to try and create my own build system, just for fun.
 	- [x] Compile module sources
 		- [ ] Figure out a way to do it in correct order
 	- [x] Compile nested sources
-	- [ ] Compile GBS with itself
+	- [x] Compile GBS with itself
 - [x] Automated support for `import std;`
 - [x] Enumerate supported compilers
 	- [x] Choose compiler from command `gbs cl=msvc:19.44 build`

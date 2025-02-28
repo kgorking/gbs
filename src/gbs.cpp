@@ -174,7 +174,7 @@ bool cl(std::string_view args) {
 
 
 int main(int argc, char const* argv[]) {
-	std::println("Gorking build system v0.03\n");
+	std::println("Gorking build system v0.05\n");
 
 	if (argc == 1) {
 		enum_cl({});
