@@ -72,7 +72,7 @@ bool check_response_files(std::string_view args) {
 	return true;
 }
 
-bool enum_cl(std::string_view args) {
+bool enum_cl(std::string_view /*args*/) {
 	std::println("Enumerating compilers:");
 
 	fill_compiler_collection();
@@ -137,7 +137,7 @@ bool build(std::string_view args) {
 	return 0 == std::system(cmd.c_str());
 }
 
-bool clean(std::string_view args) {
+bool clean(std::string_view /*args*/) {
 	std::println("Cleaning...");
 	std::filesystem::remove_all("out");
 	return true;
@@ -177,11 +177,10 @@ int main(int argc, char const* argv[]) {
 	std::println("Gorking build system v0.03\n");
 
 	if (argc == 1) {
-		//fill_compiler_collection();
 		enum_cl({});
 		selected_cl = all_compilers.begin()->second.front();
 		std::println("Using compiler '{} v{}.{}'", selected_cl.name, selected_cl.major, selected_cl.minor);
-		return !build("debug");
+		return !build("release");
 	}
 
 	static std::unordered_map<std::string_view, std::function<bool(std::string_view)>> const commands = {
