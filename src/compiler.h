@@ -20,3 +20,4 @@ using fn_callback = void(*)(compiler&&);
 //void enumerate_compilers(fn_callback);
 void fill_compiler_collection();
 compiler get_compiler(std::string_view comp);
+bool is_file_up_to_date(std::filesystem::path const& in, std::filesystem::path const& out);

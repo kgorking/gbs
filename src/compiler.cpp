@@ -8,6 +8,10 @@ extern compiler_collection all_compilers;
 
 char const* archs[] = { /*"arm64",*/ "x64" };
 
+bool is_file_up_to_date(std::filesystem::path const& in, std::filesystem::path const& out) {
+	return std::filesystem::exists(out) && (std::filesystem::last_write_time(out) > std::filesystem::last_write_time(in));
+}
+
 
 void enumerate_compilers(fn_callback callback) {
 	std::string line, cmd, version;

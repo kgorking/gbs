@@ -24,16 +24,11 @@ std::string_view output_config;
 
 // Default response files
 static std::unordered_map<std::string_view, std::string_view> response_map = {
-	{"_shared", "/nologo /EHsc /std:c++23preview /MP /fastfail /W4 /WX"},
+	{"_shared", "/nologo /EHsc /std:c++23preview /fastfail /W4 /WX"},// /MP"},
 	{"debug", "/Od /MDd /ifcOutput out/debug/ /Fo:out/debug/"},
 	{"release", "/DNDEBUG /O2 /MD /ifcOutput out/release/ /Fo:out/release/"},
 	{"analyze", "/analyze:external-"},
 };
-
-
-bool is_file_up_to_date(fs::path const& in, fs::path const& out) {
-	return fs::exists(out) && (fs::last_write_time(out) > fs::last_write_time(in));
-}
 
 
 bool ensure_response_file_exists(std::string_view resp) {
@@ -117,7 +112,7 @@ bool build(std::string_view args) {
 	// Create the build dirs if needed
 	std::filesystem::create_directories(output_dir / "bin");
 
-	// Determine reponse file folder
+	// Determine response file folder
 	std::string const response_folder = std::format("@.gbs/{}", selected_cl.name);
 
 	// Compile stdlib if needed
@@ -131,27 +126,13 @@ bool build(std::string_view args) {
 	cmd += std::format(" && cl {0}/_shared {0}/{1:s} /reference std={2}/std.ifc /Fe:{2}/bin/{3}", response_folder, view_resp, output_dir.generic_string(), executable);
 	auto not_dir = [](fs::directory_entry const& dir) { return !dir.is_directory(); };
 
-	for (auto const& dir : fs::recursive_directory_iterator("src") | std::views::filter(not_dir)) {
-		fs::path path = dir.path();
+	extern void enumerate_sources(std::filesystem::path, std::filesystem::path);
+	enumerate_sources("src", output_dir);
 
-		// Get the object name
-		auto const out = (output_dir / path.filename()).replace_extension("obj");
-
-		// Add source or object
-		cmd += ' ';
-		if (is_file_up_to_date(path, out))
-			cmd += out.generic_string();
-		else
-			cmd += path.generic_string();
-
-		if (path.extension() == ".ixx") {
-			auto const ifc = (output_dir / path.filename()).replace_extension("ifc");
-			cmd += std::format(" /reference {}", ifc.generic_string());
-		}
-	}
+	cmd += " @out/modules @out/sources @out/objects";
 
 	cmd += "\"";
-
+	std::puts(cmd.c_str());
 	return 0 == std::system(cmd.c_str());
 }
 
