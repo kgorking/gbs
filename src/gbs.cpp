@@ -132,7 +132,7 @@ bool build(std::string_view args) {
 	cmd += " @out/modules @out/sources @out/objects";
 
 	cmd += "\"";
-	std::puts(cmd.c_str());
+	//std::puts(cmd.c_str());
 	return 0 == std::system(cmd.c_str());
 }
 
