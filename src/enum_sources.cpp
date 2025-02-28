@@ -27,24 +27,18 @@ void enumerate_sources_imp(enum_context& ctx, std::filesystem::path dir, std::fi
 		if (it.is_directory())
 			continue;
 
-		if (it.path().extension() == ".ixx") {
-			auto const ifc = (output_dir / it.path().filename()).replace_extension("ifc");
-			ctx.modules << std::format(" /reference {}", ifc.generic_string());
-
-			auto const out = (output_dir / it.path().filename()).replace_extension("obj");
-			if (is_file_up_to_date(it.path(), out)) {
-				ctx.objects << ' ' << out;
-			}
-			else {
-				ctx.modules << std::format(" {}", it.path().generic_string());
-			}
+		auto const out = (output_dir / it.path().filename()).replace_extension("obj");
+		if (is_file_up_to_date(it.path(), out)) {
+			ctx.objects << ' ' << out;
 		}
-		else if (it.path().extension() == ".cpp") {
-			auto const out = (output_dir / it.path().filename()).replace_extension("obj");
-			if (is_file_up_to_date(it.path(), out)) {
-				ctx.objects << ' ' << out;
+		else {
+			if (it.path().extension() == ".ixx") {
+				auto const ifc = (output_dir / it.path().filename()).replace_extension("ifc");
+				ctx.modules
+					<< std::format(" /reference {}", ifc.generic_string())
+					<< std::format(" {}", it.path().generic_string());
 			}
-			else {
+			else if (it.path().extension() == ".cpp") {
 				ctx.sources << ' ' << it.path().generic_string();
 			}
 		}
