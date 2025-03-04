@@ -12,6 +12,10 @@ I wanted to try and create my own build system, just for fun.
 	- [x] Compile nested sources
 	- [x] Compile GBS with itself
 - [x] Automated support for `import std;`
+	- [x] msvc
+	- [ ] clang-cl
+	- [ ] clang
+	- [ ] gcc
 - [x] Enumerate supported compilers
 	- [x] Choose compiler from command `gbs cl=msvc:19.44 build`
 - [x] Use response files for compilation variance

@@ -3,8 +3,7 @@
 #include <print>
 #include <fstream>
 #include "compiler.h"
-
-extern compiler_collection all_compilers;
+#include "context.h"
 
 char const* archs[] = { /*"arm64",*/ "x64" };
 
@@ -13,7 +12,7 @@ bool is_file_up_to_date(std::filesystem::path const& in, std::filesystem::path c
 }
 
 
-void enumerate_compilers(fn_callback callback) {
+void enumerate_compilers(auto&& callback) {
 	std::string line, cmd, version;
 	compiler comp;
 
@@ -97,14 +96,14 @@ void enumerate_compilers(fn_callback callback) {
 }
 
 
-void fill_compiler_collection() {
-	all_compilers.clear();
-	enumerate_compilers(+[](compiler&& c) {
-		all_compilers[c.name].push_back(std::forward<compiler>(c));
+void fill_compiler_collection(context& ctx) {
+	ctx.all_compilers.clear();
+	enumerate_compilers([&](compiler&& c) {
+		ctx.all_compilers[c.name].push_back(std::forward<compiler>(c));
 	});
 
 	// Sort compilers from highest version to lowest
-	for (auto& [k, v] : all_compilers) {
+	for (auto& [k, v] : ctx.all_compilers) {
 		std::ranges::sort(v, [](compiler const& c1, compiler const& c2) {
 			if (c1.major == c2.major)
 				return c1.minor > c2.minor;
@@ -115,13 +114,13 @@ void fill_compiler_collection() {
 }
 
 
-compiler get_compiler(std::string_view comp) {
+compiler get_compiler(context const& ctx, std::string_view comp) {
 	auto split = comp | std::views::split(':'); // cl:version:arch
 	std::string_view cl, version, arch;
 
 	switch (std::ranges::distance(split)) {
 	case 1:
-		// No version requested, return newest
+		// No version requested, returns newest
 		cl = comp;
 		break;
 
@@ -132,7 +131,7 @@ compiler get_compiler(std::string_view comp) {
 		break;
 
 	case 3:
-		// Version requested
+		// Version and architecture requested
 		cl = std::string_view{ *split.begin() };
 		version = std::string_view{ *std::next(split.begin()) };
 		arch = std::string_view{ *std::next(split.begin(), 2) };
@@ -144,13 +143,13 @@ compiler get_compiler(std::string_view comp) {
 	}
 
 
-	if (!all_compilers.contains(cl)) {
+	if (!ctx.all_compilers.contains(cl)) {
 		std::println("Unknown compiler: {}", cl);
 		exit(1);
 	}
 
 	// Select the compiler
-	auto const& named_compilers = all_compilers[cl];
+	auto const& named_compilers = ctx.all_compilers.at(cl);
 	if (version.empty())
 		return named_compilers.front();
 
@@ -184,4 +183,3 @@ compiler get_compiler(std::string_view comp) {
 
 	return arch_compilers.front();
 }
-
