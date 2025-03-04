@@ -5,78 +5,23 @@
 #include <print>
 #include <span>
 #include "compiler.h"
+#include "context.h"
+#include "response.h"
 
 using namespace std::string_view_literals;
 namespace fs = std::filesystem;
 
-static const fs::path gbs_folder = ".gbs";
-
-// Available compilers
-compiler_collection all_compilers;
-compiler selected_cl;
-
-// Config of last compile (debug, release, etc...)
-std::string_view output_config;
-
-// Default response files
-static std::unordered_map<std::string_view, std::string_view> response_map = {
-	{"_shared", "/nologo /EHsc /std:c++23preview /fastfail /W4 /WX /MP"},
-	{"debug", "/Od /MDd /ifcOutput gout/debug/ /Fo:gout/debug/"},
-	{"release", "/DNDEBUG /O2 /MD /ifcOutput gout/release/ /Fo:gout/release/"},
-	{"analyze", "/analyze:external-"},
-};
 
 
-bool ensure_response_file_exists(std::string_view resp) {
-	if (resp.empty()) {
-		std::println("Error: bad build-arguments. Trailing comma?");
-		return false;
-	}
+bool enum_cl(context& ctx, std::string_view /*args*/) {
+	std::println("<gbs> Enumerating compilers:");
 
-	// Check that it is a valid response file
-	if (!fs::exists(gbs_folder / selected_cl.name / resp)) {
-		if (!response_map.contains(resp)) {
-			std::println("Error: unknown response file {}", resp);
-			return false;
-		}
-		else {
-			std::ofstream file(gbs_folder / selected_cl.name / resp);
-			file << response_map[resp];
-		}
-	}
+	fill_compiler_collection(ctx);
 
-	return true;
-}
-
-
-bool check_response_files(std::string_view args) {
-	if (selected_cl.name.empty()) {
-		std::println("Error: select a compiler");
-		exit(1);
-	}
-
-	if (!fs::exists(gbs_folder / selected_cl.name)) {
-		std::filesystem::create_directories(gbs_folder / selected_cl.name);
-	}
-
-	ensure_response_file_exists("_shared"sv);
-	for (auto subrange : args | std::views::split(","sv)) {
-		if (!ensure_response_file_exists(std::string_view{ subrange }))
-			return false;
-	}
-
-	return true;
-}
-
-bool enum_cl(std::string_view /*args*/) {
-	std::println("Enumerating compilers:");
-
-	fill_compiler_collection();
-
-	for(auto& [k, v] : all_compilers) {
-		std::println("{}: ", k);
+	for(auto& [k, v] : ctx.all_compilers) {
+		std::println("<gbs>   {}: ", k);
 		for (auto const &c : v) {
-			std::println("  {}.{} - {}", c.major, c.minor, c.dir.generic_string());
+			std::println("<gbs>     {}.{} - {}", c.major, c.minor, c.dir.generic_string());
 		}
 	}
 
@@ -84,9 +29,9 @@ bool enum_cl(std::string_view /*args*/) {
 }
 
 
-bool build(std::string_view args) {
+bool build(context& ctx, std::string_view args) {
 	if (!fs::exists("src/")) {
-		std::println("Error: no 'src' directory found at '{}'", fs::current_path().generic_string());
+		std::println("<gbs> Error: no 'src' directory found at '{}'", fs::current_path().generic_string());
 		return false;
 	}
 
@@ -94,90 +39,56 @@ bool build(std::string_view args) {
 	if (args.empty())
 		args = "release";
 
-	// Ensure the needed response files are present
-	check_response_files(args);
-
-	// Set up the build environment
-	auto const vcvars = selected_cl.dir / "../../../Auxiliary/Build/vcvars64.bat";
-	std::string cmd = std::format("\"\"{}\" >nul", vcvars.generic_string());
-
-	// Arguments to the compiler(s)
-	// Converts arguments into response files
-	auto view_args = args | std::views::split(","sv);
-	auto view_resp = view_args | std::views::join_with(std::format(" @{}/", (gbs_folder / selected_cl.name).generic_string()));
-
-	// Build output
-	std::string const executable = fs::current_path().stem().string() + ".exe";
-	output_config = std::string_view{ view_args.front() };
-	auto output_dir = fs::path("gout") / output_config;
-
-	// Create the build dirs if needed
-	std::filesystem::create_directories(output_dir);
-
-	// Determine response file folder
-	std::string const response_folder = std::format("@.gbs/{}", selected_cl.name);
-
-	// Compile stdlib if needed
-	if (!fs::exists(output_dir / "std.obj")) {
-		fs::path const stdlib_module = selected_cl.dir / "modules/std.ixx";
-		if (!is_file_up_to_date(stdlib_module, output_dir / "std.obj"))
-			cmd += std::format(" && cl {0}/_shared {0}/{1:s} /c \"{2}\"", response_folder, view_resp, stdlib_module.generic_string());
-	}
-
-	// Add source files
-	cmd += std::format(" && cl {0}/_shared {0}/{1:s} /reference std={2}/std.ifc /Fe:{2}/{3}", response_folder, view_resp, output_dir.generic_string(), executable);
-	auto not_dir = [](fs::directory_entry const& dir) { return !dir.is_directory(); };
-
-	extern void enumerate_sources(std::filesystem::path, std::filesystem::path);
-	enumerate_sources("src", output_dir);
-
-	cmd += " @gout/modules @gout/sources @gout/objects\"";
-
-	return 0 == std::system(cmd.c_str());
+	extern bool build_msvc(context & ctx, std::string_view args);
+	return build_msvc(ctx, args);
 }
 
-bool clean(std::string_view /*args*/) {
-	std::println("Cleaning...");
+bool clean(context& ctx, std::string_view /*args*/) {
+	// TODO args, clean=release
+	std::println("<gbs> Cleaning...");
 	std::error_code ec;
-	std::filesystem::remove_all("gout", ec);
+	std::filesystem::remove_all(ctx.gbs_out, ec);
 	if (ec) {
-		std::println("Error: {}", ec.message());
+		std::println("<gbs> Error: {}", ec.message());
 		return false;
 	}
-	std::filesystem::remove_all(gbs_folder, ec);
+
+	// TODO: move to own command
+	std::filesystem::remove_all(ctx.gbs_internal, ec);
 	if (ec) {
-		std::println("Error: {}", ec.message());
+		std::println("<gbs> Error: {}", ec.message());
 		return false;
 	}
+
 	return true;
 }
 
-bool run(std::string_view args) {
+bool run(context& ctx, std::string_view args) {
 	if (!args.empty())
-		output_config = args.substr(0, args.find_first_of(',', 0));
+		ctx.output_config = args.substr(0, args.find_first_of(',', 0));
 
-	if (output_config.empty()) {
-		std::println("Error: run : don't know what to run! Call 'run' after a compilation, or use eg. 'run=release' to run the release build.");
+	if (ctx.output_config.empty()) {
+		std::println("<gbs> Error: run : don't know what to run! Call 'run' after a compilation, or use eg. 'run=release' to run the release build.");
 		exit(1);
 	}
 
 	std::string const executable = fs::current_path().stem().string() + ".exe";
-	std::println("Running '{}' ({})...\n", executable, output_config);
-	return 0 == std::system(std::format("cd gout/{} && {}", output_config, executable).c_str());
+	std::println("<gbs> Running '{}' ({})...\n", executable, ctx.output_config);
+	return 0 == std::system(std::format("cd {} && {}", ctx.output_dir().generic_string(), executable).c_str());
 }
 
 
-bool cl(std::string_view args) {
-	if (all_compilers.empty()) {
-		fill_compiler_collection();
-		if (all_compilers.empty()) {
-			std::println("Error: no compilers found.");
+bool cl(context& ctx, std::string_view args) {
+	if (ctx.all_compilers.empty()) {
+		fill_compiler_collection(ctx);
+		if (ctx.all_compilers.empty()) {
+			std::println("<gbs> Error: no compilers found.");
 			exit(1);
 		}
 	}
 
-	selected_cl = get_compiler(args);
-	std::println("Using compiler '{} v{}.{}'", selected_cl.name, selected_cl.major, selected_cl.minor);
+	ctx.selected_cl = get_compiler(ctx, args);
+	std::println("<gbs> Using compiler '{} v{}.{}'", ctx.selected_cl.name, ctx.selected_cl.major, ctx.selected_cl.minor);
 	return true;
 }
 
@@ -185,34 +96,37 @@ bool cl(std::string_view args) {
 int main(int argc, char const* argv[]) {
 	std::println("Gorking build system v0.05\n");
 
+	context ctx;
+
 	if (argc == 1) {
-		enum_cl({});
-		selected_cl = all_compilers.begin()->second.front();
-		std::println("Using compiler '{} v{}.{}'", selected_cl.name, selected_cl.major, selected_cl.minor);
-		return !build("release");
+		enum_cl(ctx, {});
+		ctx.select_first_compiler();
+		std::println("<gbs> Using compiler '{} v{}.{}'", ctx.selected_cl.name, ctx.selected_cl.major, ctx.selected_cl.minor);
+		return !build(ctx, "release");
 	}
 
-	extern bool get_cl(std::string_view);
-	static std::unordered_map<std::string_view, bool(*)(std::string_view)> const commands = {
-		{"build", build},
-		{"clean", clean},
-		{"run", run},
+	static std::unordered_map<std::string_view, bool(*)(context&, std::string_view)> const commands = {
 		{"enum_cl", enum_cl},
 		{"cl", cl},
+		{"clean", clean},
+		{"build", build},
+		{"run", run},
 	};
 
 	auto const args = std::span<char const*>(argv, argc);
-	for (std::string_view arg : args | std::views::drop(1)) {
-		auto left = arg.substr(0, arg.find('='));
+	for (int i = 1; i < argc; i++) {
+		std::string_view arg{ argv[i] };
+
+		std::string_view const left = arg.substr(0, arg.find('='));
 		if (!commands.contains(left)) {
-			std::println("Unknown command: {}\n", left);
+			std::println("<gbs> Unknown command '{}', aborting\n", left);
 			return 1;
 		}
 
 		arg.remove_prefix(left.size());
 		arg.remove_prefix(!arg.empty() && arg.front() == '=');
-		if (!commands.at(left)(arg)) {
-			std::println("gbs: aborting due to command failure.");
+		if (!commands.at(left)(ctx, arg)) {
+			std::println("<gbs> aborting due to command failure.");
 			return 1;
 		}
 	}
