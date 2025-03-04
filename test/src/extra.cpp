@@ -1,4 +1,5 @@
-import std;
+//import std;
+#include <print>
 //import test.will_it_work;
 
 short extra() {

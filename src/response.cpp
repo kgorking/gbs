@@ -7,21 +7,43 @@
 
 namespace fs = std::filesystem;
 
+void init_response_files(context& ctx) {
+	// Default response files
+	// TODO compiler specific
+	ctx.response_map["msvc"] = {
+		{"_shared", "/nologo /EHsc /std:c++23preview /fastfail /W4 /WX /MP"},
+		{"debug", "/Od /MDd /ifcOutput gbs.out/msvc/debug/ /Fo:gbs.out/msvc/debug/"},
+		{"release", "/DNDEBUG /O2 /MD /ifcOutput gbs.out/msvc/release/ /Fo:gbs.out/msvc/release/"},
+		{"analyze", "/analyze:plugin EspXEngine.dll /analyze:external-"}
+	};
+
+	// -fprebuilt-module-path=
+	ctx.response_map["clang"] = {
+		{"_shared", "-std=c++2b -Wall -Werror"},
+		{"debug", "-O0 -fprebuilt-module-path=."},
+		{"release", "-O3 -fprebuilt-module-path=."},
+		{"analyze", "--analyze"}
+	};
+
+}
+
 bool ensure_response_file_exists(context const& ctx, std::string_view resp) {
 	if (resp.empty()) {
 		std::println("<gbs> Error: bad build-arguments. Trailing comma?");
 		return false;
 	}
 
+	auto& map = ctx.response_map.at(ctx.selected_cl.name);
+
 	// Check that it is a valid response file
 	if (!fs::exists(ctx.response_dir() / resp)) {
-		if (!ctx.response_map.contains(resp)) {
+		if (!map.contains(resp)) {
 			std::println("<gbs> Error: unknown response file {}", resp);
 			return false;
 		}
 		else {
 			std::ofstream file(ctx.response_dir() / resp);
-			file << ctx.response_map.at(resp);
+			file << map.at(resp);
 		}
 	}
 
@@ -32,6 +54,11 @@ bool ensure_response_file_exists(context const& ctx, std::string_view resp) {
 bool check_response_files(context const& ctx, std::string_view args) {
 	if (ctx.selected_cl.name.empty()) {
 		std::println("Error: select a compiler");
+		exit(1);
+	}
+
+	if (!ctx.response_map.contains(ctx.selected_cl.name)) {
+		std::println("Error: selected compiler does not have any default response files");
 		exit(1);
 	}
 

@@ -12,7 +12,8 @@ struct context {
 	compiler_collection all_compilers;
 	compiler selected_cl;
 
-	std::unordered_map<std::string_view, std::string_view> response_map;
+	using compiler_response_map = std::unordered_map<std::string_view, std::string_view>;
+	std::unordered_map<std::string_view, compiler_response_map> response_map;
 
 	// Config of last compile (debug, release, etc...)
 	std::string_view output_config;

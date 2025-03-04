@@ -42,8 +42,20 @@ bool build(context& ctx, std::string_view args) {
 	if (args.empty())
 		args = "release";
 
-	extern bool build_msvc(context & ctx, std::string_view args);
-	return build_msvc(ctx, args);
+	// Ensure the needed response files are present
+	init_response_files(ctx);
+	check_response_files(ctx, args);
+
+	if (ctx.selected_cl.name == "msvc") {
+		extern bool build_msvc(context & ctx, std::string_view args);
+		return build_msvc(ctx, args);
+	} if (ctx.selected_cl.name == "clang") {
+		extern bool build_clang(context & ctx, std::string_view args);
+		return build_clang(ctx, args);
+	} else {
+		std::println("<gbs> INTERNAL : not implemented yet");
+		return false;
+	}
 }
 
 bool clean(context& ctx, std::string_view /*args*/) {

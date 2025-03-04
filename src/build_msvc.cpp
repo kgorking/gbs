@@ -3,16 +3,61 @@
 #include <format>
 #include <print>
 #include <ranges>
+#include <fstream>
 
 #include "context.h"
 #include "response.h"
 
 namespace fs = std::filesystem;
 
+struct enum_context {
+	std::ofstream modules;
+	std::ofstream sources;
+	std::ofstream objects;
+};
+
+void enumerate_sources_imp(enum_context& ctx, std::filesystem::path dir, std::filesystem::path output_dir) {
+	using namespace std::filesystem;
+
+	for (directory_entry it : directory_iterator(dir)) {
+		if (it.is_directory()) {
+			enumerate_sources_imp(ctx, it.path(), output_dir);
+		}
+	}
+
+	for (directory_entry it : directory_iterator(dir)) {
+		if (it.is_directory())
+			continue;
+
+		if (it.path().extension() == ".cpp") {
+			auto const ifc = (output_dir / it.path().filename()).replace_extension("ifc");
+			ctx.modules << std::format(" /reference {}", ifc.generic_string());
+		}
+
+		auto const out = (output_dir / it.path().filename()).replace_extension("obj");
+		if (is_file_up_to_date(it.path(), out)) {
+			ctx.objects << out << ' ';
+		}
+		else {
+			ctx.sources << it.path().generic_string() << ' ';
+		}
+	}
+}
+
+void enumerate_sources(context const& ctx, std::filesystem::path dir, std::filesystem::path output_dir) {
+	enum_context e_ctx{
+		std::ofstream(ctx.response_dir() / "modules", std::ios::out | std::ios::trunc),
+		std::ofstream(ctx.response_dir() / "sources", std::ios::out | std::ios::trunc),
+		std::ofstream(ctx.response_dir() / "objects", std::ios::out | std::ios::trunc)
+	};
+
+	enumerate_sources_imp(e_ctx, dir, output_dir);
+}
+
 bool build_msvc(context& ctx, std::string_view args) {
 	// Set up the build environment
 	auto const vcvars = ctx.selected_cl.dir / "../../../Auxiliary/Build/vcvars64.bat";
-	std::string cmd = std::format("\"\"{}\" >nul", vcvars.generic_string());
+	std::string cmd = std::format("\"\"{}\" ", vcvars.generic_string());
 
 	// Arguments to the compiler(s)
 	// Converts arguments into response files
@@ -22,19 +67,6 @@ bool build_msvc(context& ctx, std::string_view args) {
 	// Build output
 	ctx.output_config = std::string_view{ view_args.front() };
 	auto const output_dir = ctx.output_dir();
-
-	// Default response files
-	// TODO compiler specific
-	ctx.response_map = {
-		{"_shared", "/nologo /EHsc /std:c++23preview /fastfail /W4 /WX /MP"},
-		{"debug", "/Od /MDd /ifcOutput gbs.out/msvc/debug/ /Fo:gbs.out/msvc/debug/"},
-		{"release", "/DNDEBUG /O2 /MD /ifcOutput gbs.out/msvc/release/ /Fo:gbs.out/msvc/release/"},
-		//{"analyze", "/analyze:external-"},
-		{"analyze", "/analyze:plugin EspXEngine.dll /analyze:external-"},
-	};
-
-	// Ensure the needed response files are present
-	check_response_files(ctx, args);
 
 	// Create the build dirs if needed
 	std::filesystem::create_directories(output_dir);

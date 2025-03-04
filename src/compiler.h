@@ -18,7 +18,6 @@ struct compiler {
 using compiler_collection = std::unordered_map<std::string_view, std::vector<compiler>>;
 using fn_callback = void(*)(struct context&, compiler&&);
 
-//void enumerate_compilers(fn_callback);
 void fill_compiler_collection(struct context&);
 std::optional<compiler> get_compiler(struct context const&, std::string_view);  // cl:version:arch
 bool is_file_up_to_date(std::filesystem::path const& in, std::filesystem::path const& out);

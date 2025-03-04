@@ -13,8 +13,13 @@ bool is_file_up_to_date(std::filesystem::path const& in, std::filesystem::path c
 }
 
 void extract_version(std::string_view sv, int& major, int& minor) {
-	major = std::atoi(sv.substr(0, sv.find('.')).data());
-	minor = std::atoi(sv.substr(sv.find('.') + 1).data());
+	if (sv.contains('.')) {
+		major = std::atoi(sv.substr(0, sv.find('.')).data());
+		minor = std::atoi(sv.substr(sv.find('.') + 1).data());
+	} else {
+		major = std::atoi(sv.data());
+		minor = 0;
+	}
 }
 
 void enumerate_compilers(auto&& callback) {
@@ -192,8 +197,8 @@ std::optional<compiler> get_compiler(context const& ctx, std::string_view comp) 
 		return named_compilers.front();
 
 	// Select the version
-	int const major = std::atoi(version.substr(0, version.find('.')).data());
-	int const minor = std::atoi(version.substr(version.find('.') + 1).data());
+	int major = 0, minor = 0;
+	extract_version(version, major, minor);
 
 	auto version_compilers = named_compilers | std::views::filter([major, minor](compiler const& c) {
 		if (c.major == major)
