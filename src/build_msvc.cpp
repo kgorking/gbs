@@ -29,7 +29,8 @@ void enumerate_sources_imp(enum_context& ctx, std::filesystem::path dir, std::fi
 		if (it.is_directory())
 			continue;
 
-		if (it.path().extension() == ".cpp") {
+		bool const is_module = it.path().extension() == ".cppm";
+		if (is_module) {
 			auto const ifc = (output_dir / it.path().filename()).replace_extension("ifc");
 			ctx.modules << std::format(" /reference {}", ifc.generic_string());
 		}
@@ -39,6 +40,8 @@ void enumerate_sources_imp(enum_context& ctx, std::filesystem::path dir, std::fi
 			ctx.objects << out << ' ';
 		}
 		else {
+			if (is_module)
+				ctx.sources << "/interface /Tp";
 			ctx.sources << it.path().generic_string() << ' ';
 		}
 	}
