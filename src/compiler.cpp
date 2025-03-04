@@ -11,6 +11,10 @@ bool is_file_up_to_date(std::filesystem::path const& in, std::filesystem::path c
 	return std::filesystem::exists(out) && (std::filesystem::last_write_time(out) > std::filesystem::last_write_time(in));
 }
 
+void extract_version(std::string_view sv, int& major, int& minor) {
+	major = std::atoi(sv.substr(0, sv.find('.')).data());
+	minor = std::atoi(sv.substr(sv.find('.') + 1).data());
+}
 
 void enumerate_compilers(auto&& callback) {
 	std::string line, cmd, version;
@@ -30,11 +34,12 @@ void enumerate_compilers(auto&& callback) {
 
 				for (auto const& dir : std::filesystem::directory_iterator(msvc_path)) {
 					for (auto arch : archs) {
+						comp = {};
 						comp.arch = arch;
 						comp.dir = dir;
+						comp.exe = std::format("{}\\bin\\HostX64\\{}", dir.path().string(), arch);
 						comp.inc = std::format("{}\\include", dir.path().string());
 						comp.lib = std::format("{}\\lib\\{}", dir.path().string(), arch);
-						comp.exe = std::format("{}\\bin\\HostX64\\{}", dir.path().string(), arch);
 
 						if (!std::filesystem::exists(comp.exe))
 							continue;
@@ -48,8 +53,7 @@ void enumerate_compilers(auto&& callback) {
 							sv.remove_prefix(sv.find_first_of("0123456789", 0));
 							sv = sv.substr(0, sv.find_first_of(' '));
 
-							comp.major = std::atoi(sv.substr(0, sv.find('.')).data());
-							comp.minor = std::atoi(sv.substr(sv.find('.') + 1).data());
+							extract_version(sv, comp.major, comp.minor);
 							callback(std::move(comp));
 						}
 					}

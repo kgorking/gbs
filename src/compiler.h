@@ -9,9 +9,9 @@ struct compiler {
 	std::string_view name;
 	std::string_view arch;
 	std::filesystem::path dir;
+	std::filesystem::path exe;
 	std::filesystem::path inc;
 	std::filesystem::path lib;
-	std::filesystem::path exe;
 };
 
 using compiler_collection = std::unordered_map<std::string_view, std::vector<compiler>>;
@@ -21,3 +21,4 @@ using fn_callback = void(*)(struct context&, compiler&&);
 void fill_compiler_collection(struct context&);
 compiler get_compiler(struct context const&, std::string_view);
 bool is_file_up_to_date(std::filesystem::path const& in, std::filesystem::path const& out);
+void extract_version(std::string_view, int&, int&);

@@ -11,6 +11,7 @@
 using namespace std::string_view_literals;
 namespace fs = std::filesystem;
 
+bool get_cl(context&, std::string_view args);
 
 
 bool enum_cl(context& ctx, std::string_view /*args*/) {
@@ -111,6 +112,7 @@ int main(int argc, char const* argv[]) {
 		{"clean", clean},
 		{"build", build},
 		{"run", run},
+		{"get_cl", get_cl},
 	};
 
 	auto const args = std::span<char const*>(argv, argc);
