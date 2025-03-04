@@ -31,6 +31,8 @@ bool enum_cl(context& ctx, std::string_view /*args*/) {
 
 
 bool build(context& ctx, std::string_view args) {
+	std::println("<gbs> Building...");
+
 	if (!fs::exists("src/")) {
 		std::println("<gbs> Error: no 'src' directory found at '{}'", fs::current_path().generic_string());
 		return false;
@@ -45,8 +47,9 @@ bool build(context& ctx, std::string_view args) {
 }
 
 bool clean(context& ctx, std::string_view /*args*/) {
-	// TODO args, clean=release
 	std::println("<gbs> Cleaning...");
+
+	// TODO args, clean=release
 	std::error_code ec;
 	std::filesystem::remove_all(ctx.gbs_out, ec);
 	if (ec) {
@@ -65,6 +68,9 @@ bool clean(context& ctx, std::string_view /*args*/) {
 }
 
 bool run(context& ctx, std::string_view args) {
+	std::string const executable = fs::current_path().stem().string() + ".exe";
+	std::println("<gbs> Running '{}' ({})...\n", executable, ctx.output_config);
+
 	if (!args.empty())
 		ctx.output_config = args.substr(0, args.find_first_of(',', 0));
 
@@ -73,8 +79,6 @@ bool run(context& ctx, std::string_view args) {
 		exit(1);
 	}
 
-	std::string const executable = fs::current_path().stem().string() + ".exe";
-	std::println("<gbs> Running '{}' ({})...\n", executable, ctx.output_config);
 	return 0 == std::system(std::format("cd {} && {}", ctx.output_dir().generic_string(), executable).c_str());
 }
 
@@ -88,9 +92,14 @@ bool cl(context& ctx, std::string_view args) {
 		}
 	}
 
-	ctx.selected_cl = get_compiler(ctx, args);
-	std::println("<gbs> Using compiler '{} v{}.{}'", ctx.selected_cl.name, ctx.selected_cl.major, ctx.selected_cl.minor);
-	return true;
+	if (auto opt_cl = get_compiler(ctx, args); opt_cl) {
+		ctx.selected_cl = *opt_cl;
+		std::println("<gbs> Using compiler '{} v{}.{}'", ctx.selected_cl.name, ctx.selected_cl.major, ctx.selected_cl.minor);
+		return true;
+	} else {
+		std::println("<gbs> Could not find compiler '{} v{}.{}'", ctx.selected_cl.name, ctx.selected_cl.major, ctx.selected_cl.minor);
+		return false;
+	}
 }
 
 
@@ -108,11 +117,11 @@ int main(int argc, char const* argv[]) {
 
 	static std::unordered_map<std::string_view, bool(*)(context&, std::string_view)> const commands = {
 		{"enum_cl", enum_cl},
+		{"get_cl", get_cl},
 		{"cl", cl},
 		{"clean", clean},
 		{"build", build},
 		{"run", run},
-		{"get_cl", get_cl},
 	};
 
 	auto const args = std::span<char const*>(argv, argc);

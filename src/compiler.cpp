@@ -4,6 +4,7 @@
 #include <fstream>
 #include "compiler.h"
 #include "context.h"
+#include "home.h"
 
 char const* archs[] = { /*"arm64",*/ "x64" };
 
@@ -30,16 +31,16 @@ void enumerate_compilers(auto&& callback) {
 			// Find msvc compilers
 			auto const msvc_path = path / "VC\\Tools\\MSVC";
 			if (std::filesystem::exists(msvc_path)) {
-				comp.name = "msvc";
 
 				for (auto const& dir : std::filesystem::directory_iterator(msvc_path)) {
 					for (auto arch : archs) {
 						comp = {};
+						comp.name = "msvc";
 						comp.arch = arch;
 						comp.dir = dir;
 						comp.exe = std::format("{}\\bin\\HostX64\\{}", dir.path().string(), arch);
-						comp.inc = std::format("{}\\include", dir.path().string());
-						comp.lib = std::format("{}\\lib\\{}", dir.path().string(), arch);
+						//comp.inc = std::format("{}\\include", dir.path().string());
+						//comp.lib = std::format("{}\\lib\\{}", dir.path().string(), arch);
 
 						if (!std::filesystem::exists(comp.exe))
 							continue;
@@ -63,6 +64,7 @@ void enumerate_compilers(auto&& callback) {
 			// Find clang-cl compilers
 			auto const llvm_path = path / "VC\\Tools\\LLVM";
 			if (std::filesystem::exists(llvm_path)) {
+				comp = {};
 				comp.name = "clang-cl";
 				for (auto arch : archs) {
 					comp.arch = arch;
@@ -90,13 +92,46 @@ void enumerate_compilers(auto&& callback) {
 		file.close();
 		std::error_code ec;
 		std::filesystem::remove("instpath.txt", ec);
+		std::filesystem::remove("version", ec);
+	}
+
+	// Find the users folder
+	char const* home_dir = get_home_dir();
+	if (!home_dir) {
+		std::println("<gbs> get_cl : unable to get home directory");
+		return;
 	}
 
 	// Find clang compilers
+	auto download_dir = std::filesystem::path(home_dir) / ".gbs";
+	for (auto const& dir : std::filesystem::directory_iterator(download_dir)) {
+
+		//std::println("{}", dir.path().filename().generic_string());
+		auto path = dir.path().filename().string();
+		std::string_view version = path;
+		std::string_view arch;
+
+		if (version.starts_with("clang+llvm-")) {
+			// format: clang+llvm-19.1.7-x86_64-pc-windows-msvc
+			version.remove_prefix(11); // remove 'clang+llvm-'
+			arch = version;
+			version.remove_suffix(version.size() - version.find_first_of('-')); // remove arch
+			arch.remove_prefix(version.size()); // remove version
+			if (arch == "-x86_64-pc-windows-msvc")
+				arch = "x64";
+
+			comp = {};
+			extract_version(version, comp.major, comp.minor);
+			comp.name = "clang";
+			comp.arch = arch;
+			comp.dir = dir;
+			comp.exe = dir.path() / "bin/clang";
+			callback(std::move(comp));
+		}
+	}
+
 	// TODO test
 
-	std::error_code ec;
-	std::filesystem::remove("version", ec);
 }
 
 
@@ -118,7 +153,7 @@ void fill_compiler_collection(context& ctx) {
 }
 
 
-compiler get_compiler(context const& ctx, std::string_view comp) {
+std::optional<compiler> get_compiler(context const& ctx, std::string_view comp) {
 	auto split = comp | std::views::split(':'); // cl:version:arch
 	std::string_view cl, version, arch;
 
@@ -148,8 +183,7 @@ compiler get_compiler(context const& ctx, std::string_view comp) {
 
 
 	if (!ctx.all_compilers.contains(cl)) {
-		std::println("Unknown compiler: {}", cl);
-		exit(1);
+		return {};
 	}
 
 	// Select the compiler
@@ -168,8 +202,8 @@ compiler get_compiler(context const& ctx, std::string_view comp) {
 		});
 
 	if (version_compilers.empty()) {
-		std::println("Error: A compiler with a higher version than what is available was requested");
-		exit(1);
+		//std::println("Error: A compiler with a higher version than what is available was requested");
+		return {};
 	}
 
 	if (arch.empty())
@@ -181,8 +215,8 @@ compiler get_compiler(context const& ctx, std::string_view comp) {
 		});
 
 	if (arch_compilers.empty()) {
-		std::println("Error: A compiler with architecture '{}' was not found.", arch);
-		exit(1);
+		//std::println("Error: A compiler with architecture '{}' was not found.", arch);
+		return {};
 	}
 
 	return arch_compilers.front();

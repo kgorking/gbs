@@ -29,7 +29,8 @@ bool build_msvc(context& ctx, std::string_view args) {
 		{"_shared", "/nologo /EHsc /std:c++23preview /fastfail /W4 /WX /MP"},
 		{"debug", "/Od /MDd /ifcOutput gbs.out/msvc/debug/ /Fo:gbs.out/msvc/debug/"},
 		{"release", "/DNDEBUG /O2 /MD /ifcOutput gbs.out/msvc/release/ /Fo:gbs.out/msvc/release/"},
-		{"analyze", "/analyze:external-"},
+		//{"analyze", "/analyze:external-"},
+		{"analyze", "/analyze:plugin EspXEngine.dll /analyze:external-"},
 	};
 
 	// Ensure the needed response files are present
