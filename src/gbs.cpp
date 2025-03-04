@@ -19,9 +19,9 @@ bool enum_cl(context& ctx, std::string_view /*args*/) {
 	fill_compiler_collection(ctx);
 
 	for(auto& [k, v] : ctx.all_compilers) {
-		std::println("<gbs> {}: ", k);
+		std::println("<gbs>   {}: ", k);
 		for (auto const &c : v) {
-			std::println("<gbs>   {}.{} - {}", c.major, c.minor, c.dir.generic_string());
+			std::println("<gbs>     {}.{} - {}", c.major, c.minor, c.dir.generic_string());
 		}
 	}
 
@@ -106,11 +106,11 @@ int main(int argc, char const* argv[]) {
 	}
 
 	static std::unordered_map<std::string_view, bool(*)(context&, std::string_view)> const commands = {
-		{"build", build},
-		{"clean", clean},
-		{"run", run},
 		{"enum_cl", enum_cl},
 		{"cl", cl},
+		{"clean", clean},
+		{"build", build},
+		{"run", run},
 	};
 
 	auto const args = std::span<char const*>(argv, argc);
