@@ -29,7 +29,7 @@ void enumerate_sources_imp(enum_context& ctx, std::filesystem::path dir, std::fi
 		if (it.is_directory())
 			continue;
 
-		bool const is_module = it.path().extension() == ".cppm";
+		bool const is_module = it.path().extension() == ".cppm" || it.path().extension() == ".ixx";
 		if (is_module) {
 			auto const ifc = (output_dir / it.path().filename()).replace_extension("ifc");
 			ctx.modules << std::format(" /reference {}", ifc.generic_string());
