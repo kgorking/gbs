@@ -11,8 +11,7 @@ struct compiler {
 	std::string_view arch;
 	std::filesystem::path dir;
 	std::filesystem::path exe;
-	//std::filesystem::path inc;
-	//std::filesystem::path lib;
+	std::string extra_params;
 };
 
 using compiler_collection = std::unordered_map<std::string_view, std::vector<compiler>>;

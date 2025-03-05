@@ -43,14 +43,12 @@ void enumerate_compilers(auto&& callback) {
 						comp.name = "msvc";
 						comp.arch = arch;
 						comp.dir = dir;
-						comp.exe = std::format("{}\\bin\\HostX64\\{}", dir.path().string(), arch);
-						//comp.inc = std::format("{}\\include", dir.path().string());
-						//comp.lib = std::format("{}\\lib\\{}", dir.path().string(), arch);
+						comp.exe = comp.dir / "bin/HostX64" / arch;
 
 						if (!std::filesystem::exists(comp.exe))
 							continue;
 
-						comp.exe += "\\cl.exe";
+						comp.exe /= "cl.exe";
 						cmd = std::format(R"("{}" 1>nul 2>version)", comp.exe.generic_string());
 						if (0 == std::system(cmd.c_str())) {
 							std::getline(std::ifstream("version"), version);

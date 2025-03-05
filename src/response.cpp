@@ -11,7 +11,7 @@ void init_response_files(context& ctx) {
 	// Default response files
 	// TODO compiler specific
 	ctx.response_map["msvc"] = {
-		{"_shared", "/nologo /EHsc /std:c++23preview /fastfail /W4 /WX /MP"},
+		{"_shared", "/nologo /EHsc /std:c++23preview /fastfail /W4 /WX"},
 		{"debug", "/Od /MDd /ifcOutput gbs.out/msvc/debug/ /Fo:gbs.out/msvc/debug/"},
 		{"release", "/DNDEBUG /O2 /MD /ifcOutput gbs.out/msvc/release/ /Fo:gbs.out/msvc/release/"},
 		{"analyze", "/analyze:plugin EspXEngine.dll /analyze:external-"}

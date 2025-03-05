@@ -127,7 +127,7 @@ bool get_cl(context& ctx, std::string_view args) {
 	}
 
 	// Download and unpack
-	std::println("<gbs> get_cl :   downloading {} version {}", cl.name, version);
+	std::println("<gbs> get_cl :   downloading {} {}", cl.name, version);
 	std::println("<gbs> get_cl :   {}", url);
 	if (0 != std::system(std::format("curl -L {} | tar xz -C \"{}/.gbs\"", url, homedir).c_str())) {
 		std::println("<gbs> get_cl : error downloading {} version {}", cl.name, version);
