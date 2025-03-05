@@ -116,7 +116,7 @@ bool cl(context& ctx, std::string_view args) {
 
 
 int main(int argc, char const* argv[]) {
-	std::println("Gorking build system v0.05\n");
+	std::println("Gorking build system v0.07\n");
 
 	context ctx;
 
