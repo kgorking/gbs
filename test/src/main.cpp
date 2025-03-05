@@ -4,7 +4,7 @@ import mod;
 short extra();
 
 int main() {
-	std::println("Created by the Gorking build system v0.01");
+	std::println("Created by the Gorking build system");
 	extra();
 	MyFunc();
 }
