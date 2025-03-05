@@ -105,12 +105,11 @@ void enumerate_compilers(auto&& callback) {
 		return;
 	}
 
-	// Find clang compilers
+	// Find compilers in ~/.gbs/*
 	auto download_dir = std::filesystem::path(home_dir) / ".gbs";
 	for (auto const& dir : std::filesystem::directory_iterator(download_dir)) {
 
-		//std::println("{}", dir.path().filename().generic_string());
-		auto path = dir.path().filename().string();
+		auto const path = dir.path().filename().string();
 		std::string_view version = path;
 		std::string_view arch;
 
@@ -129,6 +128,18 @@ void enumerate_compilers(auto&& callback) {
 			comp.arch = arch;
 			comp.dir = dir;
 			comp.exe = dir.path() / "bin/clang";
+			callback(std::move(comp));
+		} else if(version.starts_with("xpack-gcc-")) {
+			// xpack-gcc-13.3.0-2
+			version.remove_prefix(10);
+			arch = "x64";
+
+			comp = {};
+			extract_version(version, comp.major, comp.minor);
+			comp.name = "gcc";
+			comp.arch = arch;
+			comp.dir = dir;
+			comp.exe = dir.path() / "bin/gcc";
 			callback(std::move(comp));
 		}
 	}
