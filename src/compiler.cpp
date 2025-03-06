@@ -214,7 +214,7 @@ std::optional<compiler> get_compiler(context const& ctx, std::string_view comp) 
 		break;
 
 	default:
-		std::println("Error: ill-formed compiler descriptor: {}", comp);
+		std::println("<gbs>   Error: ill-formed compiler descriptor: {}", comp);
 		exit(1);
 	}
 
@@ -235,11 +235,11 @@ std::optional<compiler> get_compiler(context const& ctx, std::string_view comp) 
 	auto version_compilers = named_compilers | std::views::filter([major, minor](compiler const& c) {
 		if (c.major == major)
 			return c.minor >= minor;
-		return c.major >= major;
+		return false;// c.major >= major;
 		});
 
 	if (version_compilers.empty()) {
-		//std::println("Error: A compiler with a higher version than what is available was requested");
+		std::println("<gbs>   Error: requested version not found");
 		return {};
 	}
 
@@ -252,7 +252,7 @@ std::optional<compiler> get_compiler(context const& ctx, std::string_view comp) 
 		});
 
 	if (arch_compilers.empty()) {
-		//std::println("Error: A compiler with architecture '{}' was not found.", arch);
+		std::println("<gbs>   Error: A compiler with architecture '{}' was not found.", arch);
 		return {};
 	}
 
