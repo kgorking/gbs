@@ -1,4 +1,5 @@
-import std;
+//import std;
+#include <print>
 import mod;
 
 short extra();

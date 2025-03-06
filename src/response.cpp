@@ -9,7 +9,6 @@ namespace fs = std::filesystem;
 
 void init_response_files(context& ctx) {
 	// Default response files
-	// TODO compiler specific
 	ctx.response_map["msvc"] = {
 		{"_shared", "/nologo /EHsc /std:c++23preview /fastfail /W4 /WX"},
 		{"debug", "/Od /MDd /ifcOutput gbs.out/msvc/debug/ /Fo:gbs.out/msvc/debug/"},
@@ -17,14 +16,14 @@ void init_response_files(context& ctx) {
 		{"analyze", "/analyze:plugin EspXEngine.dll /analyze:external-"}
 	};
 
-	// -fprebuilt-module-path=
 	ctx.response_map["clang"] = {
 		{"_shared", "-std=c++2b -Wall -Werror"},
-		{"debug", "-O0 -fprebuilt-module-path=."},
-		{"release", "-O3 -fprebuilt-module-path=."},
+		{"debug", "-O0"},
+		{"release", "-O3"},
 		{"analyze", "--analyze"}
 	};
 
+	ctx.response_map["gcc"] = ctx.response_map["clang"];
 }
 
 bool ensure_response_file_exists(context const& ctx, std::string_view resp) {

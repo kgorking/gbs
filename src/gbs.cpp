@@ -52,6 +52,9 @@ bool build(context& ctx, std::string_view args) {
 	} if (ctx.selected_cl.name == "clang") {
 		extern bool build_clang(context & ctx, std::string_view args);
 		return build_clang(ctx, args);
+	//} if (ctx.selected_cl.name == "gcc") {
+	//	extern bool build_gcc(context & ctx, std::string_view args);
+	//	return build_gcc(ctx, args);
 	} else {
 		std::println("<gbs> INTERNAL : not implemented yet");
 		return false;

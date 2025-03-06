@@ -10,8 +10,6 @@
 namespace fs = std::filesystem;
 
 bool build_clang(context& ctx, std::string_view args) {
-	std::string cmd;
-
 	std::string const resp_dir = (ctx.response_dir()).generic_string();
 
 	// Convert ',' into response paths
@@ -22,9 +20,6 @@ bool build_clang(context& ctx, std::string_view args) {
 	// Build response file argument
 	std::string const resp_args = std::format("@{0}/_shared @{0}/{1:s}", resp_dir, view_resp);
 
-	// Build modules/files/objects argument
-	std::string const files_args = std::format(" @{0}/modules @{0}/sources @{0}/objects", resp_dir);
-
 	// Build output
 	ctx.output_config = std::string_view{ view_args.front() };
 	auto const output_dir = ctx.output_dir();
@@ -32,41 +27,96 @@ bool build_clang(context& ctx, std::string_view args) {
 	// Create the build dirs if needed
 	std::filesystem::create_directories(output_dir);
 
-	// Add source files
-	std::string const executable = fs::current_path().stem().string() + ".exe";
-	cmd += std::format("\"{}\" {} {} -o={}", ctx.selected_cl.exe.generic_string(), resp_args, files_args, executable);
-	// && mv f.o gbs.out/clang/debug/
+	// Compile std library
+	// https://raw.githubusercontent.com/llvm/llvm-project/refs/heads/main/libcxx/modules/std.cppm.in
 
-	//extern void enumerate_sources(context const&, std::filesystem::path, std::filesystem::path);
-	//enumerate_sources(ctx, "src", output_dir);
-
+	// Compile modules
 	using namespace std::filesystem;
 
-	//for (directory_entry it : directory_iterator("src")) {
-	//	if (it.is_directory()) {
-	//		enumerate_sources_imp(ctx, it.path(), output_dir);
-	//	}
-	//}
-	//
-	//
-	//for (directory_entry it : directory_iterator(dir)) {
-	//	if (it.is_directory())
-	//		continue;
-	//
-	//	if (it.path().extension() == ".ixx") {
-	//		auto const ifc = (output_dir / it.path().filename()).replace_extension("ifc");
-	//		//ctx.modules << std::format(" -fmodule-file={}={}", ifc.stem(), ifc.generic_string());
-	//	}
-	//
-	//	auto const out = (output_dir / it.path().filename()).replace_extension("obj");
-	//	if (is_file_up_to_date(it.path(), out)) {
-	//		ctx.objects << out << ' ';
-	//	}
-	//	else {
-	//		ctx.sources << "-c " << it.path().generic_string() << ' ';// << " -o " << it.path().stem() << ".o ";
-	//	}
-	//}
+	std::vector<std::filesystem::path> modules;
+	std::vector<std::string> objects;
 
+	auto compile_cppm = [&](std::filesystem::path const& in) -> void {
+		auto const pcm = (output_dir / in.filename()).replace_extension("pcm");
+		auto const obj = (output_dir / in.filename()).replace_extension("o");
+		auto const cmd = std::format("{} {} {} -fprebuilt-module-path=\"{}\" -c -fmodule-output={} -o {}", ctx.selected_cl.exe.generic_string(), resp_args, in.generic_string(), output_dir.generic_string(), pcm.generic_string(), obj.generic_string());
+		if (0 == std::system(cmd.c_str())) {
+			std::puts(in.generic_string().c_str());
+			objects.push_back(obj.generic_string());
+		}
+		else
+			modules.push_back(in);
+		};
 
-	return 0 == std::system(cmd.c_str());
+	auto compile_modules = [&](this auto& self, std::filesystem::path p) -> bool {
+		for (directory_entry it : directory_iterator(p)) {
+			if (it.is_directory()) {
+				self(it.path());
+			}
+		}
+
+		for (directory_entry it : directory_iterator(p)) {
+			if (it.is_directory())
+				continue;
+
+			if (it.path().extension() == ".cppm") {
+				compile_cppm(it.path());
+			}
+		}
+
+		while (!modules.empty()) {
+			auto copy = modules;
+			modules.clear();
+
+			for(auto const& mod : copy)
+				compile_cppm(mod);
+
+			if (copy.size() == modules.size()) {
+				std::print("<gbs> Could not resolve stuff?");
+				return false;
+			}
+		}
+
+		return true;
+		};
+
+	if (!compile_modules("src"))
+		return false;
+
+	// Compile sources
+	auto compile_sources = [&](this auto& self, std::filesystem::path p) -> bool {
+		for (directory_entry it : directory_iterator(p)) {
+			if (it.is_directory()) {
+				self(it.path());
+			}
+		}
+
+		for (directory_entry it : directory_iterator(p)) {
+			if (it.is_directory())
+				continue;
+
+			auto const& in = it.path();
+			if (it.path().extension() == ".cpp") {
+				auto const obj = (output_dir / in.filename()).replace_extension("o");
+				auto const cmd = std::format("{} {} {} -fprebuilt-module-path=\"{}\" -c -o {}", ctx.selected_cl.exe.generic_string(), resp_args, in.generic_string(), output_dir.generic_string(), obj.generic_string());
+				if (0 == std::system(cmd.c_str())) {
+					std::puts(in.generic_string().c_str());
+					objects.push_back(obj.generic_string());
+				}
+				else
+					return false;
+			}
+		}
+
+		return true;
+		};
+
+	if (!compile_sources("src"))
+		return false;
+
+	// Link objects
+	std::println("Linking...");
+	std::string const executable = fs::current_path().stem().string() + ".exe";
+	auto const cmd = std::format("{} {:s} -o {}/{}", ctx.selected_cl.exe.generic_string(), objects | std::views::join_with(' '), output_dir.generic_string(), executable);
+	return (0 == std::system(cmd.c_str()));
 }

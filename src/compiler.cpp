@@ -74,7 +74,6 @@ void enumerate_compilers_clang_cl(std::filesystem::path llvm_path, auto&& callba
 		if (0 == std::system(cmd.c_str())) {
 			std::string version;
 			std::getline(std::ifstream("version"), version);
-			std::filesystem::remove("version");
 
 			std::string_view sv(version);
 			sv.remove_prefix(sv.find_first_of("0123456789", 0));
@@ -82,6 +81,9 @@ void enumerate_compilers_clang_cl(std::filesystem::path llvm_path, auto&& callba
 			comp.major = std::atoi(sv.substr(0, sv.find('.')).data());
 			comp.minor = std::atoi(sv.substr(sv.find('.') + 1).data());
 			callback(std::move(comp));
+
+			std::error_code ec;
+			std::filesystem::remove("version", ec);
 		}
 	}
 }
