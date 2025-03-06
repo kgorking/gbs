@@ -46,8 +46,8 @@ I wanted to try and create my own build system, just for fun.
 	- [ ] clang-cl
 	- [ ] clang
 	- [ ] gcc
-- [ ] Download compilers, eg. `gbs get_cl=clang:19`
-	- [ ] msvc
+- [x] Download compilers, eg. `gbs get_cl=clang:19`
+	- [x] msvc
 	- [x] clang
 	- [x] gcc
 - [ ] Support for running custom build steps before/after compilation

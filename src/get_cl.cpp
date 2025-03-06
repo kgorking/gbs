@@ -5,26 +5,30 @@
 #include "home.h"
 
 bool get_cl(context& ctx, std::string_view args) {
-	std::println("<gbs> Searching for {}", args);
+	std::println("<gbs> get_cl : Searching for '{}'", args);
 
-	if (std::optional<compiler> opt_cl = get_compiler(ctx, args); opt_cl) {
+	if (std::optional<compiler> const opt_cl = get_compiler(ctx, args); opt_cl) {
 		ctx.selected_cl = *opt_cl;
 		return true;
 	}
 
 	if (args.empty()) {
-		std::println("<gbs> error : usage 'get_cl=compilername:version', eg. 'get_cl=clang:19.1'");
+		std::println("<gbs> get_cl error : usage 'get_cl=compilername:version', eg. 'get_cl=clang:19.1'");
 		return false;
 	}
 
 	if (1 == std::system("git --version >nul")) {
-		std::println("<gbs> 'git' is required for this command to work");
+		std::println("<gbs> get_cl : 'git' is required for this command to work");
 		return false;
 	}
 
-
 	if (1 == std::system("tar --version >nul")) {
-		std::println("<gbs> 'tar' is required for this command to work");
+		std::println("<gbs> get_cl : 'tar' is required for this command to work");
+		return false;
+	}
+
+	if (1 == std::system("curl --version >nul")) {
+		std::println("<gbs> get_cl : 'curl' is required for this command to work");
 		return false;
 	}
 
@@ -55,7 +59,6 @@ bool get_cl(context& ctx, std::string_view args) {
 		// Version to search for
 		version = args;
 	}
-
 
 	if (cl.name == "clang") {
 		cl.exe = "bin/clang";
@@ -109,8 +112,38 @@ bool get_cl(context& ctx, std::string_view args) {
 		extract_output_dir = "clang+llvm-{0}-armv7a-linux-gnueabihf";
 #endif
 	}
+	else if (cl.name == "msvc") {
+		std::string const vs_buildtools = std::format("{}/.gbs/vs_BuildTools.exe", homedir);
+		std::println("<gbs>    downloading Visual Studio build tools...");
+		if (0 != std::system(std::format("curl -fSL https://aka.ms/vs/17/release/vs_BuildTools.exe --output \"{}\"", vs_buildtools).c_str())) {
+			std::remove(vs_buildtools.c_str());
+			std::println("<gbs>    Error downloading msvc build tools");
+			return false;
+		}
+
+		std::string_view const vstools_args = "--passive --wait"
+			" --add Microsoft.VisualStudio.Workload.VCTools"
+			" --add Microsoft.VisualStudio.Component.VC.ASAN"
+			" --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
+			" --add Microsoft.VisualStudio.Component.VC.Llvm.Clang"
+			" --add Microsoft.VisualStudio.Component.VC.Modules.x86.x64"
+			" --add Microsoft.VisualStudio.Component.VC.140"
+			" --add Microsoft.VisualStudio.Component.VC.v141.x86.x64"
+			" --add Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64";
+
+		std::println("<gbs>    installing Visual Studio build tools, this will take a while...");
+		if (0 != std::system(std::format("{} --installPath \"{}/.gbs/msvc/\" {}", vs_buildtools, homedir, vstools_args).c_str())) {
+			std::remove(vs_buildtools.c_str());
+			std::println("<gbs>    Error installing msvc build tools");
+			return false;
+		}
+
+		std::remove(vs_buildtools.c_str());
+		std::println("<gbs>    Download and install successful");
+		return true;
+	}
 	else {
-		std::println("<gbs> Only clang and gcc downloads supported so far");
+		std::println("<gbs>    Unsupported compiler {}", cl.name);
 		return false;
 	}
 
