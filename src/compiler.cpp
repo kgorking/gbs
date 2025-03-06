@@ -127,47 +127,46 @@ void enumerate_compilers(auto&& callback) {
 
 	// Find compilers in ~/.gbs/*
 	auto const download_dir = std::filesystem::path(home_dir) / ".gbs";
-	for (auto const& dir : std::filesystem::directory_iterator(download_dir)) {
+	for (auto const& dir : std::filesystem::directory_iterator(download_dir / "clang")) {
 		auto const path = dir.path().filename().string();
 		std::string_view version = path;
-		std::string_view arch;
 
-		if (path.starts_with("clang+llvm-")) {
-			// format: clang+llvm-19.1.7-x86_64-pc-windows-msvc
-			version.remove_prefix(11); // remove 'clang+llvm-'
-			arch = version;
-			version.remove_suffix(version.size() - version.find_first_of('-')); // remove arch
-			arch.remove_prefix(version.size()); // remove version
-			if (arch == "-x86_64-pc-windows-msvc")
-				arch = "x64";
+		if (path.starts_with("clang_")) {
+			// format: clang_19.1.7
+			version.remove_prefix(6); // remove 'clang_'
 
 			comp = {};
 			extract_version(version, comp.major, comp.minor);
 			comp.name = "clang";
-			comp.arch = arch;
+			comp.arch = "x64";
 			comp.dir = dir;
 			comp.exe = dir.path() / "bin/clang";
 			callback(std::move(comp));
-		} else if(path.starts_with("xpack-gcc-")) {
-			// xpack-gcc-13.3.0-2
-			version.remove_prefix(10);
-			arch = "x64";
+		}
+	}
+
+	for (auto const& dir : std::filesystem::directory_iterator(download_dir / "gcc")) {
+		auto const path = dir.path().filename().string();
+		std::string_view version = path;
+
+		if(path.starts_with("gcc_")) {
+			// gcc_13.3.0-2
+			version.remove_prefix(4);
 
 			comp = {};
 			extract_version(version, comp.major, comp.minor);
 			comp.name = "gcc";
-			comp.arch = arch;
+			comp.arch = "x64";
 			comp.dir = dir;
 			comp.exe = dir.path() / "bin/gcc";
 			callback(std::move(comp));
-		} else if (path == "msvc") {
-			enumerate_compilers_msvc(download_dir / "msvc/VC/Tools/MSVC", callback);
-			enumerate_compilers_clang_cl(download_dir / "msvc/VC/Tools/LLVM", callback);
 		}
 	}
 
-	// TODO test
-
+	if (std::filesystem::exists(download_dir / "msvc")) {
+		enumerate_compilers_msvc(download_dir / "msvc/VC/Tools/MSVC", callback);
+		enumerate_compilers_clang_cl(download_dir / "msvc/VC/Tools/LLVM", callback);
+	}
 }
 
 

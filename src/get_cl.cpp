@@ -173,9 +173,15 @@ bool get_cl(context& ctx, std::string_view args) {
 
 	extract_version(version, cl.major, cl.minor);
 
+	std::string_view const filename = std::string_view{ url }.substr(1 + url.find_last_of('/'));
+	auto const gbs_user_path = std::filesystem::path(homedir) / ".gbs";
+	auto const downloaded_file_path = gbs_user_path / filename;
+	auto const compiler_dir = gbs_user_path / cl.name;
+	auto const download_dir = compiler_dir / std::vformat(extract_output_dir, std::make_format_args(version));
+	auto const dest_dir = compiler_dir / std::format("{}_{}", cl.name, version);
+
 	// Check if already downloaded
-	std::string const dirname = std::vformat(extract_output_dir, std::make_format_args(version));
-	cl.dir = std::filesystem::path(homedir) / ".gbs" / dirname;
+	cl.dir = dest_dir;
 	cl.exe = cl.dir / cl.exe; // update exe path
 
 	if (std::filesystem::exists(cl.dir)) {
@@ -185,18 +191,19 @@ bool get_cl(context& ctx, std::string_view args) {
 		return true;
 	}
 
-	std::string_view const filename = std::string_view{ url }.substr(1 + url.find_last_of('/'));
-	std::string const gbs_user_path = std::format("{}/.gbs/", homedir);
-	std::string const downloaded_file_path = std::format("{}/.gbs/{}", homedir, filename);
+	// Prep the destination dir
+	std::filesystem::create_directories(compiler_dir);
 
 	// Download
 	if (!std::filesystem::exists(downloaded_file_path)) {
 		std::println("<gbs>    downloading and unpacking {} {}", cl.name, version);
 		std::println("<gbs>    {}", url);
-		if (0 != std::system(std::format("curl -fSL {} | tar -xf - -C {}", url, gbs_user_path).c_str())) {
+		if (0 != std::system(std::format("curl -fSL {} | tar -xf - -C {}", url, compiler_dir.generic_string()).c_str())) {
 			std::println("<gbs> Error downloading and unpacking {} {}", cl.name, version);
 			return false;
 		}
+
+		std::filesystem::rename(download_dir, dest_dir);
 	}
 
 	// Add it to the list of supported compilers
