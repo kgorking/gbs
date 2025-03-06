@@ -99,20 +99,21 @@ bool run(context& ctx, std::string_view args) {
 
 
 bool cl(context& ctx, std::string_view args) {
+	std::println("<gbs> cl : searchin for compiler '{}'.", args);
 	if (ctx.all_compilers.empty()) {
 		fill_compiler_collection(ctx);
 		if (ctx.all_compilers.empty()) {
-			std::println("<gbs> Error: no compilers found.");
+			std::println("<gbs>   Error: no compilers found.");
 			exit(1);
 		}
 	}
 
 	if (auto opt_cl = get_compiler(ctx, args); opt_cl) {
 		ctx.selected_cl = *opt_cl;
-		std::println("<gbs> Using compiler '{} v{}.{}'", ctx.selected_cl.name, ctx.selected_cl.major, ctx.selected_cl.minor);
+		std::println("<gbs>   Using compiler '{} {}.{}'", ctx.selected_cl.name, ctx.selected_cl.major, ctx.selected_cl.minor);
 		return true;
 	} else {
-		std::println("<gbs> Could not find compiler '{} v{}.{}'", ctx.selected_cl.name, ctx.selected_cl.major, ctx.selected_cl.minor);
+		std::println("<gbs>   Could not find compiler '{}'", args);
 		return false;
 	}
 }
