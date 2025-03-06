@@ -64,7 +64,7 @@ void enumerate_compilers_clang_cl(std::filesystem::path llvm_path, auto&& callba
 	for (auto arch : archs) {
 		comp.arch = arch;
 		comp.dir = llvm_path / arch;
-		comp.exe = std::format("{}\\{}\\bin", llvm_path.string(), arch);
+		comp.exe = llvm_path / arch / "bin";
 
 		if (!std::filesystem::exists(comp.exe))
 			continue;
