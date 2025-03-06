@@ -2,7 +2,6 @@
 I wanted to try and create my own build system, just for fun.
 
 ## Upcoming versions
-#### v0.07: Compile test project with clang/clang-cl
 #### v0.08: Compile test project with gcc
 #### v0.09: Make `import std;` work for clang and gcc
 #### v0.10: Fix module dependencies, (recurse-retry)
@@ -42,8 +41,8 @@ I wanted to try and create my own build system, just for fun.
 	- [ ] Support for compiling externally fetched dependencies
 - [ ] Support multiple compilers
 	- [x] msvc
-	- [ ] clang-cl
-	- [ ] clang
+	- [ ] clang-cl (?)
+	- [x] clang
 	- [ ] gcc
 - [x] Download compilers, eg. `gbs get_cl=clang:19`
 	- [x] msvc
