@@ -158,8 +158,10 @@ bool get_cl(context& ctx, std::string_view args) {
 	std::string url;
 	{
 		std::ifstream versions("version_list.txt");
+		bool found_valid = false;
 		do {
-			versions >> version;
+			if (!(versions >> version))
+				break;
 			versions >> version;
 
 			// Strip down to version
@@ -167,7 +169,17 @@ bool get_cl(context& ctx, std::string_view args) {
 
 			// Build url
 			url = std::vformat(gh_download_url, std::make_format_args(version));
-		} while (22 == std::system(std::format("curl -f -s -I {} >nul", url).c_str()));
+
+			// Check for file
+			std::print("<gbs>    Checking for {} {} ...", cl.name, version);
+			found_valid = !(22 == std::system(std::format("curl -fsI {} >nul", url).c_str()));
+			std::puts(found_valid ? "OK" : "no");
+		} while (!found_valid);
+
+		if (!found_valid) {
+			std::println("<gbs>    No suitable download found for {}:{}", cl.name, args);
+			return false;
+		}
 	}
 	std::remove("version_list.txt");
 
