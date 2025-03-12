@@ -3,9 +3,12 @@
 #include <format>
 #include <print>
 #include <ranges>
+#include <execution>
 
 #include "context.h"
 #include "response.h"
+
+import source_enum;
 
 namespace fs = std::filesystem;
 
@@ -40,80 +43,60 @@ bool build_clang(context& ctx, std::string_view args) {
 		auto const pcm = (output_dir / in.filename()).replace_extension("pcm");
 		auto const obj = (output_dir / in.filename()).replace_extension("o");
 		auto const cmd = std::format("call \"{}\" {} {} -fprebuilt-module-path=\"{}\" -c -fmodule-output={} -o {}", ctx.selected_cl.exe.string(), resp_args, in.generic_string(), output_dir.generic_string(), pcm.generic_string(), obj.generic_string());
-		//std::puts(cmd.c_str());
+
 		if (0 == std::system(cmd.c_str())) {
 			std::puts(in.generic_string().c_str());
 			objects.push_back(obj.generic_string());
 		}
 		else
 			modules.push_back(in);
-		};
+	};
 
-	auto compile_modules = [&](this auto& self, std::filesystem::path p) -> bool {
-		for (directory_entry it : directory_iterator(p)) {
-			if (it.is_directory()) {
-				self(it.path());
-			}
+
+	auto compile_cpp = [&](std::filesystem::path const& in) -> bool {
+		auto const obj = (output_dir / in.filename()).replace_extension("o");
+		auto const cmd = std::format("call \"{}\" {} {} -fprebuilt-module-path=\"{}\" -c -o {}", ctx.selected_cl.exe.generic_string(), resp_args, in.generic_string(), output_dir.generic_string(), obj.generic_string());
+		if (0 == std::system(cmd.c_str())) {
+			std::puts(in.generic_string().c_str());
+			objects.push_back(obj.generic_string());
+			return true;
 		}
+		else
+			return false;
+	};
 
-		for (directory_entry it : directory_iterator(p)) {
-			if (it.is_directory())
-				continue;
+	auto queue = enum_sources("src", ".cppm");
+	for(auto& level : queue | std::views::reverse) {
+		modules.clear();
 
-			if (it.path().extension() == ".cppm") {
-				compile_cppm(it.path());
-			}
-		}
+		std::for_each(std::execution::par_unseq, level.begin(), level.end(), [&](path p) {
+			compile_cppm(p);
+		});
 
 		while (!modules.empty()) {
 			auto copy = modules;
 			modules.clear();
 
-			for(auto const& mod : copy)
+			for (auto const& mod : copy)
 				compile_cppm(mod);
 
-			if (copy.size() == modules.size()) {
-				std::println("<gbs> Could not resolve stuff?");
+			if (copy.size() == modules.size())
 				return false;
-			}
 		}
-
-		return true;
-		};
-
-	if (!compile_modules("src"))
-		return false;
+	}
 
 	// Compile sources
-	auto compile_sources = [&](this auto& self, std::filesystem::path p) -> bool {
-		for (directory_entry it : directory_iterator(p)) {
-			if (it.is_directory()) {
-				self(it.path());
-			}
-		}
+	queue = enum_sources("src", ".cpp");
+	int fails = 0;
+	for (auto& level : queue | std::views::reverse) {
+		std::for_each(std::execution::par_unseq, level.begin(), level.end(), [&](path in) {
+			if (!compile_cpp(in))
+				fails += 1;
+			});
 
-		for (directory_entry it : directory_iterator(p)) {
-			if (it.is_directory())
-				continue;
-
-			auto const& in = it.path();
-			if (it.path().extension() == ".cpp") {
-				auto const obj = (output_dir / in.filename()).replace_extension("o");
-				auto const cmd = std::format("call \"{}\" {} {} -fprebuilt-module-path=\"{}\" -c -o {}", ctx.selected_cl.exe.generic_string(), resp_args, in.generic_string(), output_dir.generic_string(), obj.generic_string());
-				if (0 == std::system(cmd.c_str())) {
-					std::puts(in.generic_string().c_str());
-					objects.push_back(obj.generic_string());
-				}
-				else
-					return false;
-			}
-		}
-
-		return true;
-		};
-
-	if (!compile_sources("src"))
-		return false;
+		if (fails > 0)
+			break;
+	}
 
 	// Link objects
 	std::println("Linking...");

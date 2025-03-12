@@ -10,5 +10,7 @@ if (POLICY CMP0141)
 endif()
 
 project ("gbs")
-add_executable (gbs "src/gbs.cpp"   "src/compiler.h" "src/compiler.cpp"  "src/build_msvc.cpp" "src/response.cpp" "src/get_cl.cpp" "src/response.h" "src/home.h" "src/build_clang.cpp")
+add_executable (gbs)
+target_sources(gbs PUBLIC "src/gbs.cpp"   "src/compiler.h" "src/compiler.cpp"  "src/build_msvc.cpp" "src/response.cpp" "src/get_cl.cpp" "src/response.h" "src/home.h" "src/build_clang.cpp")
+target_sources(gbs PUBLIC FILE_SET CXX_MODULES FILES "src/source_enum.cppm")
 set_property(TARGET gbs PROPERTY CXX_STANDARD 26)
