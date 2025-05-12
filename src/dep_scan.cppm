@@ -7,57 +7,81 @@ module;
 export module dep_scan;
 //import std;
 
-export auto detect_module_dependencies(std::filesystem::path dir) {
-    std::unordered_map<std::filesystem::path, std::vector<std::string>> dependencies;
+struct dep_entry {
+	std::filesystem::path file;
+	std::string export_name;
+	std::vector<std::string> import_names;
+};
 
-    for (auto const& entry : std::filesystem::recursive_directory_iterator(dir)) {
-        if (!entry.is_regular_file())
-            continue;
+// Returns a vector of module dependencies for each module file found.
+// First entry in the vector, is the exported modules name.
+export auto detect_module_dependencies(std::filesystem::path dir) -> std::vector<dep_entry> {
+	std::vector<dep_entry> dependencies;
 
-        auto path = entry.path();
-        if (path.extension() != ".cppm" && path.extension() != ".cpp")
-            continue;
+	for (auto const& entry : std::filesystem::recursive_directory_iterator(dir)) {
+		if (!entry.is_regular_file())
+			continue;
 
-        std::ifstream file(path);
-        if (!file.is_open())
-            continue;
+		// Only scan modules
+		auto path = entry.path();
+		if (path.extension() != ".cppm")
+			continue;
 
-        auto& module_deps = dependencies[path];
+		std::ifstream file(path);
+		if (!file.is_open())
+			continue;
 
-        std::string line;
-        while (std::getline(file, line)) {
-            if (line.empty())
-                continue;
+		auto& module_deps = dependencies.emplace_back(path);
 
-            // Simple pattern: look for "\bimport\s+<module-name>;"
-            std::string_view sv = line;
+		std::string line;
+		while (std::getline(file, line)) {
+			if (line.empty())
+				continue;
 
-            // Skip initial whitespaces
-            auto text_start = sv.find_first_not_of(" \t", 0);
-            if (text_start == std::string_view::npos)
-                continue;
+			// Simple pattern: look for "\b(import|export module)\s+<module-name>;"
+			std::string_view sv = line;
 
-            auto import_pos = sv.substr(text_start);
-            if (!import_pos.starts_with("import "))
-                continue;
+			// Skip initial whitespaces
+			auto text_start = sv.find_first_not_of(" \t", 0);
+			if (text_start == std::string_view::npos)
+				continue;
 
-            // Find the start of the module name
-            import_pos = import_pos.substr(7);
+			bool is_export = false;
+			auto module_name = sv.substr(text_start);
+			if (module_name.starts_with("import ")) {
+				module_name = module_name.substr(7);
+			}
+			else if (module_name.starts_with("export module ")) {
+				is_export = true;
+				module_name = module_name.substr(14);
+			}
+			else {
+				continue;
+			}
 
-            // Skip whitespace
-            auto const whitespaces = import_pos.find_first_not_of(" \t");
-            if (whitespaces != std::string_view::npos)
-                import_pos = import_pos.substr(whitespaces);
+			// Find the start of the module name
 
-            // Find end of module name (until ';' or whitespace)
-            auto end = import_pos.find_first_of(" ;\t");
-            if (end == std::string_view::npos)
-                continue;
+			// Skip whitespace
+			auto const whitespaces = module_name.find_first_not_of(" \t");
+			if (whitespaces != std::string_view::npos)
+				module_name = module_name.substr(whitespaces);
 
-            import_pos = import_pos.substr(0, end);
-            module_deps.emplace_back(import_pos.data(), import_pos.size());
-        }
-    }
+			// Find end of module name (until ';' or whitespace)
+			auto end = module_name.find_first_of(" ;\t");
+			if (end == std::string_view::npos)
+				continue;
 
-    return dependencies;
+			// Ignore 'std' imports
+			module_name = module_name.substr(0, end);
+			if (module_name == "std")
+				continue;
+
+			if (is_export)
+				module_deps.export_name = { module_name.data(), module_name.size() };
+			else
+				module_deps.import_names.emplace_back(module_name.data(), module_name.size());
+		}
+	}
+
+	return dependencies;
 }

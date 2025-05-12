@@ -1,7 +1,6 @@
 import std;
 import context;
 import response;
-
 import source_enum;
 
 namespace fs = std::filesystem;
@@ -27,70 +26,36 @@ bool build_clang(context& ctx, std::string_view args) {
 	// Compile std library
 	// https://raw.githubusercontent.com/llvm/llvm-project/refs/heads/main/libcxx/modules/std.cppm.in
 
-	// Compile modules
-	using namespace std::filesystem;
-
-	std::vector<std::filesystem::path> modules;
 	std::vector<std::string> objects;
 
-	auto compile_cppm = [&](std::filesystem::path const& in) -> void {
-		auto const pcm = (output_dir / in.filename()).replace_extension("pcm");
+	auto compile_cpp = [&](fs::path const& in) {
 		auto const obj = (output_dir / in.filename()).replace_extension("o");
-		auto const cmd = std::format("call \"{}\" {} {} -fprebuilt-module-path=\"{}\" -c -fmodule-output={} -o {}", ctx.selected_cl.exe.string(), resp_args, in.generic_string(), output_dir.generic_string(), pcm.generic_string(), obj.generic_string());
+		auto cmd = std::format("call \"{}\" {} {} -fprebuilt-module-path=\"{}\" -c -o {}", ctx.selected_cl.exe.generic_string(), resp_args, in.generic_string(), output_dir.generic_string(), obj.generic_string());
+
+		if (in.extension() == ".cppm") {
+			auto const pcm = (output_dir / in.filename()).replace_extension("pcm");
+			cmd += std::format(" -fmodule-output={}", pcm.generic_string());
+		}
 
 		if (0 == std::system(cmd.c_str())) {
 			std::puts(in.generic_string().c_str());
 			objects.push_back(obj.generic_string());
 		}
-		else
-			modules.push_back(in);
 	};
 
+	auto source_files = enum_sources("src");
 
-	auto compile_cpp = [&](std::filesystem::path const& in) -> bool {
-		auto const obj = (output_dir / in.filename()).replace_extension("o");
-		auto const cmd = std::format("call \"{}\" {} {} -fprebuilt-module-path=\"{}\" -c -o {}", ctx.selected_cl.exe.generic_string(), resp_args, in.generic_string(), output_dir.generic_string(), obj.generic_string());
-		if (0 == std::system(cmd.c_str())) {
-			std::puts(in.generic_string().c_str());
-			objects.push_back(obj.generic_string());
-			return true;
-		}
-		else
-			return false;
-	};
-
-	auto queue = enum_sources("src", ".cppm");
-	for(auto& level : queue | std::views::reverse) {
-		modules.clear();
-
-		std::for_each(std::execution::par_unseq, level.begin(), level.end(), [&](path p) {
-			compile_cppm(p);
-		});
-
-		while (!modules.empty()) {
-			auto copy = modules;
-			modules.clear();
-
-			for (auto const& mod : copy)
-				compile_cppm(mod);
-
-			if (copy.size() == modules.size())
-				return false;
-		}
-	}
+	// Compile modules
+	auto const& modules = source_files[".cppm"];
+	std::for_each(std::execution::/*par_un*/seq, modules.begin(), modules.end(), [&](fs::path p) {
+		compile_cpp(p);
+	});
 
 	// Compile sources
-	queue = enum_sources("src", ".cpp");
-	int fails = 0;
-	for (auto& level : queue | std::views::reverse) {
-		std::for_each(std::execution::par_unseq, level.begin(), level.end(), [&](path in) {
-			if (!compile_cpp(in))
-				fails += 1;
-			});
-
-		if (fails > 0)
-			break;
-	}
+	auto const& regulars = source_files[".cpp"];
+	std::for_each(std::execution::/*par_un*/seq, regulars.begin(), regulars.end(), [&](fs::path in) {
+		compile_cpp(in);
+		});
 
 	// Link objects
 	std::println("Linking...");

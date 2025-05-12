@@ -120,7 +120,7 @@ int main(int argc, char const* argv[]) {
 
 	auto test = detect_module_dependencies("./src");
 	for (auto &v : test)
-		std::println("{} - {}", v.first.generic_string(), v.second);
+		std::println("{} - {} - {}", v.file.generic_string(), v.export_name, v.import_names);
 	return 0;
 
 	context ctx;

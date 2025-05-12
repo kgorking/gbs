@@ -1,33 +1,32 @@
 export module source_enum;
 import std;
 
-export std::vector<std::vector<std::filesystem::path>> enum_sources(std::filesystem::path start_dir, std::filesystem::path extension) {
-	std::vector<std::vector<std::filesystem::path>> q;
+namespace fs = std::filesystem;
 
-	using namespace std::filesystem;
+// Enumerate all files in a directory. They are ordered by their extension
+export std::unordered_map<fs::path, std::vector<fs::path>> enum_sources(fs::path start_dir) {
+	auto q = std::unordered_map<fs::path, std::vector<fs::path>>{};
 
-	auto enum_impl = [&](this auto& self, std::filesystem::path p, int level) -> bool {
-		for (directory_entry it : directory_iterator(p)) {
+	auto enum_impl = [&](this auto& self, fs::path p) -> bool {
+		for (fs::directory_entry it : fs::directory_iterator(p)) {
 			if (it.is_directory()) {
-				self(it.path(), 1 + level);
+				self(it.path());
 			}
 		}
 
-		for (directory_entry it : directory_iterator(p)) {
+		for (fs::directory_entry it : fs::directory_iterator(p)) {
 			if (it.is_directory())
 				continue;
 
-			auto const& in = it.path();
-			if (in.extension() == extension) {
-				while (q.size() < 1 + level)
-					q.emplace_back();
-				q[level].push_back(in);
-			}
+			auto const in = it.path();
+			auto const ext = in.extension();
+
+			q[ext].push_back(in);
 		}
 
 		return true;
 		};
 
-	enum_impl(start_dir, 0);
+	enum_impl(start_dir);
 	return q;
 }
