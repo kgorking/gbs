@@ -1,15 +1,20 @@
 # Gorking Build System
 I wanted to try and create my own build system, just for fun.
 
+## Note
+Yes, I am aware of the irony of using CMake to make a build system.
+
 ## Upcoming versions
-#### v0.08: Compile test project with gcc
-#### v0.09: Make `import std;` work for clang and gcc
-#### v0.10: Fix module dependencies, (recurse-retry)
-#### v0.11: Compile and link libraries in 'lib'
-#### v0.12: Compile unit tests in 'unittest'
-#### v0.13: Fetch dependencies in 'deps'
-#### v0.14: Build dependencies in 'deps'
-#### v0.15: Custom build steps (via 'run'?)
+#### v0.08: Convert project to use modules
+#### v0.09: Unify source enumeration
+#### v0.10: Compile test project with gcc
+#### v0.11: Make `import std;` work for clang and gcc
+#### v0.12: Fix module dependencies, (recurse-retry)
+#### v0.13: Compile and link libraries in 'lib'
+#### v0.14: Compile unit tests in 'unittest'
+#### v0.15: Fetch dependencies in 'deps'
+#### v0.16: Build dependencies in 'deps'
+#### v0.17: Custom build steps (via 'run'?)
 
 ## Todo
 - [x] Create a simple build system
@@ -51,6 +56,3 @@ I wanted to try and create my own build system, just for fun.
 - [ ] Support for running custom build steps before/after compilation
 - [ ] Integrate with Visual Studio [Code]
 - [ ] WSL
-
-## Note
-Yes, I'm aware of the irony of using CMake to make a build system.
