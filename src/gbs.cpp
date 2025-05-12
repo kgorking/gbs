@@ -1,12 +1,7 @@
-﻿#include <filesystem>
-#include <fstream>
-#include <string_view>
-#include <ranges>
-#include <print>
-#include <span>
-#include "compiler.h"
-#include "context.h"
-#include "response.h"
+﻿import std;
+import compiler;
+import context;
+import response;
 
 using namespace std::string_view_literals;
 namespace fs = std::filesystem;

@@ -1,8 +1,7 @@
-#include <string_view>
-#include <fstream>
-#include <print>
-#include "context.h"
-#include "home.h"
+import std;
+import compiler;
+import context;
+import env;
 
 bool get_cl(context& ctx, std::string_view args) {
 	std::println("<gbs> get_cl : Searching for '{}'", args);
@@ -33,8 +32,8 @@ bool get_cl(context& ctx, std::string_view args) {
 	}
 
 	// Find the users folder
-	char const* homedir = get_home_dir();
-	if (!homedir) {
+	auto homedir = get_home_dir();
+	if (homedir.empty()) {
 		std::println("<gbs> Unable to get home directory");
 		return false;
 	}
@@ -113,10 +112,10 @@ bool get_cl(context& ctx, std::string_view args) {
 #endif
 	}
 	else if (cl.name == "msvc") {
-		std::string const vs_buildtools = std::format("{}/.gbs/vs_BuildTools.exe", homedir);
+		auto const vs_buildtools = homedir / ".gbs" / "vs_BuildTools.exe";
 		std::println("<gbs>    downloading Visual Studio build tools...");
-		if (0 != std::system(std::format("curl -fSL https://aka.ms/vs/17/release/vs_BuildTools.exe --output \"{}\"", vs_buildtools).c_str())) {
-			std::remove(vs_buildtools.c_str());
+		if (0 != std::system(std::format("curl -fSL https://aka.ms/vs/17/release/vs_BuildTools.exe --output \"{}\"", vs_buildtools.generic_string()).c_str())) {
+			std::filesystem::remove(vs_buildtools);
 			std::println("<gbs>    Error downloading msvc build tools");
 			return false;
 		}
@@ -132,13 +131,13 @@ bool get_cl(context& ctx, std::string_view args) {
 			" --add Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64";
 
 		std::println("<gbs>    installing Visual Studio build tools, this will take a while...");
-		if (0 != std::system(std::format("{} --installPath \"{}/.gbs/msvc/\" {}", vs_buildtools, homedir, vstools_args).c_str())) {
-			std::remove(vs_buildtools.c_str());
+		if (0 != std::system(std::format("{} --installPath \"{}/.gbs/msvc/\" {}", vs_buildtools.generic_string(), homedir.generic_string(), vstools_args).c_str())) {
+			std::filesystem::remove(vs_buildtools);
 			std::println("<gbs>    Error installing msvc build tools");
 			return false;
 		}
 
-		std::remove(vs_buildtools.c_str());
+		std::filesystem::remove(vs_buildtools);
 		std::println("<gbs>    Download and install successful");
 		return true;
 	}
@@ -183,7 +182,7 @@ bool get_cl(context& ctx, std::string_view args) {
 	}
 	std::remove("version_list.txt");
 
-	extract_version(version, cl.major, cl.minor);
+	extract_compiler_version(version, cl.major, cl.minor);
 
 	std::string_view const filename = std::string_view{ url }.substr(1 + url.find_last_of('/'));
 	auto const gbs_user_path = std::filesystem::path(homedir) / ".gbs";

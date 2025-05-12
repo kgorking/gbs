@@ -1,13 +1,10 @@
-#include <string_view>
-#include <filesystem>
-#include <fstream>
-#include <ranges>
-#include <print>
-#include "context.h"
+export module response;
+import std;
+import context;
 
 namespace fs = std::filesystem;
 
-void init_response_files(context& ctx) {
+export void init_response_files(context& ctx) {
 	// Default response files
 	ctx.response_map["msvc"] = {
 		{"_shared", "/nologo /EHsc /std:c++23preview /fastfail /W4 /WX"},
@@ -33,7 +30,7 @@ void init_response_files(context& ctx) {
 	//};
 }
 
-bool ensure_response_file_exists(context const& ctx, std::string_view resp) {
+export bool ensure_response_file_exists(context const& ctx, std::string_view resp) {
 	if (resp.empty()) {
 		std::println("<gbs> Error: bad build-arguments. Trailing comma?");
 		return false;
@@ -57,7 +54,7 @@ bool ensure_response_file_exists(context const& ctx, std::string_view resp) {
 }
 
 
-bool check_response_files(context const& ctx, std::string_view args) {
+export bool check_response_files(context const& ctx, std::string_view args) {
 	if (ctx.selected_cl.name.empty()) {
 		std::println("Error: select a compiler");
 		exit(1);

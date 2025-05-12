@@ -1,12 +1,7 @@
-#include <string_view>
-#include <filesystem>
-#include <format>
-#include <print>
-#include <ranges>
-#include <fstream>
-
-#include "context.h"
-#include "response.h"
+import std;
+import context;
+import response;
+import env;
 
 namespace fs = std::filesystem;
 
@@ -27,6 +22,10 @@ void enumerate_sources_imp(enum_context& ctx, std::filesystem::path dir, std::fi
 
 	for (directory_entry it : directory_iterator(dir)) {
 		if (it.is_directory())
+			continue;
+
+		auto ext = it.path().extension();
+		if (ext == ".h")
 			continue;
 
 		bool const is_module = it.path().extension() == ".cppm" || it.path().extension() == ".ixx";

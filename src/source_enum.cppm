@@ -20,10 +20,10 @@ export std::vector<std::vector<std::filesystem::path>> enum_sources(std::filesys
 				continue;
 
 			auto const& in = it.path();
-			if (it.path().extension() == extension) {
+			if (in.extension() == extension) {
 				while (q.size() < 1 + level)
 					q.emplace_back();
-				q[level].push_back(it.path());
+				q[level].push_back(in);
 			}
 		}
 
