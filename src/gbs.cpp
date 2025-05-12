@@ -2,6 +2,7 @@
 import compiler;
 import context;
 import response;
+import dep_scan;
 
 using namespace std::string_view_literals;
 namespace fs = std::filesystem;
@@ -115,7 +116,12 @@ bool cl(context& ctx, std::string_view args) {
 
 
 int main(int argc, char const* argv[]) {
-	std::println("Gorking build system v0.08\n");
+	std::println("Gorking build system v0.09\n");
+
+	auto test = detect_module_dependencies("./src");
+	for (auto &v : test)
+		std::println("{} - {}", v.first.generic_string(), v.second);
+	return 0;
 
 	context ctx;
 

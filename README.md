@@ -6,10 +6,10 @@ Yes, I am aware of the irony of using CMake to make a build system.
 
 ## Upcoming versions
 #### v0.08: Convert project to use modules
-#### v0.09: Unify source enumeration
-#### v0.10: Compile test project with gcc
-#### v0.11: Make `import std;` work for clang and gcc
-#### v0.12: Fix module dependencies, (recurse-retry)
+#### v0.09: Fix module dependencies, (recurse-retry)
+#### v0.10: Unify source enumeration
+#### v0.11: Compile test project with gcc
+#### v0.12: Make `import std;` work for clang and gcc
 #### v0.13: Compile and link libraries in 'lib'
 #### v0.14: Compile unit tests in 'unittest'
 #### v0.15: Fetch dependencies in 'deps'
