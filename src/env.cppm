@@ -2,10 +2,8 @@ module;
 #ifdef _MSC_VER
 #include <windows.h>
 #endif
-#include <filesystem>
-#include <string_view>
-#include <string>
 export module env;
+import std;
 
 export std::string get_env_value(std::string_view var) {
 #ifdef _MSC_VER
