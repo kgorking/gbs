@@ -1,7 +1,5 @@
-module;
-#include <vector>
-#include <filesystem>
 export module source_enum;
+import std;
 
 export std::vector<std::vector<std::filesystem::path>> enum_sources(std::filesystem::path start_dir, std::filesystem::path extension) {
 	std::vector<std::vector<std::filesystem::path>> q;

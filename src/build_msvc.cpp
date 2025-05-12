@@ -97,6 +97,6 @@ bool build_msvc(context& ctx, std::string_view args) {
 	enumerate_sources(ctx, "src", output_dir);
 
 	std::string const executable = fs::current_path().stem().string() + ".exe";
-	std::string const cmd = std::format("{0} @{1}/modules @{1}/sources @{1}/objects /reference std={3}/std.ifc /Fe:{3}/{4} {5}", cl, ctx.response_dir().generic_string(), view_resp, output_dir.generic_string(), executable, ctx.selected_cl.extra_params);
+	std::string const cmd = std::format("{0} /reference std={3}/std.ifc /Fe:{3}/{4} @{1}/modules @{1}/sources @{1}/objects {5}", cl, ctx.response_dir().generic_string(), view_resp, output_dir.generic_string(), executable, ctx.selected_cl.extra_params);
 	return 0 == std::system(cmd.c_str());
 }
