@@ -1,12 +1,5 @@
-module;
-#include <unordered_map>
-#include <string_view>
-#include <string>
-#include <vector>
-#include <filesystem>
-#include <algorithm>
 export module context;
-//import std;
+import std;
 import compiler;
 
 
