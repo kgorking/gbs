@@ -10,46 +10,48 @@ using namespace std::string_view_literals;
 
 bool build_msvc(context& ctx, std::string_view args) {
 	// Find the source files and dependencies
-	auto file_dependency_map  = std::unordered_map<fs::path, source_dependency>{};
-	auto file_to_imports_map  = std::unordered_map<fs::path, std::set<std::string>>{};
-	auto module_name_to_file_map   = std::unordered_map<std::string, fs::path>{};
 	auto grouped_source_files = std::vector<std::vector<fs::path>>{};
+	auto file_to_imports_map = std::unordered_map<fs::path, std::set<std::string>>{};
+	{
+		auto file_dependency_map = std::unordered_map<fs::path, source_dependency>{};
+		auto module_name_to_file_map = std::unordered_map<std::string, fs::path>{};
 
-	for (fs::directory_entry it : fs::recursive_directory_iterator("src")) {
-		if (it.is_directory())
-			continue;
+		for (fs::directory_entry it : fs::recursive_directory_iterator("src")) {
+			if (it.is_directory())
+				continue;
 
-		auto const path = it.path();
-		auto const deps = detect_module_dependencies(path);
-		file_dependency_map[path] = deps;
+			auto const path = it.path();
+			auto const deps = detect_module_dependencies(path);
+			file_dependency_map[path] = deps;
 
-		if (!deps.export_name.empty())
-			module_name_to_file_map[deps.export_name] = path;
-	}
-
-	for (auto const& [path, deps] : file_dependency_map) {
-		auto process_dependencies = [&](this auto& self, fs::path const& path, source_dependency const& deps) -> void {
-			if (file_to_imports_map.contains(path))
-				return;
-
-			file_to_imports_map[path].insert_range(deps.import_names);
-
-			for (auto const& dep : deps.import_names) {
-				if (auto it = module_name_to_file_map.find(dep); it != module_name_to_file_map.end()) {
-					auto const& dep_path = it->second;
-					self(dep_path, file_dependency_map[dep_path]);
-					file_to_imports_map[path].insert_range(file_to_imports_map[dep_path]);
-				}
-			}
-			};
-
-		process_dependencies(path, deps);
-
-		auto const dep_size = file_to_imports_map[path].size();
-		while(grouped_source_files.size() <= dep_size) {
-			grouped_source_files.emplace_back();
+			if (!deps.export_name.empty())
+				module_name_to_file_map[deps.export_name] = path;
 		}
-		grouped_source_files[(int)dep_size].push_back(path);
+
+		for (auto const& [path, deps] : file_dependency_map) {
+			auto process_dependencies = [&](this auto& self, fs::path const& path, source_dependency const& deps) -> void {
+				if (file_to_imports_map.contains(path))
+					return;
+
+				file_to_imports_map[path].insert_range(deps.import_names);
+
+				for (auto const& dep : deps.import_names) {
+					if (module_name_to_file_map.contains(dep)) {
+						auto const& dep_path = module_name_to_file_map[dep];
+						self(dep_path, file_dependency_map[dep_path]);
+						file_to_imports_map[path].insert_range(file_to_imports_map[dep_path]);
+					}
+				}
+				};
+
+			process_dependencies(path, deps);
+
+			auto const dep_size = file_to_imports_map[path].size();
+			while (grouped_source_files.size() <= dep_size) {
+				grouped_source_files.emplace_back();
+			}
+			grouped_source_files[(int)dep_size].push_back(path);
+		}
 	}
 
 	// Build output
