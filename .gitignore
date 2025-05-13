@@ -372,3 +372,4 @@ FodyWeavers.xsd
 /test/gout/objects
 /test/gout/sources
 *.idb
+/std.ifc
