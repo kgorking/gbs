@@ -6,55 +6,6 @@ import source_enum;
 
 namespace fs = std::filesystem;
 
-struct enum_context {
-	std::ofstream modules;
-	std::ofstream sources;
-	std::ofstream objects;
-};
-
-void enumerate_sources_imp(enum_context& ctx, std::filesystem::path dir, std::filesystem::path output_dir) {
-	for (fs::directory_entry it : fs::directory_iterator(dir)) {
-		if (it.is_directory()) {
-			enumerate_sources_imp(ctx, it.path(), output_dir);
-		}
-	}
-
-	for (fs::directory_entry it : fs::directory_iterator(dir)) {
-		if (it.is_directory())
-			continue;
-
-		auto ext = it.path().extension();
-		if (ext == ".h")
-			continue;
-
-		bool const is_module = it.path().extension() == ".cppm";
-		if (is_module) {
-			auto const ifc = (output_dir / it.path().filename()).replace_extension("ifc");
-			ctx.modules << std::format(" /reference {}", ifc.generic_string());
-		}
-
-		auto const out = (output_dir / it.path().filename()).replace_extension("obj");
-		if (is_file_up_to_date(it.path(), out)) {
-			ctx.objects << out << ' ';
-		}
-		else {
-			if (is_module)
-				ctx.sources << "/interface /Tp";
-			ctx.sources << it.path().generic_string() << ' ';
-		}
-	}
-}
-
-void enumerate_sources(context const& ctx, std::filesystem::path dir, std::filesystem::path output_dir) {
-	enum_context e_ctx{
-		std::ofstream(ctx.response_dir() / "modules", std::ios::out | std::ios::trunc),
-		std::ofstream(ctx.response_dir() / "sources", std::ios::out | std::ios::trunc),
-		std::ofstream(ctx.response_dir() / "objects", std::ios::out | std::ios::trunc)
-	};
-
-	enumerate_sources_imp(e_ctx, dir, output_dir);
-}
-
 bool build_msvc(context& ctx, std::string_view args) {
 	// Pull extra parameters if needed
 	if (ctx.selected_cl.extra_params.empty()) {
@@ -92,13 +43,6 @@ bool build_msvc(context& ctx, std::string_view args) {
 	}
 
 	// Add source files
-	//enumerate_sources(ctx, "src", output_dir);
-	//
-	//std::string const executable = fs::current_path().stem().string() + ".exe";
-	//std::string const cmd = std::format("{0} /reference std={3}/std.ifc /Fe:{3}/{4} @{1}/modules @{1}/sources @{1}/objects {5}", cl, ctx.response_dir().generic_string(), view_resp, output_dir.generic_string(), executable, ctx.selected_cl.extra_params);
-	//return 0 == std::system(cmd.c_str());
-
-	std::string const executable = fs::current_path().stem().string() + ".exe";
 
 	// Objects to link after compilation
 	std::vector<std::string> objects;
@@ -113,19 +57,13 @@ bool build_msvc(context& ctx, std::string_view args) {
 		if (is_file_up_to_date(in, obj))
 			return;
 
-		std::string const cmd = std::format("{0} /interface /Tp {1} /reference std={3}/std.ifc {5}"
+		std::string const cmd = std::format("{0} /interface /Tp {1} /reference std={3}/std.ifc {4}"
 			, cl
 			, in.generic_string()
 			, view_resp
 			, output_dir.generic_string()
-			, executable
 			, ctx.selected_cl.extra_params);
 		std::puts(cmd.c_str());
-
-		//if (in.extension() == ".cppm") {
-		//	auto const pcm = (output_dir / in.filename()).replace_extension("pcm");
-		//	cmd += std::format(" -fmodule-output={}", pcm.generic_string());
-		//}
 
 		if (0 == std::system(cmd.c_str())) {
 			std::puts(in.generic_string().c_str());
@@ -146,5 +84,6 @@ bool build_msvc(context& ctx, std::string_view args) {
 		compile_cpp(in);
 		});
 
+	std::string const executable = fs::current_path().stem().string() + ".exe";
 	return true;
 }
