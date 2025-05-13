@@ -1,21 +1,22 @@
 export module dep_scan;
 import std;
 
-export struct module_dependency {
-	std::filesystem::path file;
+export struct source_dependency {
 	std::string export_name;
 	std::vector<std::string> import_names;
 };
 
 // Returns a source files module dependencies.
-export auto detect_module_dependencies = [](std::filesystem::path path) -> module_dependency {
-	module_dependency dependencies{ path };
+export auto detect_module_dependencies(std::filesystem::path path) -> source_dependency {
+	source_dependency dependencies{};
 
 	std::string line;
 	auto file = std::ifstream(path);
 	while (std::getline(file, line)) {
 		if (line.empty())
 			continue;
+
+		// TODO test for {}
 
 		// Simple pattern: look for "\b(import|export module)\s+<module-name>;"
 		std::string_view sv = line;

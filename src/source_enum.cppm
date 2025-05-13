@@ -4,29 +4,20 @@ import std;
 namespace fs = std::filesystem;
 
 // Enumerate all files in a directory. They are ordered by their extension
-export std::unordered_map<fs::path, std::vector<fs::path>> enum_sources(fs::path start_dir) {
-	auto q = std::unordered_map<fs::path, std::vector<fs::path>>{};
+export std::vector<fs::path> enum_sources(fs::path start_dir) {
+	if (!fs::is_directory(start_dir))
+		return {};
 
-	auto enum_impl = [&](this auto& self, fs::path p) -> bool {
-		for (fs::directory_entry it : fs::directory_iterator(p)) {
-			if (it.is_directory()) {
-				self(it.path());
-			}
-		}
+	auto q = std::vector<fs::path>{};
+	for (fs::directory_entry it : fs::recursive_directory_iterator(start_dir)) {
+		if (it.is_directory())
+			continue;
 
-		for (fs::directory_entry it : fs::directory_iterator(p)) {
-			if (it.is_directory())
-				continue;
+		auto const in = it.path();
+		auto const ext = in.extension();
 
-			auto const in = it.path();
-			auto const ext = in.extension();
+		q.push_back(in);
+	}
 
-			q[ext].push_back(in);
-		}
-
-		return true;
-		};
-
-	enum_impl(start_dir);
 	return q;
 }

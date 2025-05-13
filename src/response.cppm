@@ -56,12 +56,12 @@ export bool ensure_response_file_exists(context const& ctx, std::string_view res
 
 export bool check_response_files(context const& ctx, std::string_view args) {
 	if (ctx.selected_cl.name.empty()) {
-		std::println("Error: select a compiler");
+		std::println("<gbs> Error: select a compiler");
 		exit(1);
 	}
 
 	if (!ctx.response_map.contains(ctx.selected_cl.name)) {
-		std::println("Error: selected compiler does not have any default response files");
+		std::println("<gbs> Error: selected compiler does not have any default response files");
 		exit(1);
 	}
 

@@ -38,6 +38,14 @@ bool build(context& ctx, std::string_view args) {
 	if (args.empty())
 		args = "release";
 
+	// Select default compiler if none is selected
+	if (ctx.selected_cl.name.empty()) {
+		if (ctx.all_compilers.empty()) {
+			fill_compiler_collection(ctx);
+		}
+		ctx.select_first_compiler();
+	}
+
 	// Ensure the needed response files are present
 	init_response_files(ctx);
 	check_response_files(ctx, args);
@@ -117,8 +125,9 @@ bool cl(context& ctx, std::string_view args) {
 
 int main(int argc, char const* argv[]) {
 	std::println("Gorking build system v0.09\n");
-
+	/*
 	std::unordered_map<std::string, std::string> module_map;
+	auto bools = std::make_unique<std::atomic_bool[]>(13);
 
 	for (auto path : std::filesystem::recursive_directory_iterator("./src")) {
 		if (path.is_directory())
@@ -133,7 +142,7 @@ int main(int argc, char const* argv[]) {
 
 	std::println("{}", module_map);
 	return 0;
-
+	*/
 	context ctx;
 
 	if (argc == 1) {

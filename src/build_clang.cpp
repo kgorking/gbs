@@ -45,17 +45,9 @@ bool build_clang(context& ctx, std::string_view args) {
 
 	auto source_files = enum_sources("src");
 
-	// Compile modules
-	auto const& modules = source_files[".cppm"];
-	std::for_each(std::execution::/*par_un*/seq, modules.begin(), modules.end(), [&](fs::path p) {
-		compile_cpp(p);
-	});
-
 	// Compile sources
-	auto const& regulars = source_files[".cpp"];
-	std::for_each(std::execution::/*par_un*/seq, regulars.begin(), regulars.end(), [&](fs::path in) {
-		compile_cpp(in);
-		});
+	for (auto p : source_files)
+		compile_cpp(p);
 
 	// Link objects
 	std::println("Linking...");
