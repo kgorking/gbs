@@ -132,7 +132,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 			" --add Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64";
 
 		std::println("<gbs>    installing Visual Studio build tools, this will take a while...");
-		if (0 != std::system(std::format("{} --installPath \"{}/.gbs/msvc/\" {}", vs_buildtools.generic_string(), homedir.generic_string(), vstools_args).c_str())) {
+		if (0 != std::system(std::format("{} {}", vs_buildtools.generic_string(), vstools_args).c_str())) {
 			std::filesystem::remove(vs_buildtools);
 			std::println("<gbs>    Error installing msvc build tools");
 			return false;
