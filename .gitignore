@@ -61,15 +61,8 @@ bld/
 *.scc
 
 
+/.gbs
+/gbs.out
 test/.gbs/*
-/.gbs/msvc
-/gout/modules
-/gout/objects
-/gout/sources
-/test/.gbs/msvc/debug
-/test/gout/modules
-/test/gout/objects
-/test/gout/sources
 *.idb
 /std.ifc
-/gbs.out/msvc
