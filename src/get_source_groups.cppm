@@ -17,7 +17,7 @@ export using source_group = std::vector<source_info>;
 
 
 // Find the source files and dependencies
-export auto grouped_source_files(fs::path dir) -> std::vector<source_group> {
+export auto get_grouped_source_files(fs::path dir) -> std::vector<source_group> {
 	// Maps a filename to _all_ its module dependencies
 	auto file_to_imports_map = std::unordered_map<fs::path, import_set>{};
 

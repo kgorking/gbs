@@ -29,12 +29,31 @@ export bool cmd_build(context& ctx, std::string_view args) {
 	init_response_files(ctx);
 	check_response_files(ctx, args);
 
+	// Build output
+	ctx.output_config = args.substr(0, args.find(','));
+	auto const output_dir = ctx.output_dir();
+
+	// Create the build dirs if needed
+	fs::create_directories(ctx.output_dir());
+
+	// Arguments to the compiler.
+	// Converts arguments into response files
+	auto const resp_prefix = ctx.response_dir();
+	auto arg_to_str = [&](auto arg) { return " @" + (resp_prefix / arg.data()).string(); };
+
+	std::string resp_args = "@" + (resp_prefix / "_shared").string();
+	resp_args += args
+		| std::views::split(',')
+		| std::views::transform(arg_to_str)
+		| std::views::join
+		| std::ranges::to<std::string>();
+
 	if (ctx.selected_cl.name == "msvc") {
-		extern bool build_msvc(context & ctx, std::string_view args);
-		return build_msvc(ctx, args);
+		extern bool build_msvc(context &, std::string_view);
+		return build_msvc(ctx, resp_args);
 	} if (ctx.selected_cl.name.starts_with("clang")) {
-		extern bool build_clang(context & ctx, std::string_view args);
-		return build_clang(ctx, args);
+		extern bool build_clang(context &, std::string_view);
+		return build_clang(ctx, resp_args);
 		//} if (ctx.selected_cl.name == "gcc") {
 		//	extern bool build_gcc(context & ctx, std::string_view args);
 		//	return build_gcc(ctx, args);
