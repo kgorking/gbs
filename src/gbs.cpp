@@ -1,36 +1,13 @@
 ﻿import std;
 import compiler;
 import context;
-import response;
-import dep_scan;
 
 import cmd_build;
 import cmd_get_cl;
 import cmd_enum_cl;
 import cmd_clean;
 import cmd_run;
-
-using namespace std::string_view_literals;
-namespace fs = std::filesystem;
-
-
-bool cl(context& ctx, std::string_view args) {
-	if (ctx.all_compilers.empty()) {
-		fill_compiler_collection(ctx);
-		if (ctx.all_compilers.empty()) {
-			std::println("<gbs> Error: no compilers found while looking for '{}'.", args);
-			exit(1);
-		}
-	}
-
-	if (auto opt_cl = get_compiler(ctx, args); opt_cl) {
-		ctx.selected_cl = *opt_cl;
-		return true;
-	} else {
-		std::println("<gbs> Could not find compiler '{}'", args);
-		return false;
-	}
-}
+import cmd_cl;
 
 
 int main(int argc, char const* argv[]) {
@@ -47,7 +24,7 @@ int main(int argc, char const* argv[]) {
 	static std::unordered_map<std::string_view, bool(*)(context&, std::string_view)> const commands = {
 		{"enum_cl", cmd_enum_cl},
 		{"get_cl", cmd_get_cl},
-		{"cl", cl},
+		{"cl", cmd_cl},
 		{"clean", cmd_clean},
 		{"build", cmd_build},
 		{"run", cmd_run},
