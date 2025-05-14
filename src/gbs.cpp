@@ -6,25 +6,10 @@ import dep_scan;
 
 import cmd_build;
 import cmd_get_cl;
+import cmd_enum_cl;
 
 using namespace std::string_view_literals;
 namespace fs = std::filesystem;
-
-
-bool enum_cl(context& ctx, std::string_view /*args*/) {
-	std::println("<gbs> Enumerating compilers:");
-
-	fill_compiler_collection(ctx);
-
-	for(auto& [k, v] : ctx.all_compilers) {
-		std::println("<gbs>   {}: ", k);
-		for (auto const &c : v) {
-			std::println("<gbs>     {}.{} - {}", c.major, c.minor, c.dir.generic_string());
-		}
-	}
-
-	return true;
-}
 
 
 bool clean(context& ctx, std::string_view /*args*/) {
@@ -89,14 +74,13 @@ int main(int argc, char const* argv[]) {
 	context ctx;
 
 	if (argc == 1) {
-		enum_cl(ctx, {});
+		fill_compiler_collection(ctx);
 		ctx.select_first_compiler();
-		std::println("<gbs> Using compiler '{} v{}.{}'", ctx.selected_cl.name, ctx.selected_cl.major, ctx.selected_cl.minor);
 		return !cmd_build(ctx, "release");
 	}
 
 	static std::unordered_map<std::string_view, bool(*)(context&, std::string_view)> const commands = {
-		{"enum_cl", enum_cl},
+		{"enum_cl", cmd_enum_cl},
 		{"get_cl", cmd_get_cl},
 		{"cl", cl},
 		{"clean", clean},
