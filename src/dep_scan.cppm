@@ -54,9 +54,9 @@ export auto detect_module_dependencies(std::filesystem::path path) -> source_dep
 		module_name = module_name.substr(0, end);
 
 		if (is_export)
-			dependencies.export_name = { module_name.data(), module_name.size() };
+			dependencies.export_name.assign(module_name);
 		else
-			dependencies.import_names.emplace(module_name.data(), module_name.size());
+			dependencies.import_names.emplace(module_name);
 	}
 
 	return dependencies;

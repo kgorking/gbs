@@ -4,19 +4,22 @@ import dep_scan;
 
 namespace fs = std::filesystem;
 
-// Holds a single source files module dependencies,
-// including its dependecies dependecies
-export using source_info = std::pair<fs::path, std::set<std::string>>;
+// A set of imports for a module
+using import_set = std::set<std::string>;
 
-// A single group of source files that
-// can be compiled in parallel.
+// Holds a single source files module dependencies,
+// including its dependencies dependencies
+export using source_info = std::pair<fs::path, import_set>;
+
+// A single group of source files
+// that can be compiled in parallel.
 export using source_group = std::vector<source_info>;
 
 
 // Find the source files and dependencies
 export auto grouped_source_files(fs::path dir) -> std::vector<source_group> {
 	// Maps a filename to _all_ its module dependencies
-	auto file_to_imports_map = std::unordered_map<fs::path, std::set<std::string>>{};
+	auto file_to_imports_map = std::unordered_map<fs::path, import_set>{};
 
 	// Maps an export module name to its filename
 	auto module_name_to_file_map = std::unordered_map<std::string, fs::path>{};
@@ -30,16 +33,16 @@ export auto grouped_source_files(fs::path dir) -> std::vector<source_group> {
 		auto const path = it.path();
 
 		auto const deps = detect_module_dependencies(path);
-		file_to_imports_map[path].insert_range(deps.import_names);
+		file_to_imports_map[path.string()].insert_range(deps.import_names);
 
 		if (!deps.export_name.empty())
-			module_name_to_file_map[deps.export_name] = path;
+			module_name_to_file_map[deps.export_name] = path.string();
 	}
 
-	// Recursively merge a files child dependencies into current dependencies.
+	// Recursively merge a files child dependencies into its current dependencies.
 	//   Fx. A -> B -> C
-	//   Results in A's dependecies being [B, C]
-	std::ranges::for_each(file_to_imports_map | std::views::values, [&](this auto& self, std::set<std::string>& deps) -> void {
+	//   Results in A's dependencies being [B, C]
+	std::ranges::for_each(file_to_imports_map | std::views::values, [&](this auto& self, import_set& deps) -> void {
 		for (auto const& dep : deps) {
 			if (module_name_to_file_map.contains(dep)) {
 				auto const& dep_path = module_name_to_file_map[dep];
@@ -58,7 +61,7 @@ export auto grouped_source_files(fs::path dir) -> std::vector<source_group> {
 			sources.emplace_back();
 		}
 
-		sources[(int)dep_size].emplace_back(std::move(path), std::move(imports));
+		sources[(int)dep_size].emplace_back(path, std::move(imports));
 	}
 
 	return sources;
