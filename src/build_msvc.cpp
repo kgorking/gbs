@@ -16,7 +16,7 @@ bool build_msvc(context& ctx, std::string_view args) {
 
 	// Arguments to the compiler(s)
 	// Converts arguments into response files
-	auto joiner = std::format(" @{}/", ctx.response_dir().generic_string());
+	auto joiner = std::format(" @{}/", ctx.response_dir().string());
 	auto view_resp = args
 		| std::views::split(',')
 		| std::views::join_with(joiner);
@@ -27,8 +27,8 @@ bool build_msvc(context& ctx, std::string_view args) {
 
 	auto const vcvars = ctx.selected_cl.dir / "../../../Auxiliary/Build/vcvars64.bat";
 	std::string const vcvars_cmd = std::format(R"("cd "{}" && "{}" >nul && call {} >INCLUDE && call {} >LIBPATH")",
-		ctx.output_dir().generic_string(),
-		vcvars.generic_string(),
+		ctx.output_dir().string(),
+		vcvars.string(),
 		include_cmd,
 		libpath_cmd);
 
@@ -52,15 +52,16 @@ bool build_msvc(context& ctx, std::string_view args) {
 
 	// Create the build command
 	std::string const cl = std::format("cl @{0}/_shared @{0}/{1:s} @{2}/INCLUDE /c /interface",
-		ctx.response_dir().generic_string(),
+		ctx.response_dir().string(),
 		view_resp,
-		output_dir.generic_string());
+		output_dir.string());
 
 	// Set up the compiler helper
 	auto compile_cpp = [&](this auto& self, source_info const& in) -> bool {
 		auto const& [path, imports] = in;
 
-		auto const obj = (output_dir / path.filename()).replace_extension("obj");
+		fs::path const obj = (output_dir / path.filename()).replace_extension("obj");
+
 		{
 			std::scoped_lock sl(mut);
 			objects << obj << ' ';
@@ -72,11 +73,11 @@ bool build_msvc(context& ctx, std::string_view args) {
 
 		std::string refs;
 		for(auto ref : imports)
-			refs += std::format("/reference {0}={1}/{0}.ifc ", ref, output_dir.generic_string());
+			refs += std::format("/reference {0}={1}/{0}.ifc ", ref, output_dir.string());
 
-		std::string const cmd = std::format("{0} /Tp\"{1}\" {2}",
+		std::string const cmd = std::format("{0} /Tp{1:?} {2}",
 			cl,
-			path.generic_string(),
+			path.string(),
 			refs);
 
 		return (0 == std::system(cmd.c_str()));
@@ -94,7 +95,7 @@ bool build_msvc(context& ctx, std::string_view args) {
 	std::println("<gbs> Linking...");
 	std::string const executable = fs::current_path().stem().string() + ".exe";
 	std::string const link_cmd = std::format("link /NOLOGO /OUT:{0}/{1} @{0}/LIBPATH @{0}/OBJLIST",
-		output_dir.generic_string(),
+		output_dir.string(),
 		executable);
 
 	return 0 == std::system(link_cmd.c_str());
