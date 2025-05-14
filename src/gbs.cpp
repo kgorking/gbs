@@ -11,7 +11,7 @@ import cmd_cl;
 
 
 int main(int argc, char const* argv[]) {
-	std::println("Gorking build system v0.09\n");
+	std::println("Gorking build system v0.10\n");
 
 	context ctx;
 

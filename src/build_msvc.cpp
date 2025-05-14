@@ -16,10 +16,11 @@ bool build_msvc(context& ctx, std::string_view args) {
 
 	// Arguments to the compiler(s)
 	// Converts arguments into response files
-	auto joiner = std::format(" @{}/", ctx.response_dir().string());
-	auto view_resp = args
-		| std::views::split(',')
-		| std::views::join_with(joiner);
+	auto const resp_prefix = ctx.response_dir();
+	std::string resp_args = "@" + (resp_prefix / "_shared").string();
+	for (auto arg : args | std::views::split(',')) {
+		resp_args += " @" + (resp_prefix / arg.data()).string();
+	}
 
 	// Executes 'vcvars64.bat' and pulls out the INCLUDE, LIB, LIBPATH environment variables
 	constexpr std::string_view include_cmd = R"(echo /I"%INCLUDE:;=" /I"%")";
@@ -51,9 +52,9 @@ bool build_msvc(context& ctx, std::string_view args) {
 	std::shared_mutex mut;
 
 	// Create the build command
-	std::string const cl = std::format("cl @{0}/_shared @{0}/{1:s} @{2}/INCLUDE /c /interface",
-		ctx.response_dir().string(),
-		view_resp,
+	std::string const cl = std::format("call \"{0}\" {1} @{2}/INCLUDE /c /interface",
+		ctx.selected_cl.exe.string(),
+		resp_args,
 		output_dir.string());
 
 	// Set up the compiler helper
