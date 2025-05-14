@@ -3,12 +3,12 @@ import compiler;
 import context;
 import response;
 import dep_scan;
+
 import cmd_build;
+import cmd_get_cl;
 
 using namespace std::string_view_literals;
 namespace fs = std::filesystem;
-
-bool get_cl(context&, std::string_view args);
 
 
 bool enum_cl(context& ctx, std::string_view /*args*/) {
@@ -97,7 +97,7 @@ int main(int argc, char const* argv[]) {
 
 	static std::unordered_map<std::string_view, bool(*)(context&, std::string_view)> const commands = {
 		{"enum_cl", enum_cl},
-		{"get_cl", get_cl},
+		{"get_cl", cmd_get_cl},
 		{"cl", cl},
 		{"clean", clean},
 		{"build", cmd_build},

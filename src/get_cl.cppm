@@ -1,9 +1,10 @@
+export module cmd_get_cl;
 import std;
 import compiler;
 import context;
 import env;
 
-bool get_cl(context& ctx, std::string_view args) {
+export bool cmd_get_cl(context& ctx, std::string_view args) {
 	std::println("<gbs> get_cl : Searching for '{}'", args);
 
 	if (std::optional<compiler> const opt_cl = get_compiler(ctx, args); opt_cl) {
@@ -207,7 +208,6 @@ bool get_cl(context& ctx, std::string_view args) {
 
 	// Download
 	if (!std::filesystem::exists(downloaded_file_path)) {
-		std::println("<gbs>    downloading and unpacking {} {}", cl.name, version);
 		std::println("<gbs>    {}", url);
 		if (0 != std::system(std::format("curl -fSL {} | tar -xf - -C {}", url, compiler_dir.generic_string()).c_str())) {
 			std::println("<gbs> Error downloading and unpacking {} {}", cl.name, version);
