@@ -7,7 +7,7 @@ namespace fs = std::filesystem;
 export void init_response_files(context& ctx) {
 	// Default response files
 	ctx.response_map["msvc"] = {
-		{"_shared", "/nologo /EHsc /std:c++23preview /fastfail /W4 /WX"},
+		{"_shared", "/nologo /EHsc /std:c++23preview /fastfail /W4 /WX /D_MSVC_STL_HARDENING=1 /D_MSVC_STL_DESTRUCTOR_TOMBSTONES=1"},
 		{"debug",   "/Od /MDd /ifcOutput gbs.out/msvc/debug/ /Fo:gbs.out/msvc/debug/"},
 		{"release", "/DNDEBUG /O2 /MD /ifcOutput gbs.out/msvc/release/ /Fo:gbs.out/msvc/release/"},
 		{"analyze", "/analyze:plugin EspXEngine.dll /analyze:external-"}
