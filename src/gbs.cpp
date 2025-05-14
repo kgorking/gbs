@@ -8,27 +8,10 @@ import cmd_build;
 import cmd_get_cl;
 import cmd_enum_cl;
 import cmd_clean;
+import cmd_run;
 
 using namespace std::string_view_literals;
 namespace fs = std::filesystem;
-
-
-
-
-bool run(context& ctx, std::string_view args) {
-	std::string const executable = fs::current_path().stem().string() + ".exe";
-	std::println("<gbs> Running '{}' ({})...\n", executable, ctx.output_config);
-
-	if (!args.empty())
-		ctx.output_config = args.substr(0, args.find_first_of(',', 0));
-
-	if (ctx.output_config.empty()) {
-		std::println("<gbs> Error: run : don't know what to run! Call 'run' after a compilation, or use eg. 'run=release' to run the release build.");
-		exit(1);
-	}
-
-	return 0 == std::system(std::format("cd {} && {}", ctx.output_dir().generic_string(), executable).c_str());
-}
 
 
 bool cl(context& ctx, std::string_view args) {
@@ -67,7 +50,7 @@ int main(int argc, char const* argv[]) {
 		{"cl", cl},
 		{"clean", cmd_clean},
 		{"build", cmd_build},
-		{"run", run},
+		{"run", cmd_run},
 	};
 
 	auto const args = std::span<char const*>(argv, argc);
