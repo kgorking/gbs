@@ -17,10 +17,14 @@ bool build_msvc(context& ctx, std::string_view args) {
 	// Arguments to the compiler(s)
 	// Converts arguments into response files
 	auto const resp_prefix = ctx.response_dir();
+	auto arg_to_str = [&](auto arg) { return " @" + (resp_prefix / arg.data()).string(); };
+
 	std::string resp_args = "@" + (resp_prefix / "_shared").string();
-	for (auto arg : args | std::views::split(',')) {
-		resp_args += " @" + (resp_prefix / arg.data()).string();
-	}
+	resp_args += args
+		| std::views::split(',')
+		| std::views::transform(arg_to_str)
+		| std::views::join
+		| std::ranges::to<std::string>();
 
 	// Executes 'vcvars64.bat' and pulls out the INCLUDE, LIB, LIBPATH environment variables
 	constexpr std::string_view include_cmd = R"(echo /I"%INCLUDE:;=" /I"%")";
