@@ -3,7 +3,7 @@ import std;
 
 export struct source_dependency {
 	std::string export_name;
-	std::vector<std::string> import_names;
+	std::set<std::string> import_names;
 };
 
 // Returns a source files module dependencies.
@@ -53,14 +53,10 @@ export auto detect_module_dependencies(std::filesystem::path path) -> source_dep
 		// The full module name
 		module_name = module_name.substr(0, end);
 
-		// Ignore 'std' imports
-		if (module_name == "std")
-			continue;
-
 		if (is_export)
 			dependencies.export_name = { module_name.data(), module_name.size() };
 		else
-			dependencies.import_names.emplace_back(module_name.data(), module_name.size());
+			dependencies.import_names.emplace(module_name.data(), module_name.size());
 	}
 
 	return dependencies;

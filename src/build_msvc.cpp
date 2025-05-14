@@ -1,92 +1,18 @@
 import std;
+import env;
 import context;
 import response;
-import env;
-import source_enum;
-import dep_scan;
+import get_source_groups;
 
 namespace fs = std::filesystem;
-using namespace std::string_view_literals;
-
-struct source_info {
-	fs::path path;
-	std::set<std::string> import_names;
-};
 
 bool build_msvc(context& ctx, std::string_view args) {
-	// Find the source files and dependencies
-	auto grouped_source_files = std::vector<std::vector<source_info>>{};
-	{
-		auto file_dependency_map = std::unordered_map<fs::path, source_dependency>{};
-		auto file_to_imports_map = std::unordered_map<fs::path, std::set<std::string>>{};
-		auto module_name_to_file_map = std::unordered_map<std::string, fs::path>{};
-
-		for (fs::directory_entry it : fs::recursive_directory_iterator("src")) {
-			if (it.is_directory())
-				continue;
-
-			auto const path = it.path();
-			auto const deps = detect_module_dependencies(path);
-			file_dependency_map[path] = deps;
-
-			if (!deps.export_name.empty())
-				module_name_to_file_map[deps.export_name] = path;
-		}
-
-		for (auto const& [path, deps] : file_dependency_map) {
-			auto process_dependencies = [&](this auto& self, fs::path const& path, source_dependency const& deps) -> void {
-				if (file_to_imports_map.contains(path))
-					return;
-
-				file_to_imports_map[path].insert_range(deps.import_names);
-
-				for (auto const& dep : deps.import_names) {
-					if (module_name_to_file_map.contains(dep)) {
-						auto const& dep_path = module_name_to_file_map[dep];
-						self(dep_path, file_dependency_map[dep_path]);
-						file_to_imports_map[path].insert_range(file_to_imports_map[dep_path]);
-					}
-				}
-				};
-
-			process_dependencies(path, deps);
-		}
-
-		for (auto&& [path, imps] : file_to_imports_map) {
-			auto const dep_size = imps.size();
-
-			while (grouped_source_files.size() <= dep_size) {
-				grouped_source_files.emplace_back();
-			}
-
-			grouped_source_files[(int)dep_size].emplace_back(std::move(path), std::move(imps));
-		}
-	}
-
 	// Build output
 	ctx.output_config = args.substr(0, args.find(','));
 	auto const output_dir = ctx.output_dir();
 
 	// Create the build dirs if needed
-	std::filesystem::create_directories(ctx.output_dir());
-
-	// Pull extra parameters if needed
-	if (ctx.selected_cl.extra_params.empty()) {
-		// Executes 'vcvars64.bat' and pulls out the INCLUDE, LIB, LIBPATH environment variables
-		constexpr std::string_view include_cmd = R"(echo /I"%INCLUDE:;=" /I"%")";
-		constexpr std::string_view libpath_cmd = R"(echo /LIBPATH:"%LIB:;=" /LIBPATH:"%" /LIBPATH:"%LIBPATH:;=" /LIBPATH:"%")";
-
-		auto const vcvars = ctx.selected_cl.dir / "../../../Auxiliary/Build/vcvars64.bat";
-		std::string const cmd = std::format(R"("cd "{}" && "{}" >nul && call {} >INCLUDE && call {} >LIBPATH")",
-			ctx.output_dir().generic_string(),
-			vcvars.generic_string(),
-			include_cmd,
-			libpath_cmd);
-
-		if (0 == std::system(cmd.c_str())) {
-			ctx.selected_cl.extra_params = " ";
-		}
-	}
+	fs::create_directories(ctx.output_dir());
 
 	// Arguments to the compiler(s)
 	// Converts arguments into response files
@@ -95,57 +21,81 @@ bool build_msvc(context& ctx, std::string_view args) {
 		| std::views::split(',')
 		| std::views::join_with(joiner);
 
-	// Build cl command
-	std::string const cl = std::format("cl @{0}/_shared @{0}/{1:s} ", ctx.response_dir().generic_string(), view_resp);
+	// Executes 'vcvars64.bat' and pulls out the INCLUDE, LIB, LIBPATH environment variables
+	constexpr std::string_view include_cmd = R"(echo /I"%INCLUDE:;=" /I"%")";
+	constexpr std::string_view libpath_cmd = R"(echo /LIBPATH:"%LIB:;=" /LIBPATH:"%" /LIBPATH:"%LIBPATH:;=" /LIBPATH:"%")";
 
-	// Compile stdlib if needed
-	// TODO add this as a transparent source file to build
-	if (!fs::exists(output_dir / "std.obj")) {
-		fs::path const stdlib_module = ctx.selected_cl.dir / "modules/std.ixx";
-		if (!is_file_up_to_date(stdlib_module, output_dir / "std.obj")) {
-			auto const cmd = std::format("{} /c \"{}\" @{}/INCLUDE",
-				cl,
-				stdlib_module.generic_string(),
-				output_dir.generic_string()
-			);
+	auto const vcvars = ctx.selected_cl.dir / "../../../Auxiliary/Build/vcvars64.bat";
+	std::string const vcvars_cmd = std::format(R"("cd "{}" && "{}" >nul && call {} >INCLUDE && call {} >LIBPATH")",
+		ctx.output_dir().generic_string(),
+		vcvars.generic_string(),
+		include_cmd,
+		libpath_cmd);
 
-			if (0 != std::system(cmd.c_str()))
-				return false;
-		}
+	if (0 != std::system(vcvars_cmd.c_str())) {
+		std::println("<gbs> Error: failed to extract vars from 'vcvars64.bat'");
+		return false;
 	}
 
-	//for (auto const& [i, paths] : grouped_source_files) {
-	//	for (auto path : paths) {
-	//		std::println(" {} - {}", path.generic_string(), i);
-	//	}
-	//}
+
+	// Get the source files to compile
+	auto sources = grouped_source_files("src");
+	if (sources.empty())
+		return true;
+
+	// Insert the 'std' module
+	sources[0].emplace_back(source_info{ ctx.selected_cl.dir / "modules/std.ixx", {} });
+
+	// Create file containing the list of objects to link
+	std::ofstream objects(output_dir / "OBJLIST");
+	std::shared_mutex mut;
+
+	// Create the build command
+	std::string const cl = std::format("cl @{0}/_shared @{0}/{1:s} @{2}/INCLUDE /c /interface",
+		ctx.response_dir().generic_string(),
+		view_resp,
+		output_dir.generic_string());
 
 	// Set up the compiler helper
 	auto compile_cpp = [&](this auto& self, source_info const& in) -> bool {
-		auto const obj = (output_dir / in.path.filename()).replace_extension("obj");
-		if (is_file_up_to_date(in.path, obj)) {
+		auto const& [path, imports] = in;
+
+		auto const obj = (output_dir / path.filename()).replace_extension("obj");
+		{
+			std::scoped_lock sl(mut);
+			objects << obj << ' ';
+		}
+
+		if (is_file_up_to_date(path, obj)) {
 			return true;
 		}
 
 		std::string refs;
-		for(auto ref : in.import_names)
+		for(auto ref : imports)
 			refs += std::format("/reference {0}={1}/{0}.ifc ", ref, output_dir.generic_string());
 
-		std::string const cmd = std::format("{0} @{2}/INCLUDE /c /interface /Tp\"{1}\" /reference std={2}/std.ifc {3}",
+		std::string const cmd = std::format("{0} /Tp\"{1}\" {2}",
 			cl,
-			in.path.generic_string(),
-			output_dir.generic_string(),
-			refs
-		);
+			path.generic_string(),
+			refs);
 
 		return (0 == std::system(cmd.c_str()));
 		};
 
 	// Compile sources
-	for (auto const& paths : grouped_source_files) {
+	for (auto const& paths : sources) {
 		std::for_each(std::execution::par_unseq, paths.begin(), paths.end(), compile_cpp);
 	}
 
+	// Close the objects file
+	objects.close();
+
+	// Link sources
+	std::println("<gbs> Linking...");
 	std::string const executable = fs::current_path().stem().string() + ".exe";
-	return true;
+	std::string const link_cmd = std::format("link /NOLOGO /OUT:{0}/{1} @{0}/LIBPATH @{0}/OBJLIST",
+		output_dir.generic_string(),
+		executable);
+
+	return 0 == std::system(link_cmd.c_str());
 }

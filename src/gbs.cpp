@@ -125,24 +125,7 @@ bool cl(context& ctx, std::string_view args) {
 
 int main(int argc, char const* argv[]) {
 	std::println("Gorking build system v0.09\n");
-	/*
-	std::unordered_map<std::string, std::string> module_map;
-	auto bools = std::make_unique<std::atomic_bool[]>(13);
 
-	for (auto path : std::filesystem::recursive_directory_iterator("./src")) {
-		if (path.is_directory())
-			continue;
-
-		auto deps = detect_module_dependencies(path);
-		std::println("{} - {} - {}", deps.file.generic_string(), deps.export_name, deps.import_names);
-
-		if (!deps.export_name.empty())
-			module_map[deps.export_name] = deps.file.generic_string();
-	}
-
-	std::println("{}", module_map);
-	return 0;
-	*/
 	context ctx;
 
 	if (argc == 1) {
