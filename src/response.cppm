@@ -21,13 +21,7 @@ export void init_response_files(context& ctx) {
 	};
 
 	ctx.response_map["gcc"] = ctx.response_map["clang"];
-
-	//ctx.response_map["clang-cl"] = {
-	//	{"_shared", "/std:c++2b /Wall /Werror"},
-	//	{"debug", "/O0"},
-	//	{"release", "/O3"},
-	//	{"analyze", "/analyze"}
-	//};
+	//ctx.response_map["clang-cl"] = ctx.response_map["clang"];
 }
 
 export bool ensure_response_file_exists(context const& ctx, std::string_view resp) {

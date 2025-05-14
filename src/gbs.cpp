@@ -27,7 +27,15 @@ bool enum_cl(context& ctx, std::string_view /*args*/) {
 
 
 bool build(context& ctx, std::string_view args) {
-	std::println("<gbs> Building...");
+	// Select default compiler if none is selected
+	if (ctx.selected_cl.name.empty()) {
+		if (ctx.all_compilers.empty()) {
+			fill_compiler_collection(ctx);
+		}
+		ctx.select_first_compiler();
+	}
+
+	std::println("<gbs> Building with '{} {}.{}'", ctx.selected_cl.name, ctx.selected_cl.major, ctx.selected_cl.minor);
 
 	if (!fs::exists("src/")) {
 		std::println("<gbs> Error: no 'src' directory found at '{}'", fs::current_path().generic_string());
@@ -37,14 +45,6 @@ bool build(context& ctx, std::string_view args) {
 	// Default build config is 'release'
 	if (args.empty())
 		args = "release";
-
-	// Select default compiler if none is selected
-	if (ctx.selected_cl.name.empty()) {
-		if (ctx.all_compilers.empty()) {
-			fill_compiler_collection(ctx);
-		}
-		ctx.select_first_compiler();
-	}
 
 	// Ensure the needed response files are present
 	init_response_files(ctx);
@@ -103,21 +103,19 @@ bool run(context& ctx, std::string_view args) {
 
 
 bool cl(context& ctx, std::string_view args) {
-	std::println("<gbs> cl : searchin for compiler '{}'.", args);
 	if (ctx.all_compilers.empty()) {
 		fill_compiler_collection(ctx);
 		if (ctx.all_compilers.empty()) {
-			std::println("<gbs>   Error: no compilers found.");
+			std::println("<gbs> Error: no compilers found while looking for '{}'.", args);
 			exit(1);
 		}
 	}
 
 	if (auto opt_cl = get_compiler(ctx, args); opt_cl) {
 		ctx.selected_cl = *opt_cl;
-		std::println("<gbs>   Using compiler '{} {}.{}'", ctx.selected_cl.name, ctx.selected_cl.major, ctx.selected_cl.minor);
 		return true;
 	} else {
-		std::println("<gbs>   Could not find compiler '{}'", args);
+		std::println("<gbs> Could not find compiler '{}'", args);
 		return false;
 	}
 }

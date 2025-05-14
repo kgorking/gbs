@@ -5,7 +5,6 @@ I wanted to try and create my own build system, just for fun.
 Yes, I am aware of the irony of using CMake to make a build system.
 
 ## Upcoming versions
-#### v0.09: Fix module dependencies
 #### v0.10: Unify source enumeration
 #### v0.11: Compile test project with gcc
 #### v0.12: Make `import std;` work for clang and gcc
@@ -22,12 +21,11 @@ Yes, I am aware of the irony of using CMake to make a build system.
 	- [x] Don't compile things that don't need it
     - [x] Deduce executable name from current directory
 	- [x] Compile module sources
-		- [ ] Figure out a way to do it in correct order
+		- [x] Figure out a way to do it in correct order
 	- [x] Compile nested sources
 	- [x] Compile GBS with itself
 - [x] Automated support for `import std;`
 	- [x] msvc
-	- [ ] clang-cl
 	- [ ] clang
 	- [ ] gcc
 - [x] Enumerate supported compilers
@@ -45,7 +43,6 @@ Yes, I am aware of the irony of using CMake to make a build system.
 	- [ ] Support for compiling externally fetched dependencies
 - [ ] Support multiple compilers
 	- [x] msvc
-	- [ ] clang-cl (?)
 	- [x] clang
 	- [ ] gcc
 - [x] Download compilers, eg. `gbs get_cl=clang:19`

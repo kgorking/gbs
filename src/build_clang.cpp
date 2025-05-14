@@ -5,6 +5,8 @@ import source_enum;
 
 namespace fs = std::filesystem;
 
+// https://igormcoelho.medium.com/experimenting-c-23-import-std-with-bazel-and-clang-1bec82779ac8
+
 bool build_clang(context& ctx, std::string_view args) {
 	std::string const resp_dir = (ctx.response_dir()).generic_string();
 
