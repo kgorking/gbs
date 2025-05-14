@@ -8,12 +8,17 @@ import dep_scan;
 namespace fs = std::filesystem;
 using namespace std::string_view_literals;
 
+struct source_info {
+	fs::path path;
+	std::set<std::string> import_names;
+};
+
 bool build_msvc(context& ctx, std::string_view args) {
 	// Find the source files and dependencies
-	auto grouped_source_files = std::vector<std::vector<fs::path>>{};
-	auto file_to_imports_map = std::unordered_map<fs::path, std::set<std::string>>{};
+	auto grouped_source_files = std::vector<std::vector<source_info>>{};
 	{
 		auto file_dependency_map = std::unordered_map<fs::path, source_dependency>{};
+		auto file_to_imports_map = std::unordered_map<fs::path, std::set<std::string>>{};
 		auto module_name_to_file_map = std::unordered_map<std::string, fs::path>{};
 
 		for (fs::directory_entry it : fs::recursive_directory_iterator("src")) {
@@ -45,12 +50,16 @@ bool build_msvc(context& ctx, std::string_view args) {
 				};
 
 			process_dependencies(path, deps);
+		}
 
-			auto const dep_size = file_to_imports_map[path].size();
+		for (auto&& [path, imps] : file_to_imports_map) {
+			auto const dep_size = imps.size();
+
 			while (grouped_source_files.size() <= dep_size) {
 				grouped_source_files.emplace_back();
 			}
-			grouped_source_files[(int)dep_size].push_back(path);
+
+			grouped_source_files[(int)dep_size].emplace_back(std::move(path), std::move(imps));
 		}
 	}
 
@@ -90,6 +99,7 @@ bool build_msvc(context& ctx, std::string_view args) {
 	std::string const cl = std::format("cl @{0}/_shared @{0}/{1:s} ", ctx.response_dir().generic_string(), view_resp);
 
 	// Compile stdlib if needed
+	// TODO add this as a transparent source file to build
 	if (!fs::exists(output_dir / "std.obj")) {
 		fs::path const stdlib_module = ctx.selected_cl.dir / "modules/std.ixx";
 		if (!is_file_up_to_date(stdlib_module, output_dir / "std.obj")) {
@@ -111,19 +121,19 @@ bool build_msvc(context& ctx, std::string_view args) {
 	//}
 
 	// Set up the compiler helper
-	auto compile_cpp = [&](this auto& self, fs::path const& in) -> bool {
-		auto const obj = (output_dir / in.filename()).replace_extension("obj");
-		if (is_file_up_to_date(in, obj)) {
+	auto compile_cpp = [&](this auto& self, source_info const& in) -> bool {
+		auto const obj = (output_dir / in.path.filename()).replace_extension("obj");
+		if (is_file_up_to_date(in.path, obj)) {
 			return true;
 		}
 
 		std::string refs;
-		for(auto ref : file_to_imports_map[in])
+		for(auto ref : in.import_names)
 			refs += std::format("/reference {0}={1}/{0}.ifc ", ref, output_dir.generic_string());
 
 		std::string const cmd = std::format("{0} @{2}/INCLUDE /c /interface /Tp\"{1}\" /reference std={2}/std.ifc {3}",
 			cl,
-			in.generic_string(),
+			in.path.generic_string(),
 			output_dir.generic_string(),
 			refs
 		);
