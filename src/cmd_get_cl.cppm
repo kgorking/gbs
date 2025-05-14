@@ -61,7 +61,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 	}
 
 	if (cl.name == "clang") {
-		cl.exe = "bin/clang";
+		cl.compiler = "bin/clang";
 
 		version_prefix = "refs/tags/llvmorg-";
 
@@ -91,7 +91,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 	else if (cl.name == "gcc") {
 		// git ls-remote --exit-code --refs --tags --sort="-version:refname" https://github.com/xpack-dev-tools/gcc-xpack v*
 		// https://github.com/xpack-dev-tools/gcc-xpack/releases/download/v14.2.0-2/xpack-gcc-14.2.0-2-win32-x64.zip
-		cl.exe = "bin/gcc";
+		cl.compiler = "bin/gcc";
 		version_prefix = "refs/tags/v";
 
 		git_search_cmd = std::format("git ls-remote --exit-code --refs --tags --sort=\"-version:refname\" https://github.com/xpack-dev-tools/gcc-xpack *v{}* > {}",
@@ -194,7 +194,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 
 	// Check if already downloaded
 	cl.dir = dest_dir;
-	cl.exe = cl.dir / cl.exe; // update exe path
+	cl.compiler = cl.dir / cl.compiler; // update exe path
 
 	if (std::filesystem::exists(cl.dir)) {
 		// TODO check bin

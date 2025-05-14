@@ -19,7 +19,7 @@ bool build_clang(context& ctx, std::string_view args) {
 	std::string const resp_args = std::format("@{0}/_shared @{0}/{1:s}", resp_dir, view_resp);
 
 	// Build output
-	ctx.output_config = std::string_view{ view_args.front() };
+	ctx.config = std::string_view{ view_args.front() };
 	auto const output_dir = ctx.output_dir();
 
 	// Create the build dirs if needed
@@ -32,7 +32,7 @@ bool build_clang(context& ctx, std::string_view args) {
 
 	auto compile_cpp = [&](fs::path const& in) {
 		auto const obj = (output_dir / in.filename()).replace_extension("o");
-		auto cmd = std::format("call \"{}\" {} {} -fprebuilt-module-path=\"{}\" -c -o {}", ctx.selected_cl.exe.generic_string(), resp_args, in.generic_string(), output_dir.generic_string(), obj.generic_string());
+		auto cmd = std::format("call \"{}\" {} {} -fprebuilt-module-path=\"{}\" -c -o {}", ctx.selected_cl.compiler.generic_string(), resp_args, in.generic_string(), output_dir.generic_string(), obj.generic_string());
 
 		if (in.extension() == ".cppm") {
 			auto const pcm = (output_dir / in.filename()).replace_extension("pcm");
@@ -54,6 +54,6 @@ bool build_clang(context& ctx, std::string_view args) {
 	// Link objects
 	std::println("Linking...");
 	std::string const executable = fs::current_path().stem().string() + ".exe";
-	auto const cmd = std::format("call \"{}\" {:s} -o {}/{}", ctx.selected_cl.exe.generic_string(), objects | std::views::join_with(' '), output_dir.generic_string(), executable);
+	auto const cmd = std::format("call \"{}\" {:s} -o {}/{}", ctx.selected_cl.linker.generic_string(), objects | std::views::join_with(' '), output_dir.generic_string(), executable);
 	return (0 == std::system(cmd.c_str()));
 }

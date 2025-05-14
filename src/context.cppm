@@ -17,15 +17,15 @@ export struct context {
 	std::unordered_map<std::string_view, compiler_response_map> response_map;
 
 	// Config of last compile (debug, release, etc...)
-	std::string_view output_config;
+	std::string_view config;
 
 	// Determine output dir, eg. 'gbs.out/msvc/debug
-	std::filesystem::path output_dir() const {
-		return gbs_out / selected_cl.name / output_config;
+	auto output_dir() const -> std::filesystem::path {
+		return gbs_out / selected_cl.name / config;
 	}
 
 	// Determine response directory
-	std::filesystem::path response_dir() const {
+	auto response_dir() const -> std::filesystem::path {
 		return gbs_internal / selected_cl.name;
 	}
 
@@ -37,6 +37,34 @@ export struct context {
 	// Returns the name of the currently selected compiler
 	std::string_view compiler_name() const {
 		return selected_cl.name;
+	}
+
+	// Create build command for the currently selected compiler
+	std::string build_command_prefix() const {
+		auto const compiler = selected_cl.compiler.string();
+		auto const out = output_dir().string();
+		return std::vformat(selected_cl.build_command_prefix, std::make_format_args(compiler, out));
+	}
+
+	// Create build args for a single file
+	std::string build_file(std::string_view file, std::string_view obj_file) const {
+		if (file.ends_with(".cppm"))
+			return std::vformat(selected_cl.build_module, std::make_format_args(file, obj_file));
+		else
+			return std::vformat(selected_cl.build_source, std::make_format_args(file, obj_file));
+	}
+
+	// Create link command for the currently selected compiler
+	std::string link_command(std::string_view exe_name) const {
+		auto const linker = selected_cl.linker.string();
+		auto const out = output_dir().string();
+		return std::vformat(selected_cl.link_command, std::make_format_args(linker, out, exe_name));
+	}
+
+	// Create a reference to a module
+	auto build_reference(std::string_view module_name) const -> std::string {
+		auto const out = (output_dir() / module_name).string();
+		return std::vformat(selected_cl.reference, std::make_format_args(module_name, out));
 	}
 };
 

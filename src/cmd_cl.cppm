@@ -7,7 +7,7 @@ export bool cmd_cl(context& ctx, std::string_view args) {
 		fill_compiler_collection(ctx);
 		if (ctx.all_compilers.empty()) {
 			std::println("<gbs> Error: no compilers found while looking for '{}'.", args);
-			exit(1);
+			return false;
 		}
 	}
 

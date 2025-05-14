@@ -8,8 +8,15 @@ export struct compiler {
 	int major = 0, minor = 0;
 	std::string_view name;
 	std::string_view arch;
+	std::string_view build_source;
+	std::string_view build_module;
+	std::string_view build_command_prefix;
+	std::string_view link_command;
+	std::string_view reference;
 	std::filesystem::path dir;
-	std::filesystem::path exe;
+	std::filesystem::path compiler;
+	std::filesystem::path linker;
+	std::filesystem::path std_module;
 };
 
 
@@ -33,13 +40,20 @@ void enumerate_compilers_msvc(std::filesystem::path msvc_path, auto&& callback) 
 			comp.name = "msvc";
 			comp.arch = arch;
 			comp.dir = dir;
-			comp.exe = comp.dir / "bin/HostX64" / arch;
+			comp.compiler = comp.dir / "bin" / "HostX64" / arch / "cl.exe";
+			comp.linker   = comp.dir / "bin" / "HostX64" / arch / "link.exe";
+			comp.std_module = comp.dir / "modules" / "std.ixx";
 
-			if (!std::filesystem::exists(comp.exe))
+			comp.build_source = " {0:?} ";
+			comp.build_module = " {0:?} ";
+			comp.build_command_prefix = "call \"{0}\" @{1}/INCLUDE /c /interface /TP ";
+			comp.link_command = "call \"{0}\" /NOLOGO /OUT:{1}/{2}.exe @{1}/LIBPATH @{1}/OBJLIST";
+			comp.reference = "/reference {0}={1}.ifc ";
+
+			if (!std::filesystem::exists(comp.compiler))
 				continue;
 
-			comp.exe /= "cl.exe";
-			std::string const cmd = std::format(R"("{}" 1>nul 2>version)", comp.exe.generic_string());
+			std::string const cmd = std::format(R"("{}" 1>nul 2>version)", comp.compiler.generic_string());
 			if (0 == std::system(cmd.c_str())) {
 				std::string version;
 				std::getline(std::ifstream("version"), version);
@@ -57,39 +71,6 @@ void enumerate_compilers_msvc(std::filesystem::path msvc_path, auto&& callback) 
 	}
 }
 
-void enumerate_compilers_clang_cl(std::filesystem::path llvm_path, auto&& callback) {
-	if (!std::filesystem::exists(llvm_path))
-		return;
-
-	compiler comp;
-	comp.name = "clang-cl";
-	for (auto arch : archs) {
-		comp.arch = arch;
-		comp.dir = llvm_path / arch;
-		comp.exe = llvm_path / arch / "bin";
-
-		if (!std::filesystem::exists(comp.exe))
-			continue;
-
-		comp.exe += "\\clang-cl.exe";
-		std::string const cmd = std::format(R"("{}" -v 2>version)", comp.exe.generic_string());
-		if (0 == std::system(cmd.c_str())) {
-			std::string version;
-			std::getline(std::ifstream("version"), version);
-
-			std::string_view sv(version);
-			sv.remove_prefix(sv.find_first_of("0123456789", 0));
-
-			comp.major = std::atoi(sv.substr(0, sv.find('.')).data());
-			comp.minor = std::atoi(sv.substr(sv.find('.') + 1).data());
-			callback(std::move(comp));
-
-			std::error_code ec;
-			std::filesystem::remove("version", ec);
-		}
-	}
-}
-
 export void enumerate_compilers(auto&& callback) {
 	std::string line, cmd, version;
 	compiler comp;
@@ -101,8 +82,7 @@ export void enumerate_compilers(auto&& callback) {
 
 		while (std::getline(file, line)) {
 			std::filesystem::path const path(line);
-			enumerate_compilers_msvc(path / "VC/Tools/MSVC", callback);
-			//enumerate_compilers_clang_cl(path / "VC/Tools/LLVM", callback);
+			enumerate_compilers_msvc(path / "VC" / "Tools" / "MSVC", callback);
 		}
 		file.close();
 		std::error_code ec;
@@ -114,7 +94,7 @@ export void enumerate_compilers(auto&& callback) {
 		auto const build_tools_dir = std::filesystem::path(prg_86) / "Microsoft Visual Studio" / "2022" / "BuildTools";
 		if (std::filesystem::exists(build_tools_dir)) {
 			// Find msvc compilers
-			auto const msvc_path = build_tools_dir / "VC/Tools/MSVC";
+			auto const msvc_path = build_tools_dir / "VC" / "Tools" / "MSVC";
 			if (std::filesystem::exists(msvc_path)) {
 				enumerate_compilers_msvc(msvc_path, callback);
 			}
@@ -130,7 +110,7 @@ export void enumerate_compilers(auto&& callback) {
 	}
 
 	// Find compilers in ~/.gbs/*
-	auto const download_dir = std::filesystem::path(home_dir) / ".gbs";
+	auto const download_dir = home_dir / ".gbs";
 
 	if (std::filesystem::exists(download_dir)) {
 		if (std::filesystem::exists(download_dir / "clang")) {
@@ -147,7 +127,14 @@ export void enumerate_compilers(auto&& callback) {
 					comp.name = "clang";
 					comp.arch = "x64";
 					comp.dir = dir;
-					comp.exe = dir.path() / "bin/clang";
+					comp.compiler = dir.path() / "bin" / "clang";
+					comp.linker = comp.compiler;
+
+					comp.build_source = " {0:?} -o {1:?} ";
+					comp.build_module = " {0:?} -fmodule-output -o {1:?} ";
+					comp.build_command_prefix = "call \"{0}\" -c ";
+					comp.link_command = "call \"{0}\"  @{1}/OBJLIST -o {1}/{2}.exe";
+					comp.reference = "-fmodule-file={}={}.pcm ";
 					callback(std::move(comp));
 				}
 			}
@@ -167,15 +154,10 @@ export void enumerate_compilers(auto&& callback) {
 					comp.name = "gcc";
 					comp.arch = "x64";
 					comp.dir = dir;
-					comp.exe = dir.path() / "bin/gcc";
+					comp.compiler = dir.path() / "bin" / "gcc";
 					callback(std::move(comp));
 				}
 			}
-		}
-
-		if (std::filesystem::exists(download_dir / "msvc")) {
-			enumerate_compilers_msvc(download_dir / "msvc/VC/Tools/MSVC", callback);
-			//enumerate_compilers_clang_cl(download_dir / "msvc/VC/Tools/LLVM", callback);
 		}
 	}
 }
