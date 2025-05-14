@@ -7,31 +7,13 @@ import dep_scan;
 import cmd_build;
 import cmd_get_cl;
 import cmd_enum_cl;
+import cmd_clean;
 
 using namespace std::string_view_literals;
 namespace fs = std::filesystem;
 
 
-bool clean(context& ctx, std::string_view /*args*/) {
-	std::println("<gbs> Cleaning...");
 
-	// TODO args, clean=release
-	std::error_code ec;
-	std::filesystem::remove_all(ctx.gbs_out, ec);
-	if (ec) {
-		std::println("<gbs> Error: {}", ec.message());
-		return false;
-	}
-
-	// TODO: move to own command
-	std::filesystem::remove_all(ctx.gbs_internal, ec);
-	if (ec) {
-		std::println("<gbs> Error: {}", ec.message());
-		return false;
-	}
-
-	return true;
-}
 
 bool run(context& ctx, std::string_view args) {
 	std::string const executable = fs::current_path().stem().string() + ".exe";
@@ -83,7 +65,7 @@ int main(int argc, char const* argv[]) {
 		{"enum_cl", cmd_enum_cl},
 		{"get_cl", cmd_get_cl},
 		{"cl", cl},
-		{"clean", clean},
+		{"clean", cmd_clean},
 		{"build", cmd_build},
 		{"run", run},
 	};
