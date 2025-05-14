@@ -131,7 +131,7 @@ export void enumerate_compilers(auto&& callback) {
 					comp.linker = comp.compiler;
 
 					comp.build_source = " {0:?} -o {1:?} ";
-					comp.build_module = " {0:?} -fmodule-output -o {1:?} ";
+					comp.build_module = " {0:?} -o {1:?} -fmodule-output ";
 					comp.build_command_prefix = "call \"{0}\" -c ";
 					comp.link_command = "call \"{0}\"  @{1}/OBJLIST -o {1}/{2}.exe";
 					comp.reference = "-fmodule-file={}={}.pcm ";

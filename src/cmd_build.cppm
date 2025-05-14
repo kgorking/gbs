@@ -56,13 +56,8 @@ export bool cmd_build(context& ctx, std::string_view args) {
 		extern bool init_msvc(context&);
 		if (!init_msvc(ctx))
 			return false;
-
-		//extern bool build_msvc(context &, std::string_view);
-		//return build_msvc(ctx, resp_args);
 	}
 	else if (ctx.selected_cl.name.starts_with("clang")) {
-		//extern bool build_clang(context &, std::string_view);
-		//return build_clang(ctx, resp_args);
 	}
 	else if (ctx.selected_cl.name == "gcc") {
 		std::println("<gbs> INTERNAL : not implemented yet");
