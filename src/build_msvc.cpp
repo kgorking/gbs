@@ -1,102 +1,101 @@
 import std;
+import env;
 import context;
 import response;
-import env;
+import get_source_groups;
 
 namespace fs = std::filesystem;
 
-struct enum_context {
-	std::ofstream modules;
-	std::ofstream sources;
-	std::ofstream objects;
-};
-
-void enumerate_sources_imp(enum_context& ctx, std::filesystem::path dir, std::filesystem::path output_dir) {
-	using namespace std::filesystem;
-
-	for (directory_entry it : directory_iterator(dir)) {
-		if (it.is_directory()) {
-			enumerate_sources_imp(ctx, it.path(), output_dir);
-		}
-	}
-
-	for (directory_entry it : directory_iterator(dir)) {
-		if (it.is_directory())
-			continue;
-
-		auto ext = it.path().extension();
-		if (ext == ".h")
-			continue;
-
-		bool const is_module = it.path().extension() == ".cppm" || it.path().extension() == ".ixx";
-		if (is_module) {
-			auto const ifc = (output_dir / it.path().filename()).replace_extension("ifc");
-			ctx.modules << std::format(" /reference {}", ifc.generic_string());
-		}
-
-		auto const out = (output_dir / it.path().filename()).replace_extension("obj");
-		if (is_file_up_to_date(it.path(), out)) {
-			ctx.objects << out << ' ';
-		}
-		else {
-			if (is_module)
-				ctx.sources << "/interface /Tp";
-			ctx.sources << it.path().generic_string() << ' ';
-		}
-	}
-}
-
-void enumerate_sources(context const& ctx, std::filesystem::path dir, std::filesystem::path output_dir) {
-	enum_context e_ctx{
-		std::ofstream(ctx.response_dir() / "modules", std::ios::out | std::ios::trunc),
-		std::ofstream(ctx.response_dir() / "sources", std::ios::out | std::ios::trunc),
-		std::ofstream(ctx.response_dir() / "objects", std::ios::out | std::ios::trunc)
-	};
-
-	enumerate_sources_imp(e_ctx, dir, output_dir);
-}
-
 bool build_msvc(context& ctx, std::string_view args) {
-	// Pull extra parameters if needed
-	if (ctx.selected_cl.extra_params.empty()) {
-		// Executes 'vcvars64.bat' and pulls out the INCLUDE, LIB, LIBPATH environment variables
-		constexpr std::string_view extract_cmd = R"(echo /I"%INCLUDE:;=" /I"%" /link /LIBPATH:"%LIB:;=" /LIBPATH:"%" /LIBPATH:"%LIBPATH:;=" /LIBPATH:"%")";
-		auto const vcvars = ctx.selected_cl.dir / "../../../Auxiliary/Build/vcvars64.bat";
-		std::string const cmd = std::format(R"(""{}" >nul && call {} >extra_params")", vcvars.generic_string(), extract_cmd);
-		if (0 == std::system(cmd.c_str())) {
-			std::getline(std::ifstream("extra_params"), ctx.selected_cl.extra_params);
-			std::remove("extra_params");
-		}
-	}
-
-	// Arguments to the compiler(s)
-	// Converts arguments into response files
-	auto view_args = args | std::views::split(',');
-	auto view_resp = view_args | std::views::join_with(std::format(" @{}/", (ctx.gbs_internal / ctx.selected_cl.name).generic_string()));
-
-	// Build cl command
-	std::string const cl = std::format("cl @{0}/_shared @{0}/{1:s} ", ctx.response_dir().generic_string(), view_resp);
-
 	// Build output
-	ctx.output_config = std::string_view{ view_args.front() };
+	ctx.output_config = args.substr(0, args.find(','));
 	auto const output_dir = ctx.output_dir();
 
 	// Create the build dirs if needed
-	std::filesystem::create_directories(output_dir);
+	fs::create_directories(ctx.output_dir());
 
-	// Compile stdlib if needed
-	if (!fs::exists(output_dir / "std.obj")) {
-		fs::path const stdlib_module = ctx.selected_cl.dir / "modules/std.ixx";
-		if (!is_file_up_to_date(stdlib_module, output_dir / "std.obj"))
-			if (0 != std::system(std::format("{} /c \"{}\" {}", cl, stdlib_module.generic_string(), ctx.selected_cl.extra_params).c_str()))
-				return false;
+	// Arguments to the compiler(s)
+	// Converts arguments into response files
+	auto joiner = std::format(" @{}/", ctx.response_dir().generic_string());
+	auto view_resp = args
+		| std::views::split(',')
+		| std::views::join_with(joiner);
+
+	// Executes 'vcvars64.bat' and pulls out the INCLUDE, LIB, LIBPATH environment variables
+	constexpr std::string_view include_cmd = R"(echo /I"%INCLUDE:;=" /I"%")";
+	constexpr std::string_view libpath_cmd = R"(echo /LIBPATH:"%LIB:;=" /LIBPATH:"%" /LIBPATH:"%LIBPATH:;=" /LIBPATH:"%")";
+
+	auto const vcvars = ctx.selected_cl.dir / "../../../Auxiliary/Build/vcvars64.bat";
+	std::string const vcvars_cmd = std::format(R"("cd "{}" && "{}" >nul && call {} >INCLUDE && call {} >LIBPATH")",
+		ctx.output_dir().generic_string(),
+		vcvars.generic_string(),
+		include_cmd,
+		libpath_cmd);
+
+	if (0 != std::system(vcvars_cmd.c_str())) {
+		std::println("<gbs> Error: failed to extract vars from 'vcvars64.bat'");
+		return false;
 	}
 
-	// Add source files
-	extern void enumerate_sources(context const&, std::filesystem::path, std::filesystem::path);
-	enumerate_sources(ctx, "src", output_dir);
 
+	// Get the source files to compile
+	auto sources = grouped_source_files("src");
+	if (sources.empty())
+		return true;
+
+	// Insert the 'std' module
+	sources[0].emplace_back(source_info{ ctx.selected_cl.dir / "modules/std.ixx", {} });
+
+	// Create file containing the list of objects to link
+	std::ofstream objects(output_dir / "OBJLIST");
+	std::shared_mutex mut;
+
+	// Create the build command
+	std::string const cl = std::format("cl @{0}/_shared @{0}/{1:s} @{2}/INCLUDE /c /interface",
+		ctx.response_dir().generic_string(),
+		view_resp,
+		output_dir.generic_string());
+
+	// Set up the compiler helper
+	auto compile_cpp = [&](this auto& self, source_info const& in) -> bool {
+		auto const& [path, imports] = in;
+
+		auto const obj = (output_dir / path.filename()).replace_extension("obj");
+		{
+			std::scoped_lock sl(mut);
+			objects << obj << ' ';
+		}
+
+		if (is_file_up_to_date(path, obj)) {
+			return true;
+		}
+
+		std::string refs;
+		for(auto ref : imports)
+			refs += std::format("/reference {0}={1}/{0}.ifc ", ref, output_dir.generic_string());
+
+		std::string const cmd = std::format("{0} /Tp\"{1}\" {2}",
+			cl,
+			path.generic_string(),
+			refs);
+
+		return (0 == std::system(cmd.c_str()));
+		};
+
+	// Compile sources
+	for (auto const& paths : sources) {
+		std::for_each(std::execution::par_unseq, paths.begin(), paths.end(), compile_cpp);
+	}
+
+	// Close the objects file
+	objects.close();
+
+	// Link sources
+	std::println("<gbs> Linking...");
 	std::string const executable = fs::current_path().stem().string() + ".exe";
-	std::string const cmd = std::format("{0} /reference std={3}/std.ifc /Fe:{3}/{4} @{1}/modules @{1}/sources @{1}/objects {5}", cl, ctx.response_dir().generic_string(), view_resp, output_dir.generic_string(), executable, ctx.selected_cl.extra_params);
-	return 0 == std::system(cmd.c_str());
+	std::string const link_cmd = std::format("link /NOLOGO /OUT:{0}/{1} @{0}/LIBPATH @{0}/OBJLIST",
+		output_dir.generic_string(),
+		executable);
+
+	return 0 == std::system(link_cmd.c_str());
 }

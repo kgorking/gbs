@@ -10,7 +10,6 @@ export struct compiler {
 	std::string_view arch;
 	std::filesystem::path dir;
 	std::filesystem::path exe;
-	std::string extra_params;
 };
 
 
@@ -44,7 +43,6 @@ void enumerate_compilers_msvc(std::filesystem::path msvc_path, auto&& callback) 
 			if (0 == std::system(cmd.c_str())) {
 				std::string version;
 				std::getline(std::ifstream("version"), version);
-				std::filesystem::remove("version");
 
 				std::string_view sv(version);
 				sv.remove_prefix(sv.find_first_of("0123456789", 0));
@@ -52,6 +50,8 @@ void enumerate_compilers_msvc(std::filesystem::path msvc_path, auto&& callback) 
 
 				extract_compiler_version(sv, comp.major, comp.minor);
 				callback(std::move(comp));
+
+				std::filesystem::remove("version");
 			}
 		}
 	}
@@ -102,7 +102,7 @@ export void enumerate_compilers(auto&& callback) {
 		while (std::getline(file, line)) {
 			std::filesystem::path const path(line);
 			enumerate_compilers_msvc(path / "VC/Tools/MSVC", callback);
-			enumerate_compilers_clang_cl(path / "VC/Tools/LLVM", callback);
+			//enumerate_compilers_clang_cl(path / "VC/Tools/LLVM", callback);
 		}
 		file.close();
 		std::error_code ec;

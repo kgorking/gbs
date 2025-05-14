@@ -2,7 +2,6 @@ export module context;
 import std;
 import compiler;
 
-using compiler_collection = std::unordered_map<std::string_view, std::vector<compiler>>;
 
 export struct context {
 	// Folder to store gbs related files
@@ -10,6 +9,7 @@ export struct context {
 	const std::filesystem::path gbs_out{ "gbs.out" };
 
 	// Available compilers
+	using compiler_collection = std::unordered_map<std::string_view, std::vector<compiler>>;
 	compiler_collection all_compilers;
 	compiler selected_cl;
 
