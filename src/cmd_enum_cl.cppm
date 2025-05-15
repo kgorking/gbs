@@ -8,9 +8,9 @@ export bool cmd_enum_cl(context& ctx, std::string_view /*args*/) {
 
 	fill_compiler_collection(ctx);
 
-	for (auto& [k, v] : ctx.all_compilers) {
-		std::println("<gbs>   {}: ", k);
-		for (auto const& c : v) {
+	for (auto& kv : ctx.all_compilers) {
+		std::println("<gbs>   {}: ", kv.first);
+		for (auto const& c : kv.second) {
 			std::println("<gbs>     {}.{} - {}", c.major, c.minor, c.dir.generic_string());
 		}
 	}

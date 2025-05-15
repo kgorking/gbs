@@ -55,7 +55,7 @@ export bool cmd_build(context& ctx, std::string_view args) {
 		| std::ranges::to<std::string>();
 
 	if (ctx.selected_cl.name == "msvc") {
-		extern bool init_msvc(context&);
+		extern bool init_msvc(context const&);
 		if (!init_msvc(ctx))
 			return false;
 	}
@@ -79,7 +79,7 @@ export bool cmd_build(context& ctx, std::string_view args) {
 
 	// Insert the 'std' module
 	if (!ctx.selected_cl.std_module.empty())
-		sources[0].emplace_back(source_info{ ctx.selected_cl.std_module, {} });
+		sources.front().emplace_back(source_info{ ctx.selected_cl.std_module, {} });
 
 	// Create file containing the list of objects to link
 	std::ofstream objects(ctx.output_dir() / "OBJLIST");

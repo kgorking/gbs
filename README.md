@@ -1,5 +1,7 @@
-# Gorking Build System
+# Gorking Build System v0.10.1
 I wanted to try and create my own build system, just for fun.
+
+# Features
 
 ## Note
 Yes, I am aware of the irony of using CMake to make a build system.

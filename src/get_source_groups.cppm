@@ -61,7 +61,7 @@ export auto get_grouped_source_files(fs::path dir) -> std::vector<source_group> 
 			sources.emplace_back();
 		}
 
-		sources[(int)dep_size].emplace_back(path, std::move(imports));
+		sources.at(dep_size).emplace_back(path, std::move(imports));
 	}
 
 	return sources;

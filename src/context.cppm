@@ -35,7 +35,7 @@ export struct context {
 	}
 
 	// Returns the name of the currently selected compiler
-	std::string_view compiler_name() const {
+	std::string_view compiler_name() const noexcept {
 		return selected_cl.name;
 	}
 
@@ -75,8 +75,8 @@ export void fill_compiler_collection(context& ctx) {
 		});
 
 	// Sort compilers from highest version to lowest
-	for (auto& [k, v] : ctx.all_compilers) {
-		std::ranges::sort(v, [](compiler const& c1, compiler const& c2) {
+	for (auto& kv : ctx.all_compilers) {
+		std::ranges::sort(kv.second, [](compiler const& c1, compiler const& c2) {
 			if (c1.major == c2.major)
 				return c1.minor > c2.minor;
 			else

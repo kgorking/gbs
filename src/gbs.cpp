@@ -31,9 +31,7 @@ int main(int argc, char const* argv[]) {
 	};
 
 	auto const args = std::span<char const*>(argv, argc);
-	for (int i = 1; i < argc; i++) {
-		std::string_view arg{ argv[i] };
-
+	for (std::string_view arg : args | std::views::drop(1)) {
 		std::string_view const left = arg.substr(0, arg.find('='));
 		if (!commands.contains(left)) {
 			std::println("<gbs> Unknown command '{}', aborting\n", left);

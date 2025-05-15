@@ -2,7 +2,7 @@ export module compiler;
 import std;
 import env;
 
-char const* archs[] = { /*"arm64",*/ "x64" };
+constexpr std::string_view archs[] = { /*"arm64",*/ "x64" };
 
 export struct compiler {
 	int major = 0, minor = 0;
@@ -35,7 +35,7 @@ void enumerate_compilers_msvc(std::filesystem::path msvc_path, auto&& callback) 
 		return;
 
 	for (auto const& dir : std::filesystem::directory_iterator(msvc_path)) {
-		for (auto arch : archs) {
+		for (auto const arch : archs) {
 			compiler comp;
 			comp.name = "msvc";
 			comp.arch = arch;
