@@ -48,7 +48,7 @@ void enumerate_compilers_msvc(std::filesystem::path msvc_path, auto&& callback) 
 			comp.build_module = " {0:?} ";
 			comp.build_command_prefix = "call \"{0}\" @{1}/INCLUDE /c /interface /TP ";
 			comp.link_command = "call \"{0}\" /NOLOGO /OUT:{1}/{2}.exe @{1}/LIBPATH @{1}/OBJLIST";
-			comp.reference = "/reference {0}={1}.ifc ";
+			comp.reference = " /reference {0}={1}.ifc ";
 
 			if (!std::filesystem::exists(comp.compiler))
 				continue;
@@ -134,7 +134,7 @@ export void enumerate_compilers(auto&& callback) {
 					comp.build_module = " {0:?} -o {1:?} -fmodule-output ";
 					comp.build_command_prefix = "call \"{0}\" -c ";
 					comp.link_command = "call \"{0}\"  @{1}/OBJLIST -o {1}/{2}.exe";
-					comp.reference = "-fmodule-file={}={}.pcm ";
+					comp.reference = " -fmodule-file={}={}.pcm ";
 					callback(std::move(comp));
 				}
 			}
@@ -155,10 +155,18 @@ export void enumerate_compilers(auto&& callback) {
 					comp.arch = "x64";
 					comp.dir = dir;
 					comp.compiler = dir.path() / "bin" / "gcc";
+					comp.linker = comp.compiler;
+					if (comp.major >= 15)
+						comp.std_module = "-fsearch-include-path bits/std.cc";
+
+					comp.build_source = " {0:?} -o {1:?} ";
+					comp.build_module = " -xc++ {0:?} -o {1:?} ";
+					comp.build_command_prefix = "call \"{0}\" -c ";
+					comp.link_command = "call \"{0}\"  @{1}/OBJLIST -o {1}/{2}.exe";
+					comp.reference = "";
 					callback(std::move(comp));
 				}
 			}
 		}
 	}
 }
-

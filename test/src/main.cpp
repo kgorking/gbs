@@ -1,11 +1,12 @@
 //import std;
-#include <print>
-import mod9;
+#include <cstdio>
+//#include <print>
+import mod0;
 
 short extra();
 
 int main() {
-	std::println("Created by the Gorking build system");
+	std::puts("Created by the Gorking build system");
 	extra();
-	MyFunc9();
+	MyFunc0();
 }

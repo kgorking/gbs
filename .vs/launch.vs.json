@@ -1,0 +1,97 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": "./test",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "clean cl=clang build run"
+      ],
+      "name": "test run [clang]"
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": "./test",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "clean cl=msvc build run"
+      ],
+      "name": "test run [msvc]"
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": "./test",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "clean cl=gcc:14 build run"
+      ],
+      "name": "test run [gcc]"
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": ".",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "clean cl=clang build=debug,warnings"
+      ],
+      "name": "[clang] self"
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": ".",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "get_cl=clang"
+      ],
+      "name": "download latest [clang]"
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": ".",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "get_cl=gcc"
+      ],
+      "name": "download latest [gcc]"
+    },
+    {
+      "isDefaultConfiguration": true,
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": ".",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "clean cl=msvc build=debug,warnings"
+      ],
+      "name": "[msvc] self"
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": "./test",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "clean cl=clang build=debug,analyze,warnings"
+      ],
+      "name": "[clang] self analyze"
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": "./test",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "clean cl=msvc build=debug,analyze,warnings"
+      ],
+      "name": "[msvc] self analyze"
+    }
+  ]
+}

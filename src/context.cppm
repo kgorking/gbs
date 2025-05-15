@@ -48,10 +48,10 @@ export struct context {
 
 	// Create build args for a single file
 	std::string build_file(std::string_view file, std::string_view obj_file) const {
-		if (file.ends_with(".cppm"))
-			return std::vformat(selected_cl.build_module, std::make_format_args(file, obj_file));
-		else
+		if (file.ends_with(".cpp"))
 			return std::vformat(selected_cl.build_source, std::make_format_args(file, obj_file));
+		else
+			return std::vformat(selected_cl.build_module, std::make_format_args(file, obj_file));
 	}
 
 	// Create link command for the currently selected compiler

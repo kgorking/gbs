@@ -62,10 +62,6 @@ export bool cmd_build(context& ctx, std::string_view args) {
 	else if (ctx.selected_cl.name.starts_with("clang")) {
 	}
 	else if (ctx.selected_cl.name == "gcc") {
-		std::println("<gbs> INTERNAL : not implemented yet");
-		return false;
-		//	extern bool build_gcc(context & ctx, std::string_view args);
-		//	return build_gcc(ctx, args);
 	}
 	else {
 		std::println("<gbs> INTERNAL : unknown compiler {:?}", ctx.selected_cl.name);
@@ -107,12 +103,16 @@ export bool cmd_build(context& ctx, std::string_view args) {
 			return;
 		}
 
-		std::string cmd = cmd_prefix + ctx.build_file(path.string(), obj.string());
-		for (auto const& s : imports)
-			cmd += ctx.build_reference(s);
+		std::string cmd = cmd_prefix;
 
-		// Clang doesn't print out the name of the file being compiled,
-		// so do it manually.
+		if (!ctx.selected_cl.reference.empty())
+			for (auto const& s : imports)
+				cmd += ctx.build_reference(s);
+
+		cmd += ctx.build_file(path.string(), obj.string());
+
+		// Clang/gcc doesn't print out the name of the
+		// file being compiled, so do it manually.
 		if (ctx.selected_cl.name != "msvc")
 			std::puts(path.filename().string().c_str());
 
@@ -121,15 +121,21 @@ export bool cmd_build(context& ctx, std::string_view args) {
 
 	// Compile sources
 	for (auto const& paths : sources) {
-		std::for_each(std::execution::par_unseq, paths.begin(), paths.end(), compile_cpp);
+		//std::for_each(std::execution::par_unseq, paths.begin(), paths.end(), compile_cpp);
+		std::for_each(std::execution::seq, paths.begin(), paths.end(), compile_cpp);
 	}
 
 	// Close the objects file
 	objects.close();
 
 	// Link sources
-	std::println("<gbs> Linking...");
-	std::string const executable = fs::current_path().stem().string();
-	std::string const link = ctx.link_command(executable);
-	return 0 == std::system(link.c_str());
+	if (!failed) {
+		std::println("<gbs> Linking...");
+		std::string const executable = fs::current_path().stem().string();
+		std::string const link = ctx.link_command(executable);
+		return 0 == std::system(link.c_str());
+	}
+	else {
+		return false;
+	}
 }
