@@ -1,9 +1,16 @@
 ## Ignore Visual Studio temporary files, build results, and
-/.gbs/
+/std.ifc
+/.gbs
 /gbs.out
 /test/.gbs/*
 /test/gbs.out
-/std.ifc
+/test/gcm.cache
+
+/.vs/CMake Overview
+/.vs/cmake.db
+/.vs/gbs
+/.vs/slnx.sqlite
+/.vs/VSWorkspaceState.json
 
 # User-specific files
 *.rsuser
@@ -30,7 +37,7 @@ bld/
 [Ll]ogs/
 
 # Visual Studio 2015/2017 cache/options directory
-.vs/
+#.vs/
 
 
 # Files built by Visual Studio
@@ -62,3 +69,5 @@ bld/
 *.svclog
 *.scc
 *.idb
+/.vs/ProjectSettings.json
+/.vs/slnx.sqlite-journal

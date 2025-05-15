@@ -1,7 +1,8 @@
 //import std;
-#include <print>
+//#include <print>
+#include <cstdio>
 
 short extra() {
-	std::println("  This is an extra function");
+	std::puts("  This is an extra function");
 	return 0;
 }

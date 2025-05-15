@@ -48,7 +48,7 @@ void enumerate_compilers_msvc(std::filesystem::path msvc_path, auto&& callback) 
 			comp.build_module = " {0:?} ";
 			comp.build_command_prefix = "call \"{0}\" @{1}/INCLUDE /c /interface /TP ";
 			comp.link_command = "call \"{0}\" /NOLOGO /OUT:{1}/{2}.exe @{1}/LIBPATH @{1}/OBJLIST";
-			comp.reference = "/reference {0}={1}.ifc ";
+			comp.reference = " /reference {0}={1}.ifc ";
 
 			if (!std::filesystem::exists(comp.compiler))
 				continue;
@@ -73,7 +73,6 @@ void enumerate_compilers_msvc(std::filesystem::path msvc_path, auto&& callback) 
 
 export void enumerate_compilers(auto&& callback) {
 	std::string line, cmd, version;
-	compiler comp;
 
 	// Look for installations of Visual Studio
 	int const inst = std::system("\">instpath.txt \"%ProgramFiles(x86)%/Microsoft Visual Studio/Installer/vswhere.exe\" -prerelease -property installationPath 2>nul\"");
@@ -122,7 +121,7 @@ export void enumerate_compilers(auto&& callback) {
 					// format: clang_19.1.7
 					clang_version.remove_prefix(6); // remove 'clang_'
 
-					comp = {};
+					compiler comp;
 					extract_compiler_version(clang_version, comp.major, comp.minor);
 					comp.name = "clang";
 					comp.arch = "x64";
@@ -134,7 +133,7 @@ export void enumerate_compilers(auto&& callback) {
 					comp.build_module = " {0:?} -o {1:?} -fmodule-output ";
 					comp.build_command_prefix = "call \"{0}\" -c ";
 					comp.link_command = "call \"{0}\"  @{1}/OBJLIST -o {1}/{2}.exe";
-					comp.reference = "-fmodule-file={}={}.pcm ";
+					comp.reference = " -fmodule-file={}={}.pcm ";
 					callback(std::move(comp));
 				}
 			}
@@ -149,16 +148,24 @@ export void enumerate_compilers(auto&& callback) {
 					// gcc_13.3.0-2
 					gcc_version.remove_prefix(4);
 
-					comp = {};
+					compiler comp;
 					extract_compiler_version(gcc_version, comp.major, comp.minor);
 					comp.name = "gcc";
 					comp.arch = "x64";
 					comp.dir = dir;
 					comp.compiler = dir.path() / "bin" / "gcc";
+					comp.linker = comp.compiler;
+					if (comp.major >= 15)
+						comp.std_module = "-fsearch-include-path bits/std.cc";
+
+					comp.build_source = " {0:?} -o {1:?} ";
+					comp.build_module = " -xc++ {0:?} -o {1:?} ";
+					comp.build_command_prefix = "call \"{0}\" -c ";
+					comp.link_command = "call \"{0}\"  @{1}/OBJLIST -o {1}/{2}.exe";
+					comp.reference = "";
 					callback(std::move(comp));
 				}
 			}
 		}
 	}
 }
-
