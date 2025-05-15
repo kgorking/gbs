@@ -42,7 +42,9 @@ export bool cmd_build(context& ctx, std::string_view args) {
 
 	// Arguments to the compiler.
 	// Converts arguments into response files
-	auto arg_to_str = [&](auto arg) { return " @" + (ctx.response_dir() / arg.data()).string(); };
+	auto arg_to_str = [&](auto arg) {
+		return " @" + (ctx.response_dir() / std::string{ arg.begin(), arg.end() }).string();
+		};
 
 	// TODO std::views::concat("_shared", args)
 	std::string resp_args = arg_to_str("_shared"sv);
@@ -109,7 +111,8 @@ export bool cmd_build(context& ctx, std::string_view args) {
 		for (auto const& s : imports)
 			cmd += ctx.build_reference(s);
 
-		//std::puts(cmd.c_str());
+		// Clang doesn't print out the name of the file being compiled,
+		// so do it manually.
 		if (ctx.selected_cl.name != "msvc")
 			std::puts(path.filename().string().c_str());
 
