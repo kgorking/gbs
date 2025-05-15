@@ -5,14 +5,14 @@ I wanted to try and create my own build system, just for fun.
 Yes, I am aware of the irony of using CMake to make a build system.
 
 ## Upcoming versions
-#### v0.10: Unify source enumeration
-#### v0.11: Compile test project with gcc
-#### v0.12: Make `import std;` work for clang and gcc
-#### v0.13: Compile and link libraries in 'lib'
-#### v0.14: Compile unit tests in 'unittest'
-#### v0.15: Fetch dependencies in 'deps'
-#### v0.16: Build dependencies in 'deps'
-#### v0.17: Custom build steps (via 'run'?)
+- v0.10: Unify source enumeration
+- v0.11: Compile test project with gcc
+- v0.12: Make `import std;` work for clang and gcc
+- v0.13: Compile and link libraries in 'lib'
+- v0.14: Compile unit tests in 'unittest'
+- v0.15: Fetch dependencies in 'deps'
+- v0.16: Build dependencies in 'deps'
+- v0.17: Custom build steps (via 'run'?)
 
 ## Todo
 - [x] Create a simple build system
@@ -51,4 +51,4 @@ Yes, I am aware of the irony of using CMake to make a build system.
 	- [x] gcc
 - [ ] Support for running custom build steps before/after compilation
 - [ ] Integrate with Visual Studio [Code]
-- [ ] WSL
+- [ ] WSL support ?

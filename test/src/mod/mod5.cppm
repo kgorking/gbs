@@ -4,5 +4,6 @@ export module mod5;
 import mod4;
 
 export void MyFunc5() {
+	MyFunc4();
 	std::println("\tHello from module 'mod5'");
 }
