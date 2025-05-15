@@ -7,7 +7,7 @@ namespace fs = std::filesystem;
 export void init_response_files(context& ctx) {
 	// Default response files
 	ctx.response_map["msvc"] = {
-		{"_warnings", 
+		{"warnings", 
 		    "/W4 "         // Baseline reasonable warnings
 			"/WX "         // Warnings are errors
 			"/w14242 "     // 'identifier': conversion from 'type1' to 'type2', possible loss of data
@@ -37,7 +37,7 @@ export void init_response_files(context& ctx) {
 	};
 
 	ctx.response_map["clang"] = {
-		{"_warnings",
+		{"warnings",
 			"-Wall "
 			"-Werror "
 			"-Wextra "                // reasonable and standard
@@ -104,7 +104,6 @@ export bool check_response_files(context const& ctx, std::string_view args) {
 		std::filesystem::create_directories(ctx.response_dir());
 	}
 
-	ensure_response_file_exists(ctx, "_warnings");
 	ensure_response_file_exists(ctx, "_shared");
 
 	for (auto subrange : args | std::views::split(',')) {

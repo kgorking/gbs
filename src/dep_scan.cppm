@@ -19,10 +19,10 @@ export auto detect_module_dependencies(std::filesystem::path path) -> source_dep
 		// TODO test for {}
 
 		// Simple pattern: look for "\b(import|export module)\s+<module-name>;"
-		std::string_view sv = line;
+		std::string_view const sv = line;
 
 		// Skip initial whitespaces
-		auto text_start = sv.find_first_not_of(" \t", 0);
+		auto const text_start = sv.find_first_not_of(" \t", 0);
 		if (text_start == std::string_view::npos)
 			continue;
 
@@ -46,7 +46,7 @@ export auto detect_module_dependencies(std::filesystem::path path) -> source_dep
 			module_name = module_name.substr(whitespaces);
 
 		// Find end of module name (until ';' or whitespace)
-		auto end = module_name.find_first_of(" ;\t");
+		auto const end = module_name.find_first_of(" ;\t");
 		if (end == std::string_view::npos)
 			continue;
 
