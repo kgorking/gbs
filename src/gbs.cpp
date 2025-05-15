@@ -9,9 +9,59 @@ import cmd_clean;
 import cmd_run;
 import cmd_cl;
 
+template<typename T>
+requires ("test", !std::same_as<T, void>)
+struct task {
+	struct promise_type {
+		T value;
+
+		task get_return_object() {
+			return task{ std::coroutine_handle<promise_type>::from_promise(*this) };
+		}
+
+		std::suspend_always initial_suspend() { return {}; }
+		std::suspend_always final_suspend() noexcept { return {}; }
+
+		void return_value(T&& from) { value = std::forward<T>(from); }
+
+		std::suspend_always yield_value(T&& from) { value = std::forward<T>(from); return {}; }
+
+		void unhandled_exception() { std::terminate(); }
+	};
+
+	using handle_type = std::coroutine_handle<promise_type>;
+
+	explicit task(handle_type h) : handle(h) {}
+	~task() { if (handle) handle.destroy(); }
+
+	T get() {
+		handle.resume();
+		return handle.promise().value;
+	}
+
+private:
+	handle_type handle;
+};
+
+task<int> computeSquare(int x) {
+	co_return x * x;
+}
+
+task<std::string> asyncMessage() {
+	co_return "Hello from coroutine!";
+}
+
+void test() {
+	int sq = computeSquare(5).get();
+	task<std::string> messageTask = asyncMessage();
+
+	std::string s = messageTask.get();
+}
 
 int main(int argc, char const* argv[]) {
-	std::println("Gorking build system v0.10.1");
+	test();
+
+	std::println("Gorking build system v0.11");
 
 	context ctx;
 
