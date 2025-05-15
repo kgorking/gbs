@@ -73,7 +73,6 @@ void enumerate_compilers_msvc(std::filesystem::path msvc_path, auto&& callback) 
 
 export void enumerate_compilers(auto&& callback) {
 	std::string line, cmd, version;
-	compiler comp;
 
 	// Look for installations of Visual Studio
 	int const inst = std::system("\">instpath.txt \"%ProgramFiles(x86)%/Microsoft Visual Studio/Installer/vswhere.exe\" -prerelease -property installationPath 2>nul\"");
@@ -122,7 +121,7 @@ export void enumerate_compilers(auto&& callback) {
 					// format: clang_19.1.7
 					clang_version.remove_prefix(6); // remove 'clang_'
 
-					comp = {};
+					compiler comp;
 					extract_compiler_version(clang_version, comp.major, comp.minor);
 					comp.name = "clang";
 					comp.arch = "x64";
@@ -149,7 +148,7 @@ export void enumerate_compilers(auto&& callback) {
 					// gcc_13.3.0-2
 					gcc_version.remove_prefix(4);
 
-					comp = {};
+					compiler comp;
 					extract_compiler_version(gcc_version, comp.major, comp.minor);
 					comp.name = "gcc";
 					comp.arch = "x64";
