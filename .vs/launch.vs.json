@@ -28,7 +28,7 @@
       "currentDir": "./test",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=gcc:14 build run"
+        "clean cl=gcc build run"
       ],
       "name": "test run [gcc]"
     },
@@ -41,6 +41,16 @@
         "clean cl=clang build=debug,warnings"
       ],
       "name": "[clang] self"
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": ".",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "clean cl=gcc build=debug,warnings"
+      ],
+      "name": "[gcc] self"
     },
     {
       "type": "default",
