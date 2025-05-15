@@ -3,6 +3,6 @@ module;
 export module mod0;
 //import std;
 
-export void MyFunc() {
+export void MyFunc0() {
 	std::println("\tHello from module 'mod0'");
 }
