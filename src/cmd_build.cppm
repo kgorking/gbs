@@ -121,8 +121,7 @@ export bool cmd_build(context& ctx, std::string_view args) {
 
 	// Compile sources
 	for (auto const& paths : sources) {
-		//std::for_each(std::execution::par_unseq, paths.begin(), paths.end(), compile_cpp);
-		std::for_each(std::execution::seq, paths.begin(), paths.end(), compile_cpp);
+		std::for_each(std::execution::par_unseq, paths.begin(), paths.end(), compile_cpp);
 	}
 
 	// Close the objects file
