@@ -9,23 +9,36 @@ import cmd_clean;
 import cmd_run;
 import cmd_cl;
 
-template<typename T>
-requires ("test", !std::same_as<T, void>)
+struct simple_awaiter {
+	bool await_ready() const noexcept { return false; }
+	static void await_suspend(std::coroutine_handle<>) noexcept {}
+	static void await_resume() noexcept {}
+};
+
+struct thread_awaitable
+{
+	std::jthread* p_out;
+	bool await_ready() { return false; }
+	void await_suspend(std::coroutine_handle<> h)
+	{
+		std::jthread& out = *p_out;
+		if (out.joinable())
+			throw std::runtime_error("Output jthread parameter not empty");
+		out = std::jthread([h] { h.resume(); });
+	}
+	void await_resume() {}
+};
+
+template<typename T = void>
 struct task {
 	struct promise_type {
 		T value;
 
-		task get_return_object() {
-			return task{ std::coroutine_handle<promise_type>::from_promise(*this) };
-		}
-
+		task get_return_object() { return task{ std::coroutine_handle<promise_type>::from_promise(*this) }; }
 		std::suspend_always initial_suspend() { return {}; }
 		std::suspend_always final_suspend() noexcept { return {}; }
-
 		void return_value(T&& from) { value = std::forward<T>(from); }
-
-		std::suspend_always yield_value(T&& from) { value = std::forward<T>(from); return {}; }
-
+		//std::suspend_always yield_value(T&& from) { value = std::forward<T>(from); return {}; }
 		void unhandled_exception() { std::terminate(); }
 	};
 
@@ -43,6 +56,25 @@ private:
 	handle_type handle;
 };
 
+template<>
+struct task<void> {
+	struct promise_type {
+		task get_return_object() { return task{ std::coroutine_handle<promise_type>::from_promise(*this) }; }
+		std::suspend_never initial_suspend() { return {}; }
+		std::suspend_never final_suspend() noexcept { return {}; }
+		void return_void() { }
+		void unhandled_exception() { std::terminate(); }
+	};
+
+	using handle_type = std::coroutine_handle<promise_type>;
+
+	explicit task(handle_type h) : handle(h) {}
+	~task() { if (handle) handle.destroy(); }
+
+private:
+	handle_type handle;
+};
+
 task<int> computeSquare(int x) {
 	co_return x * x;
 }
@@ -51,11 +83,23 @@ task<std::string> asyncMessage() {
 	co_return "Hello from coroutine!";
 }
 
+task<> resuming_on_new_thread(std::jthread& out)
+{
+	std::println("Coroutine started on thread: {}", std::this_thread::get_id());
+	co_await thread_awaitable{ &out };
+	std::println("Coroutine resumed on thread: ", std::this_thread::get_id());
+}
+
 void test() {
 	int sq = computeSquare(5).get();
 	task<std::string> messageTask = asyncMessage();
+	std::println("sq: {}", sq);
+
+	std::jthread thread;
+	resuming_on_new_thread(thread);
 
 	std::string s = messageTask.get();
+	std::println("Message: {}", s);
 }
 
 int main(int argc, char const* argv[]) {
