@@ -87,7 +87,11 @@ export bool cmd_build(context& ctx, std::string_view args) {
 	std::string const cmd_prefix = ctx.build_command_prefix() + resp_args.data();
 
 	// Set up the compiler helper
-	auto compile_cpp = [&](this auto& self, source_info const& in) -> bool {
+	bool failed = false;
+	auto compile_cpp = [&](this auto& self, source_info const& in) -> void {
+		if (failed)
+			return;
+
 		auto const& [path, imports] = in;
 
 		fs::path const obj = (ctx.output_dir() / path.filename()).replace_extension("obj");
@@ -98,7 +102,7 @@ export bool cmd_build(context& ctx, std::string_view args) {
 		}
 
 		if (is_file_up_to_date(path, obj)) {
-			return true;
+			return;
 		}
 
 		std::string cmd = cmd_prefix + ctx.build_file(path.string(), obj.string());
@@ -109,7 +113,7 @@ export bool cmd_build(context& ctx, std::string_view args) {
 		if (ctx.selected_cl.name != "msvc")
 			std::puts(path.filename().string().c_str());
 
-		return (0 == std::system(cmd.c_str()));
+		failed = (0 != std::system(cmd.c_str()));
 		};
 
 	// Compile sources
