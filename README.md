@@ -1,4 +1,4 @@
-# Gorking Build System v0.10.1
+# Gorking Build System v0.11
 I wanted to try and create my own build system, just for fun.
 
 # Features
@@ -7,7 +7,6 @@ I wanted to try and create my own build system, just for fun.
 Yes, I am aware of the irony of using CMake to make a build system.
 
 ## Upcoming versions
-- v0.11: Compile test project with gcc
 - v0.12: Make `import std;` work for clang and gcc
 - v0.13: Compile and link libraries in 'lib'
 - v0.14: Compile unit tests in 'unittest'
