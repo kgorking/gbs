@@ -8,7 +8,7 @@ concept mutable_monad = !std::is_const_v<std::remove_reference_t<T>>;
 export template<typename V>
 class monad : public std::ranges::view_interface<monad<V>> {
 	V view_;
-	using Base = std::remove_reference_t<decltype(*view_.begin())>;
+	using Base = std::remove_reference_t<decltype(*std::ranges::begin(view_))>;
 
 public:
 	monad() = delete;
@@ -21,8 +21,8 @@ public:
 	explicit constexpr monad(R&& cont) noexcept : view_(std::forward<R>(cont)) {}
 
 
-	constexpr auto begin() { return view_.begin(); }
-	constexpr auto end()   { return view_.end(); }
+	constexpr auto begin() { return std::ranges::begin(view_); }
+	constexpr auto end() { return std::ranges::end(view_); }
 
 	constexpr auto as_rvalue() {
 		return ::monad(
@@ -30,10 +30,19 @@ public:
 		);
 	}
 
-	template<typename Fn, mutable_monad Self>
-	constexpr auto filter(this Self&& self, Fn&& fn) {
+	template<typename Fn>
+	constexpr auto filter(Fn&& fn) {
 		return ::monad(
-			std::ranges::views::filter(std::move(std::forward<Self>(self).view_), std::forward<Fn>(fn))
+			std::ranges::views::filter(std::move(view_), std::forward<Fn>(fn))
+		);
+	}
+
+	// Filter using a member function pointer
+	template<typename TypeHack = std::conditional_t<std::is_class_v<Base>, Base, std::nullopt_t>>
+		requires std::is_class_v<Base>
+	constexpr auto filter(bool (TypeHack::* fn)() const) {
+		return ::monad(
+			std::ranges::views::filter(std::move(view_), fn)
 		);
 	}
 
@@ -41,6 +50,15 @@ public:
 	constexpr auto transform(Fn&& fn) {
 		return ::monad(
 			std::ranges::views::transform(std::move(view_), std::forward<Fn>(fn))
+		);
+	}
+
+	template<typename Fn>
+	constexpr auto passthrough(Fn&& fn) {
+		return ::monad(
+			std::ranges::views::transform(std::move(view_),
+				[fn = std::forward<Fn>(fn)](auto const& v) { fn(v); return v; }
+			)
 		);
 	}
 
@@ -52,9 +70,16 @@ public:
 
 	template<typename Fn>
 	constexpr auto take_while(Fn&& fn) {
-		return ::monad(
-			std::ranges::views::take_while(std::move(view_), std::forward<Fn>(fn))
-		);
+		if constexpr (std::is_invocable_v<Fn, Base>) {
+			return ::monad(
+				std::ranges::views::take_while(std::move(view_), std::forward<Fn>(fn))
+			);
+		}
+		else if constexpr (std::same_as<bool, std::remove_cvref_t<Fn>>){
+			return ::monad(
+				std::ranges::views::take_while(std::move(view_), [v = std::ref(fn)](auto&&) { return v; })
+			);
+		}
 	}
 
 	constexpr auto drop(std::integral auto i) {
@@ -223,6 +248,56 @@ public:
 #endif
 
 	//
+	// My own stuff
+	// 
+
+	// Pick out the elements of the tuple at the given indices
+	template<int ...Is>
+	constexpr auto select() {
+		return ::monad(
+			std::ranges::views::zip(std::ranges::views::elements<Is>(view_)...)
+		);
+	}
+
+	// Apply projections to the incoming value and return them as a tuple
+	template<typename ...Projs>
+	constexpr auto as_tuple(Projs&& ...projs) {
+		auto converter = [=](auto&& v) { return std::tuple{ std::invoke(projs, v)... }; };
+
+		return ::monad(std::ranges::views::transform(view_, converter));
+	}
+
+	// Like transform, but for tuple-like values
+	template<typename Fn>
+	constexpr auto apply(Fn&& fn) {
+		auto converter = [=](auto&& v) { return std::apply(fn, v); };
+		return ::monad(std::ranges::views::transform(view_, converter));
+	}
+
+	template<typename Fn>
+	constexpr auto pair_with(Fn&& fn) {
+		return ::monad(
+			std::ranges::views::zip(
+				std::ranges::views::transform(view_, std::forward<Fn>(fn)),
+				view_
+			)
+		);
+	}
+
+	// Convert to T
+	template<typename T>
+	constexpr auto as() {
+		auto converter = [=](auto&& v) { return T{ v }; };
+		return ::monad(std::ranges::views::transform(view_, converter));
+	}
+
+	constexpr auto continue_if(bool const& b) {
+		return ::monad(
+			std::ranges::views::take_while(std::move(view_), [b = std::ref(b)](auto&&) { return b; })
+		);
+	}
+
+	//
 	// Wrap some ranges stuff 
 	//
 
@@ -240,13 +315,13 @@ public:
 	}
 
 	template<template <typename...> typename To>
-	constexpr auto to() const {
-		return std::ranges::to<To>(view_);
+	constexpr auto to() {
+		return std::ranges::to<To>(std::move(view_));
 	}
 
 	template<typename To>
-	constexpr auto to() const {
-		return std::ranges::to<To>(view_);
+	constexpr auto to() {
+		return std::ranges::to<To>(std::move(view_));
 	}
 };
 
@@ -254,4 +329,4 @@ template<typename T>
 monad(std::initializer_list<T>) -> monad<std::ranges::views::all_t<std::vector<T>>>;
 
 template<std::ranges::viewable_range R>
-monad(R&&) -> monad<std::ranges::views::all_t<R>>;
+monad(R&&) noexcept -> monad<std::ranges::views::all_t<R>>;

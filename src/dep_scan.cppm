@@ -2,13 +2,18 @@ export module dep_scan;
 import std;
 
 export struct source_dependency {
+	std::filesystem::path path;
 	std::string export_name;
 	std::set<std::string> import_names;
+
+	bool is_export() const {
+		return !export_name.empty();
+	}
 };
 
 // Returns a source files module dependencies.
 export auto detect_module_dependencies(std::filesystem::path path) -> source_dependency {
-	source_dependency dependencies{};
+	source_dependency dependencies{ path };
 
 	std::string line;
 	auto file = std::ifstream(path);

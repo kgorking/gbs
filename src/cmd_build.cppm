@@ -4,10 +4,10 @@ import env;
 import context;
 import response;
 import get_source_groups;
+import monad;
 
 namespace fs = std::filesystem;
 using namespace std::string_view_literals;
-using namespace std::views;
 
 export bool cmd_build(context& ctx, std::string_view args) {
 	// Select default compiler if none is selected
@@ -48,11 +48,11 @@ export bool cmd_build(context& ctx, std::string_view args) {
 
 	// TODO std::views::concat("_shared", args)
 	std::string resp_args = arg_to_str("_shared"sv);
-	resp_args += args
-		| split(',')
-		| transform(arg_to_str)
-		| join
-		| std::ranges::to<std::string>();
+	resp_args += monad(args)
+		.split(',')
+		.transform(arg_to_str)
+		.join()
+		.to<std::string>();
 
 	if (ctx.selected_cl.name == "msvc") {
 		extern bool init_msvc(context const&);
@@ -75,7 +75,7 @@ export bool cmd_build(context& ctx, std::string_view args) {
 
 	// Insert the 'std' module
 	if (!ctx.selected_cl.std_module.empty())
-		sources.front().emplace_back(source_info{ ctx.selected_cl.std_module, {} });
+		sources[0].emplace_back(source_info{ ctx.selected_cl.std_module, {} });
 
 	// Create file containing the list of objects to link
 	std::ofstream objects(ctx.output_dir() / "OBJLIST");
@@ -120,7 +120,7 @@ export bool cmd_build(context& ctx, std::string_view args) {
 		};
 
 	// Compile sources
-	for (auto const& paths : sources) {
+	for (auto const& paths : std::views::values(sources)) {
 		std::for_each(std::execution::par_unseq, paths.begin(), paths.end(), compile_cpp);
 	}
 
