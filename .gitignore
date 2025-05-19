@@ -62,3 +62,4 @@ bld/
 *.svclog
 *.scc
 *.idb
+/test/gcm.cache
