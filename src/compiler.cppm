@@ -75,14 +75,13 @@ export void enumerate_compilers(auto&& callback) {
 	std::string line, cmd, version;
 
 	// Look for installations of Visual Studio
-	std::string msvc_std_module{};
 	int const inst = std::system("\">instpath.txt \"%ProgramFiles(x86)%/Microsoft Visual Studio/Installer/vswhere.exe\" -prerelease -property installationPath 2>nul\"");
 	if (inst == 0) {
 		std::ifstream file("instpath.txt");
 
 		while (std::getline(file, line)) {
-			std::filesystem::path const msvc_path(line);
-			enumerate_compilers_msvc(msvc_path / "VC" / "Tools" / "MSVC", callback);
+			std::filesystem::path const path(line);
+			enumerate_compilers_msvc(path / "VC" / "Tools" / "MSVC", callback);
 		}
 		file.close();
 		std::error_code ec;
