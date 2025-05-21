@@ -323,7 +323,6 @@ monad(V&&) -> monad<V>;
 
 constexpr auto is_even = [](int i) { return 0 == i % 2; };
 constexpr auto lt_three = [](int i) { return i < 3; };
-constexpr auto mul_two = [](int v) { return v * 2; };
 
 
 // Test constructors
@@ -469,7 +468,7 @@ static_assert(
 static_assert(
 	[] -> bool {
 		auto m = monad(std::array{ 1,2,3 }).as_const();
-		if constexpr (!requires { m.front()++; })
+		if constexpr (std::is_const_v<std::remove_reference_t<decltype(*m.begin())>>)
 			return true;
 		else
 			return false;

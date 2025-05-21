@@ -3,8 +3,8 @@ import std;
 
 export struct source_dependency {
 	std::filesystem::path path;
-	std::string export_name;
-	std::set<std::string> import_names;
+	std::string export_name{};
+	std::set<std::string> import_names{};
 
 	bool is_export() const {
 		return !export_name.empty();

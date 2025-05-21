@@ -18,7 +18,7 @@ export bool cmd_build(context& ctx, std::string_view args) {
 		ctx.select_first_compiler();
 	}
 
-	std::println("<gbs> Building with '{} {}.{}'", ctx.selected_cl.name, ctx.selected_cl.major, ctx.selected_cl.minor);
+	std::println("<gbs> Building with '{} {}.{}.{}'", ctx.selected_cl.name, ctx.selected_cl.major, ctx.selected_cl.minor, ctx.selected_cl.patch);
 
 	if (!fs::exists("src/")) {
 		std::println("<gbs> Error: no 'src' directory found at '{}'", fs::current_path().generic_string());

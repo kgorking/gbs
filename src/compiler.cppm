@@ -5,7 +5,7 @@ import env;
 constexpr std::string_view archs[] = { /*"arm64",*/ "x64" };
 
 export struct compiler {
-	int major = 0, minor = 0;
+	int major = 0, minor = 0, patch = 0;
 	std::string_view name;
 	std::string_view arch;
 	std::string_view build_source;
@@ -20,14 +20,25 @@ export struct compiler {
 };
 
 
-export void extract_compiler_version(std::string_view sv, int& major, int& minor) {
-	if (sv.contains('.')) {
-		major = std::atoi(sv.substr(0, sv.find('.')).data());
-		minor = std::atoi(sv.substr(sv.find('.') + 1).data());
-	} else {
-		major = std::atoi(sv.data());
-		minor = 0;
-	}
+export void extract_compiler_version(std::string_view sv, int& major, int& minor, int & patch) {
+	major = 0;
+	minor = 0;
+	patch = 0;
+
+	auto dot = sv.find('.');
+	major = std::atoi(sv.substr(0, dot).data());
+	if (dot == std::string_view::npos)
+		return;
+
+	sv.remove_prefix(dot + 1);
+	dot = sv.find('.');
+	minor = std::atoi(sv.data());
+	if (dot == std::string_view::npos)
+		return;
+
+	sv.remove_prefix(dot + 1);
+	dot = sv.find('.');
+	patch = std::atoi(sv.data());
 }
 
 void enumerate_compilers_msvc(std::filesystem::path msvc_path, auto&& callback) {
@@ -62,7 +73,7 @@ void enumerate_compilers_msvc(std::filesystem::path msvc_path, auto&& callback) 
 				sv.remove_prefix(sv.find_first_of("0123456789", 0));
 				sv = sv.substr(0, sv.find_first_of(' '));
 
-				extract_compiler_version(sv, comp.major, comp.minor);
+				extract_compiler_version(sv, comp.major, comp.minor, comp.patch);
 				callback(std::move(comp));
 
 				std::filesystem::remove("version");
@@ -123,7 +134,7 @@ export void enumerate_compilers(auto&& callback) {
 					clang_version.remove_prefix(6); // remove 'clang_'
 
 					compiler comp;
-					extract_compiler_version(clang_version, comp.major, comp.minor);
+					extract_compiler_version(clang_version, comp.major, comp.minor, comp.patch);
 					comp.name = "clang";
 					comp.arch = "x64";
 					comp.dir = dir;
@@ -150,7 +161,7 @@ export void enumerate_compilers(auto&& callback) {
 					gcc_version.remove_prefix(4);
 
 					compiler comp;
-					extract_compiler_version(gcc_version, comp.major, comp.minor);
+					extract_compiler_version(gcc_version, comp.major, comp.minor, comp.patch);
 					comp.name = "gcc";
 					comp.arch = "x64";
 					comp.dir = dir;

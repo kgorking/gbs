@@ -64,7 +64,7 @@ export void init_response_files(context& ctx) {
 		},
 		{"debug", "-O0"},
 		{"release", "-O3"},
-		{"analyze", "--analyze"}
+		{"analyze", "--analyze -Wno-unused-command-line-argument"} // ignore -c
 	};
 
 	ctx.response_map["gcc"] = {

@@ -79,7 +79,10 @@ export void fill_compiler_collection(context& ctx) {
 	for (auto& kv : ctx.all_compilers) {
 		std::ranges::sort(kv.second, [](compiler const& c1, compiler const& c2) {
 			if (c1.major == c2.major)
-				return c1.minor > c2.minor;
+				if (c1.minor == c2.minor)
+					return c1.patch > c2.patch;
+				else
+					return c1.minor > c2.minor;
 			else
 				return c1.major > c2.major;
 			});
@@ -115,22 +118,17 @@ export std::optional<compiler> get_compiler(context const& ctx, std::string_view
 	std::string_view cl, version, arch;
 
 	switch (std::ranges::distance(split)) {
-	case 1:
-		// No version requested, returns newest
-		cl = comp;
-		break;
+	case 3:
+		// Version and architecture requested
+		arch = std::string_view{ *std::next(split.begin(), 2) };
 
 	case 2:
 		// Version requested
-		cl = std::string_view{ *split.begin() };
 		version = std::string_view{ *std::next(split.begin()) };
-		break;
 
-	case 3:
-		// Version and architecture requested
+	case 1:
+		// No version requested, returns newest
 		cl = std::string_view{ *split.begin() };
-		version = std::string_view{ *std::next(split.begin()) };
-		arch = std::string_view{ *std::next(split.begin(), 2) };
 		break;
 
 	default:
@@ -149,13 +147,18 @@ export std::optional<compiler> get_compiler(context const& ctx, std::string_view
 		return named_compilers.front();
 
 	// Select the version
-	int major = 0, minor = 0;
-	extract_compiler_version(version, major, minor);
+	int major = 0, minor = 0, patch = 0;
+	auto const dots = std::ranges::count(version, '.');
+	extract_compiler_version(version, major, minor, patch);
 
-	auto version_compilers = named_compilers | std::views::filter([major, minor](compiler const& c) {
-		if (c.major == major)
-			return c.minor >= minor;
-		return false;// c.major >= major;
+	auto version_compilers = named_compilers | std::views::filter([&](compiler const& c) {
+		bool match = true;
+		switch (dots) {
+		case 2: match = match && (c.patch == patch);
+		case 1: match = match && (c.minor == minor);
+		case 0: match = match && (c.major == major);
+		}
+		return match;
 		});
 
 	if (version_compilers.empty()) {

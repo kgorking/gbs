@@ -173,7 +173,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 			// Check for file
 			std::print("<gbs>    Checking for {} {} ...", cl.name, version);
 			found_valid = !(22 == std::system(std::format("curl -fsI {} >nul", url).c_str()));
-			std::puts(found_valid ? "OK" : "no");
+			std::puts(found_valid ? "Found" : "Not found");
 		} while (!found_valid);
 
 		if (!found_valid) {
@@ -183,7 +183,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 	}
 	std::remove("version_list.txt");
 
-	extract_compiler_version(version, cl.major, cl.minor);
+	extract_compiler_version(version, cl.major, cl.minor, cl.patch);
 
 	std::string_view const filename = std::string_view{ url }.substr(1 + url.find_last_of('/'));
 	auto const gbs_user_path = std::filesystem::path(homedir) / ".gbs";
