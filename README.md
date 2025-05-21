@@ -7,8 +7,7 @@ I wanted to try and create my own build system, just for fun.
 Yes, I am aware of the irony of using CMake to make a build system.
 
 ## Upcoming versions
-- v0.13: Rework 'get_cl' command
-	- v0.13.1: Show all compilers available for download
+- v0.13: ?
 - v0.14: Make `import std;` work for gcc
 - v0.15: Compile and link libraries in 'lib'
 - v0.16: Compile unit tests in 'unittest'
