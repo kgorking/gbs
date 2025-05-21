@@ -7,7 +7,7 @@ I wanted to try and create my own build system, just for fun.
 Yes, I am aware of the irony of using CMake to make a build system.
 
 ## Upcoming versions
-- v0.13: ?
+- v0.13: Integrate with Visual Studio
 - v0.14: Make `import std;` work for gcc
 - v0.15: Compile and link libraries in 'lib'
 - v0.16: Compile unit tests in 'unittest'
@@ -52,4 +52,6 @@ Yes, I am aware of the irony of using CMake to make a build system.
 	- [x] gcc
 - [ ] Support for running custom build steps before/after compilation
 - [ ] Integrate with Visual Studio [Code]
+	- [x] Visual Studio
+	- [ ] Visual Studio Code
 - [ ] WSL support ?
