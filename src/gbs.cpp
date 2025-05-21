@@ -9,10 +9,10 @@ import cmd_enum_cl;
 import cmd_clean;
 import cmd_run;
 import cmd_cl;
-
+import cmd_ide;
 
 int main(int argc, char const* argv[]) {
-	std::println("Gorking build system v0.12");
+	std::println("<gbs> Gorking build system v0.13");
 
 	context ctx;
 
@@ -29,6 +29,7 @@ int main(int argc, char const* argv[]) {
 		{"clean", cmd_clean},
 		{"build", cmd_build},
 		{"run", cmd_run},
+		{"ide", cmd_ide},
 	};
 
 	auto const args = std::span<char const*>(argv, argc);

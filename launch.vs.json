@@ -7,7 +7,7 @@
       "type": "default",
       "project": "CMakeLists.txt",
       "currentDir": "./",
-      "projectTarget": "gbs.exe",
+      "projectTarget": "${workspaceRoot}/gbs.out/msvc/debug/gbs.exe",
       "args": [
         "get_cl"
       ]
@@ -49,7 +49,7 @@
       "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean get_cl=clang:19.0.0 cl=clang:19.0.0 build=debug,warnings"
+        "clean get_cl=clang cl=clang build=debug,warnings"
       ]
     },
     {
@@ -83,7 +83,6 @@
       ]
     },
     {
-      "isDefaultConfiguration": true,
       "type": "default",
       "project": "CMakeLists.txt",
       "currentDir": ".",
