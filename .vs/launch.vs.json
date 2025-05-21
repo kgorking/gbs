@@ -4,6 +4,7 @@
   "configurations": [
     {
       "name": "test run [clang]",
+      "type": "default",
       "project": "CMakeLists.txt",
       "currentDir": "./test",
       "projectTarget": "gbs.exe",
@@ -13,6 +14,7 @@
     },
     {
       "name": "test run [msvc]",
+      "type": "default",
       "project": "CMakeLists.txt",
       "currentDir": "./test",
       "projectTarget": "gbs.exe",
@@ -22,6 +24,7 @@
     },
     {
       "name": "test run [gcc]",
+      "type": "default",
       "project": "CMakeLists.txt",
       "currentDir": "./test",
       "projectTarget": "gbs.exe",
@@ -31,6 +34,7 @@
     },
     {
       "name": "[clang] self",
+      "type": "default",
       "project": "CMakeLists.txt",
       "currentDir": ".",
       "projectTarget": "gbs.exe",
@@ -39,34 +43,34 @@
       ]
     },
     {
+      "name": "[gcc] self",
       "type": "default",
       "project": "CMakeLists.txt",
       "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
         "clean cl=gcc build=debug,warnings"
-      ],
-      "name": "[gcc] self"
+      ]
     },
     {
+      "name": "download latest [clang]",
       "type": "default",
       "project": "CMakeLists.txt",
       "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
         "get_cl=clang"
-      ],
-      "name": "download latest [clang]"
+      ]
     },
     {
+      "name": "download latest [gcc]",
       "type": "default",
       "project": "CMakeLists.txt",
       "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
         "get_cl=gcc"
-      ],
-      "name": "download latest [gcc]"
+      ]
     },
     {
       "isDefaultConfiguration": true,

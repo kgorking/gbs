@@ -55,7 +55,13 @@ export void init_response_files(context& ctx) {
 			"-Wformat=2 "             // warn on security issues around functions that format output (ie printf)
 			"-Wimplicit-fallthrough " // warn on statements that fallthrough without an explicit annotation
 		},
-		{"_shared", "-std=c++2b"},
+		{"_shared",
+			"-std=c++2b "
+#ifdef _MSC_VER
+			// Needed to use std module
+			"-Wno-include-angled-in-module-purview -Wno-reserved-module-identifier"
+#endif
+		},
 		{"debug", "-O0"},
 		{"release", "-O3"},
 		{"analyze", "--analyze"}

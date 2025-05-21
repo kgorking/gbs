@@ -25,9 +25,9 @@ export bool cmd_build(context& ctx, std::string_view args) {
 		return false;
 	}
 
-	// Default build config is 'release'
+	// Default build config
 	if (args.empty())
-		args = "release";
+		args = "release,warnings";
 
 	// Ensure the needed response files are present
 	init_response_files(ctx);
@@ -112,8 +112,8 @@ export bool cmd_build(context& ctx, std::string_view args) {
 
 		// Clang/gcc doesn't print out the name of the
 		// file being compiled, so do it manually.
-		if (ctx.selected_cl.name != "msvc")
-			std::puts(path.filename().string().c_str());
+		//if (ctx.selected_cl.name != "msvc")
+		//	std::puts(path.filename().string().c_str());
 
 		failed = (0 != std::system(cmd.c_str()));
 		};
