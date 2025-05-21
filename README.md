@@ -1,4 +1,4 @@
-# Gorking Build System v0.11
+# Gorking Build System v0.12
 I wanted to try and create my own build system, just for fun.
 
 # Features
@@ -7,12 +7,13 @@ I wanted to try and create my own build system, just for fun.
 Yes, I am aware of the irony of using CMake to make a build system.
 
 ## Upcoming versions
-- v0.12: Make `import std;` work for clang and gcc
-- v0.13: Compile and link libraries in 'lib'
-- v0.14: Compile unit tests in 'unittest'
-- v0.15: Fetch dependencies in 'deps'
-- v0.16: Build dependencies in 'deps'
-- v0.17: Custom build steps (via 'run'?)
+- v0.13: Rework 'get_cl' command
+- v0.14: Make `import std;` work for gcc
+- v0.15: Compile and link libraries in 'lib'
+- v0.16: Compile unit tests in 'unittest'
+- v0.17: Fetch dependencies in 'deps'
+- v0.18: Build dependencies in 'deps'
+- v0.19: Custom build steps (via 'run'?)
 
 ## Todo
 - [x] Create a simple build system
@@ -26,7 +27,7 @@ Yes, I am aware of the irony of using CMake to make a build system.
 	- [x] Compile GBS with itself
 - [x] Automated support for `import std;`
 	- [x] msvc
-	- [ ] clang
+	- [x] clang
 	- [ ] gcc
 - [x] Enumerate supported compilers
 - [x] Choose compiler from command `gbs cl=msvc:19.44 build cl=clang:17 build`

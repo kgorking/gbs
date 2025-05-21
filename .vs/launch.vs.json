@@ -3,6 +3,16 @@
   "defaults": {},
   "configurations": [
     {
+      "name": "get_cl",
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": "./",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "get_cl"
+      ]
+    },
+    {
       "name": "test run [clang]",
       "type": "default",
       "project": "CMakeLists.txt",
