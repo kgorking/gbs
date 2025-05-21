@@ -48,10 +48,11 @@ export struct context {
 
 	// Create build args for a single file
 	std::string build_file(std::string_view file, std::string_view obj_file) const {
-		if (file.ends_with(".cpp"))
-			return std::vformat(selected_cl.build_source, std::make_format_args(file, obj_file));
-		else
-			return std::vformat(selected_cl.build_module, std::make_format_args(file, obj_file));
+		std::string_view const build_cmd = file.ends_with(".cpp")
+			? selected_cl.build_source
+			: selected_cl.build_module;
+
+		return std::vformat(build_cmd, std::make_format_args(file, obj_file));
 	}
 
 	// Create link command for the currently selected compiler
@@ -83,6 +84,30 @@ export void fill_compiler_collection(context& ctx) {
 				return c1.major > c2.major;
 			});
 	}
+
+	// Patch up clang compilers to use msvc std module on windows
+#ifdef _MSC_VER
+	
+	if(ctx.all_compilers.contains("clang") && ctx.all_compilers.contains("msvc")) {
+		auto const link = ctx.output_dir() / "clang/std.cppm";
+		if (!std::filesystem::exists(link)) {
+			std::filesystem::create_directories(link.parent_path());
+
+			// Get the newest msvc compiler
+			compiler const& msvc_compiler = ctx.all_compilers["msvc"].front();
+
+			// Copy the msvc std module
+			auto const target = std::filesystem::path(msvc_compiler.std_module);
+			std::filesystem::copy_file(target, link);
+
+			// Update the clang compilers to use the msvc std module
+			auto& clang_compilers = ctx.all_compilers["clang"];
+			for (auto& c : clang_compilers) {
+				c.std_module = link;
+			}
+		}
+	}
+#endif
 }
 
 export std::optional<compiler> get_compiler(context const& ctx, std::string_view comp) {
