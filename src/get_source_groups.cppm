@@ -18,7 +18,7 @@ export using source_group = std::vector<source_info>;
 
 
 // Find the source files and dependencies
-export auto get_grouped_source_files(fs::path dir) -> std::map<int, source_group> {
+export auto get_grouped_source_files(fs::path dir) -> std::map<std::size_t, source_group> {
 	// Maps a filename to _all_ its module dependencies
 	auto file_to_imports_map = std::unordered_map<fs::path, import_set>{};
 	auto store_in_map = [&](source_dependency const& sd) { file_to_imports_map[sd.path.string()].insert_range(sd.import_names); };
@@ -50,7 +50,7 @@ export auto get_grouped_source_files(fs::path dir) -> std::map<int, source_group
 	std::ranges::for_each(file_to_imports_map | std::views::values, recursive_merge);
 
 	// Group files according to how deep their dependency chain is
-	auto sources = std::map<int, source_group>{};
+	auto sources = std::map<std::size_t, source_group>{};
 	for (auto&& [path, imports] : file_to_imports_map) {
 		auto const dep_size = imports.size();
 		sources[dep_size].emplace_back(path, std::move(imports));

@@ -47,12 +47,11 @@ export bool cmd_build(context& ctx, std::string_view args) {
 		};
 
 	// TODO std::views::concat("_shared", args)
-	std::string resp_args = arg_to_str("_shared"sv);
-	resp_args += monad(args)
-		.split(',')
-		.transform(arg_to_str)
-		.join()
-		.to<std::string>();
+	std::string const resp_args = arg_to_str("_shared"sv) + monad(args)
+			.split(',')
+			.transform(arg_to_str)
+			.join()
+			.to<std::string>();
 
 	if (ctx.selected_cl.name == "msvc") {
 		extern bool init_msvc(context const&);
