@@ -10,7 +10,7 @@ export bool cmd_ide(context&, std::string_view args) {
         std::println("Usage: gbs ide=[arg]");
         std::println("arg:");
         std::println("  vs       Creates 'tasks.vs.json' for Visual Studio");
-        std::println("  # vscode   Create Visual Studio Code tasks");
+        std::println("  vscode   Create Visual Studio Code tasks");
         return true;
 	}
 	if (args == "vs") {
