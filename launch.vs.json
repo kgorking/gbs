@@ -115,7 +115,7 @@
     {
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": "./test",
+      "currentDir": "./",
       "projectTarget": "gbs.exe",
       "args": [
         "clean cl=msvc build=debug,analyze,warnings"
