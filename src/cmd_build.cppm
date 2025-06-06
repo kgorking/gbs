@@ -18,7 +18,7 @@ export bool cmd_build(context& ctx, std::string_view args) {
 		ctx.select_first_compiler();
 	}
 
-	std::println("<gbs> Building with '{} {}.{}.{}'", ctx.selected_cl.name, ctx.selected_cl.major, ctx.selected_cl.minor, ctx.selected_cl.patch);
+	std::println(std::cerr, "<gbs> Building with '{} {}.{}.{}'", ctx.selected_cl.name, ctx.selected_cl.major, ctx.selected_cl.minor, ctx.selected_cl.patch);
 
 	if (!fs::exists("src/")) {
 		std::println("<gbs> Error: no 'src' directory found at '{}'", fs::current_path().generic_string());
@@ -69,8 +69,9 @@ export bool cmd_build(context& ctx, std::string_view args) {
 
 	// Get the source files to compile
 	auto sources = get_grouped_source_files("src");
-	if (sources.empty())
+	if (sources.empty()) {
 		return true;
+	}
 
 	// Insert the 'std' module
 	if (!ctx.selected_cl.std_module.empty())
