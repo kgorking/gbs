@@ -2,18 +2,18 @@
 I wanted to try and create my own build system, just for fun.
 
 # Features
+- TODO
 
-## Note
+# Note
 Yes, I am aware of the irony of using CMake to make a build system.
 
-## Upcoming versions
-- v0.13: Integrate with Visual Studio
-- v0.14: Make `import std;` work for gcc
-- v0.15: Compile and link libraries in 'lib'
-- v0.16: Compile unit tests in 'unittest'
-- v0.17: Fetch dependencies in 'deps'
-- v0.18: Build dependencies in 'deps'
-- v0.19: Custom build steps (via 'run'?)
+# Upcoming versions (not in a specific order)
+- Make `import std;` work for gcc
+- Compile and link libraries in 'lib'
+- Compile unit tests in 'unittest'
+- Fetch dependencies in 'deps'
+- Build dependencies in 'deps'
+- Custom build steps (via 'run'?)
 
 ## Todo
 - [x] Create a simple build system
