@@ -6,6 +6,7 @@ constexpr std::string_view archs[] = { /*"arm64",*/ "x64" };
 
 export struct compiler {
 	int major = 0, minor = 0, patch = 0;
+	std::string name_and_version;
 	std::string_view name;
 	std::string_view arch;
 	std::string_view build_source;
@@ -49,6 +50,7 @@ void enumerate_compilers_msvc(std::filesystem::path msvc_path, auto&& callback) 
 		for (auto const arch : archs) {
 			compiler comp;
 			comp.name = "msvc";
+			comp.name_and_version = "msvc_" + dir.path().filename().string();
 			comp.arch = arch;
 			comp.dir = dir;
 			comp.compiler = comp.dir / "bin" / "HostX64" / arch / "cl.exe";
@@ -57,7 +59,7 @@ void enumerate_compilers_msvc(std::filesystem::path msvc_path, auto&& callback) 
 
 			comp.build_source = " {0:?} ";
 			comp.build_module = " {0:?} ";
-			comp.build_command_prefix = "call \"{0}\" @{1}/INCLUDE /c /interface /TP ";
+			comp.build_command_prefix = "call \"{0}\" @{1}/INCLUDE /c /interface /TP /ifcOutput {1}/ /Fo:{1}/ ";
 			comp.link_command = "call \"{0}\" /NOLOGO /OUT:{1}/{2}.exe @{1}/LIBPATH @{1}/OBJLIST";
 			comp.reference = " /reference {0}={1}.ifc ";
 
@@ -130,10 +132,12 @@ export void enumerate_compilers(auto&& callback) {
 				std::string_view clang_version = path;
 
 				if (path.starts_with("clang_")) {
+					compiler comp;
+
 					// format: clang_19.1.7
+					comp.name_and_version = clang_version;
 					clang_version.remove_prefix(6); // remove 'clang_'
 
-					compiler comp;
 					extract_compiler_version(clang_version, comp.major, comp.minor, comp.patch);
 					comp.name = "clang";
 					comp.arch = "x64";
@@ -143,7 +147,7 @@ export void enumerate_compilers(auto&& callback) {
 
 					comp.build_source = " {0:?} -o {1:?} ";
 					comp.build_module = " {0:?} -o {1:?} -fmodule-output ";
-					comp.build_command_prefix = "call \"{0}\" -c ";
+					comp.build_command_prefix = "call \"{0}\" -c --language=c++-module ";
 					comp.link_command = "call \"{0}\"  @{1}/OBJLIST -o {1}/{2}.exe";
 					comp.reference = " -fmodule-file={}={}.pcm ";
 					callback(std::move(comp));
@@ -157,10 +161,12 @@ export void enumerate_compilers(auto&& callback) {
 				std::string_view gcc_version = path;
 
 				if (path.starts_with("gcc_")) {
+					compiler comp;
+
 					// gcc_13.3.0-2
+					comp.name_and_version = gcc_version;
 					gcc_version.remove_prefix(4);
 
-					compiler comp;
 					extract_compiler_version(gcc_version, comp.major, comp.minor, comp.patch);
 					comp.name = "gcc";
 					comp.arch = "x64";

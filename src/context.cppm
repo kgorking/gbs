@@ -21,7 +21,7 @@ export struct context {
 
 	// Determine output dir, eg. 'gbs.out/msvc/debug
 	auto output_dir() const -> std::filesystem::path {
-		return gbs_out / selected_cl.name / config;
+		return gbs_out / selected_cl.name_and_version / config;
 	}
 
 	// Determine response directory
@@ -90,24 +90,23 @@ export void fill_compiler_collection(context& ctx) {
 
 	// Patch up clang compilers to use msvc std module on windows
 #ifdef _MSC_VER
-	
 	if(ctx.all_compilers.contains("clang") && ctx.all_compilers.contains("msvc")) {
-		auto const link = ctx.output_dir() / "clang/std.cppm";
-		if (!std::filesystem::exists(link)) {
-			std::filesystem::create_directories(link.parent_path());
+		// Get the newest msvc compiler
+		compiler const& msvc_compiler = ctx.all_compilers["msvc"].front();
+		auto const std_module = std::filesystem::path(msvc_compiler.std_module);
 
-			// Get the newest msvc compiler
-			compiler const& msvc_compiler = ctx.all_compilers["msvc"].front();
+		for(compiler& clang : ctx.all_compilers["clang"]) {
+			//ctx.selected_cl = clang;
+			//auto const link = ctx.output_dir() / "std.cppm";
+			//if (!std::filesystem::exists(link)) {
+				//std::filesystem::create_directories(link.parent_path());
 
-			// Copy the msvc std module
-			auto const target = std::filesystem::path(msvc_compiler.std_module);
-			std::filesystem::copy_file(target, link);
+				// Copy the msvc std module
+				//std::filesystem::copy_file(std_module, link);
 
-			// Update the clang compilers to use the msvc std module
-			auto& clang_compilers = ctx.all_compilers["clang"];
-			for (auto& c : clang_compilers) {
-				c.std_module = link;
-			}
+				// Update the clang compiler to use the msvc std module
+			clang.std_module = std_module;
+			//}
 		}
 	}
 #endif

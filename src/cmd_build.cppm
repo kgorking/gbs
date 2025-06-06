@@ -74,15 +74,16 @@ export bool cmd_build(context& ctx, std::string_view args) {
 	}
 
 	// Insert the 'std' module
-	if (!ctx.selected_cl.std_module.empty())
+	if (!ctx.selected_cl.std_module.empty()) {
 		sources[0].emplace_back(source_info{ ctx.selected_cl.std_module, {} });
+	}
 
 	// Create file containing the list of objects to link
 	std::ofstream objects(ctx.output_dir() / "OBJLIST");
 	std::shared_mutex mut;
 
 	// Create the build command
-	std::string const cmd_prefix = ctx.build_command_prefix() + resp_args.data();
+	std::string const cmd_prefix = ctx.build_command_prefix();// +resp_args.data();
 
 	// Set up the compiler helper
 	bool failed = false;
@@ -105,11 +106,12 @@ export bool cmd_build(context& ctx, std::string_view args) {
 
 		std::string cmd = cmd_prefix;
 
+		cmd += ctx.build_file(path.string(), obj.string());
+		cmd += resp_args.data();
+
 		if (!ctx.selected_cl.reference.empty())
 			for (auto const& s : imports)
 				cmd += ctx.build_reference(s);
-
-		cmd += ctx.build_file(path.string(), obj.string());
 
 		// Clang/gcc doesn't print out the name of the
 		// file being compiled, so do it manually.

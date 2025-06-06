@@ -7,9 +7,19 @@
       "type": "default",
       "project": "CMakeLists.txt",
       "currentDir": "./",
-      "projectTarget": "${workspaceRoot}/gbs.out/msvc/debug/gbs.exe",
+      "projectTarget": "gbs.exe",
       "args": [
         "get_cl"
+      ]
+    },
+    {
+      "name": "Enumerate compilers",
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": "./",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "enum_cl"
       ]
     },
     {
