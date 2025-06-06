@@ -1,0 +1,60 @@
+{
+  "version": "0.2.1",
+  "outDir": "\"${workspaceRoot}\\gbs.out\"",
+  "tasks": [
+    {
+      "taskLabel": "Build",
+      "appliesTo": "/",
+      "type": "launch",
+      "contextType": "build",
+      "workingDirectory": "${workspaceRoot}/",
+      "command": "pwsh",
+      "args": [
+        "-Command Start-Process",
+        "-Wait",
+        "-UseNewEnvironment",
+        "-NoNewWindow",
+        "-FilePath",
+        "'${env.GBS_BIN}'",
+        "-ArgumentList",
+        "'build=release,warnings'"
+      ]
+    },
+    {
+      "taskLabel": "Rebuild",
+      "appliesTo": "/",
+      "type": "default",
+      "contextType": "rebuild",
+      "workingDirectory": "${workspaceRoot}/",
+      "command": "pwsh",
+      "args": [
+        "-Command Start-Process",
+        "-Wait",
+        "-UseNewEnvironment",
+        "-NoNewWindow",
+        "-FilePath",
+        "'${env.GBS_BIN}'",
+        "-ArgumentList",
+        "'clean build=release,warnings'"
+      ]
+    },
+    {
+      "taskLabel": "Clean",
+      "appliesTo": "/",
+      "type": "default",
+      "contextType": "clean",
+      "workingDirectory": "${workspaceRoot}/",
+      "command": "pwsh",
+      "args": [
+        "-Command Start-Process",
+        "-Wait",
+        "-UseNewEnvironment",
+        "-NoNewWindow",
+        "-FilePath",
+        "'${env.GBS_BIN}'",
+        "-ArgumentList",
+        "clean"
+      ]
+    }
+  ]
+}

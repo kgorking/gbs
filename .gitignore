@@ -6,11 +6,10 @@
 /test/gbs.out
 /test/gcm.cache
 
-/.vs/CMake Overview
-/.vs/cmake.db
-/.vs/gbs
-/.vs/slnx.sqlite
-/.vs/VSWorkspaceState.json
+!/.vs/task.vs.json
+!/.vs/launch.vs.json
+/.vs
+
 
 # User-specific files
 *.rsuser
