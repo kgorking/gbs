@@ -51,7 +51,7 @@ Yes, I am aware of the irony of using CMake to make a build system.
 	- [x] clang
 	- [x] gcc
 - [ ] Support for running custom build steps before/after compilation
-- [ ] Integrate with Visual Studio [Code]
+- [x] Integrate with Visual Studio [Code]
 	- [x] Visual Studio
 	- [x] Visual Studio Code
 - [ ] WSL support ?
