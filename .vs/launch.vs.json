@@ -49,7 +49,7 @@
       "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean get_cl=clang:19.0.0 cl=clang:19.0.0 build=debug,warnings"
+        "clean cl=clang build=debug,warnings"
       ]
     },
     {
