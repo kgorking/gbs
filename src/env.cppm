@@ -14,7 +14,8 @@ export std::string get_env_value(std::string_view var) {
 	//path[s] = 0;
 	return path.data();
 #else
-	return std::getenv(var.data());
+	char* val = std::getenv(var.data());
+	return val ? val : "";
 #endif
 }
 

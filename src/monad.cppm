@@ -98,11 +98,13 @@ public:
 		);
 	}
 
+#ifdef __cpp_lib_ranges_join_with
 	constexpr auto join_with(auto&& pattern) requires std::ranges::range<Base> {
 		return ::monad(
 			std::ranges::views::join_with(std::move(view_), std::move(pattern))
 		);
 	}
+#endif
 
 	constexpr auto lazy_split(auto&& pattern) {
 		return ::monad(
@@ -130,11 +132,13 @@ public:
 		);
 	}
 
+#ifdef __cpp_lib_ranges_as_const
 	constexpr auto as_const() {
 		return ::monad(
 			std::ranges::views::as_const(std::move(view_))
 		);
 	}
+#endif
 
 	template<int I>
 		requires (I >= 0 && I < std::tuple_size_v<Base>)
@@ -157,27 +161,28 @@ public:
 			std::ranges::views::values(std::move(view_))
 		);
 	}
-
+#ifdef __cpp_lib_ranges_enumerate
 	constexpr auto enumerate() {
 		return ::monad(
 			std::ranges::views::enumerate(std::move(view_))
 		);
 	}
-
+#endif
 	template<std::ranges::viewable_range... Rs >
 	constexpr auto zip(Rs&& ...rs) {
 		return ::monad(
 			std::ranges::views::zip(std::move(view_), std::forward<Rs>(rs)...)
 		);
 	}
-
+#ifdef __cpp_lib_ranges_zip_transform
 	template<typename F, std::ranges::viewable_range... Rs>
 	constexpr auto zip_transform(F&& f, Rs&& ...rs) {
 		return ::monad(
 			std::ranges::views::zip_transform(std::forward<F>(f), std::move(view_), std::forward<Rs>(rs)...)
 		);
 	}
-
+#endif
+#ifdef __cpp_lib_ranges_adjacent
 	template<int I>
 		requires (I > 0)
 	constexpr auto adjacent() {
@@ -185,7 +190,8 @@ public:
 			std::ranges::views::adjacent<I>(std::move(view_))
 		);
 	}
-
+#endif
+#ifdef __cpp_lib_ranges_adjacent_transform
 	template<int I, typename F>
 		requires (I > 0)
 	constexpr auto adjacent_transform(F&& f) {
@@ -193,39 +199,42 @@ public:
 			std::ranges::views::adjacent_transform<I>(std::move(view_), std::forward<F>(f))
 		);
 	}
-
+#endif
+#ifdef __cpp_lib_ranges_chunk
 	constexpr auto chunk(int n) {
 		return ::monad(
 			std::ranges::views::chunk(std::move(view_), n)
 		);
 	}
-
+#endif
+#ifdef __cpp_lib_ranges_slide
 	constexpr auto slide(int n) {
 		return ::monad(
 			std::ranges::views::slide(std::move(view_), n)
 		);
 	}
-
+#endif
 	template<std::indirect_binary_predicate<std::ranges::iterator_t<V>, std::ranges::iterator_t<V>> Pred>
 	constexpr auto chunk_by(Pred&& pred) {
 		return ::monad(
 			std::ranges::views::chunk_by(std::move(view_), std::forward<Pred>(pred))
 		);
 	}
-
+#ifdef __cpp_lib_ranges_stride
 	constexpr auto stride(int n) {
 		return ::monad(
 			std::ranges::views::stride(std::move(view_), n)
 		);
 	}
-
+#endif
+#ifdef __cpp_lib_ranges_cartesian_product
 	template<std::ranges::viewable_range... Rs >
 	constexpr auto cartesian_product(Rs&& ...rs) {
 		return ::monad(
 			std::ranges::views::cartesian_product(std::move(view_), std::forward<Rs>(rs)...)
 		);
 	}
-
+#endif
 #ifdef __cpp_lib_ranges_cache_latest
 	constexpr auto cache_latest() {
 		return ::monad(
@@ -269,7 +278,7 @@ public:
 		return ::monad(std::ranges::views::transform(view_, converter));
 	}
 
-	template<typename Fn>
+	/*template<typename Fn>
 	constexpr auto pair_with(Fn&& fn) {
 		return ::monad(
 			std::ranges::views::zip(
@@ -277,7 +286,7 @@ public:
 				view_
 			)
 		);
-	}
+	}*/
 
 	// Convert to T
 	template<typename T>
@@ -295,7 +304,7 @@ public:
 
 	template<typename T>
 	constexpr bool equal(std::initializer_list<T> other) {
-		return std::ranges::equal(view_, other);
+		return std::ranges::equal(view_, std::ranges::subrange(other.begin(), other.end()));
 	}
 
 	constexpr bool equal(std::ranges::input_range auto&& other) {
@@ -416,6 +425,7 @@ static_assert(
 
 //
 // join_with
+#ifdef __cpp_lib_ranges_join_with
 static_assert(
 	[] -> bool {
 		std::array const v1{ 1,2 };
@@ -426,7 +436,7 @@ static_assert(
 	} (),
 		"monad::join_with"
 		);
-
+#endif
 //
 // lazy_split
 static_assert(
@@ -465,6 +475,7 @@ static_assert(
 
 //
 // as_const
+#ifdef __cpp_lib_ranges_as_const
 static_assert(
 	[] -> bool {
 		auto m = monad(std::array{ 1,2,3 }).as_const();
@@ -475,7 +486,7 @@ static_assert(
 	} (),
 		"monad::as_const"
 		);
-
+#endif
 //
 // elements
 static_assert(
@@ -521,6 +532,7 @@ static_assert(
 
 //
 // enmumerate
+#ifdef __cpp_lib_ranges_enumerate
 static_assert(
 	[] -> bool {
 		return monad(std::array{ 'A', 'B', 'C', 'D', 'E' })
@@ -535,7 +547,7 @@ static_assert(
 	} (),
 		"monad::enmumerate"
 		);
-
+#endif
 //
 // zip
 static_assert(
@@ -543,10 +555,10 @@ static_assert(
 		return monad(std::array{ 0, 1, 2, 3 })
 			.zip(std::array{ 'A', 'B', 'C', 'D', 'E' })
 			.equal({
-				std::make_pair(0, 'A'),
-				std::make_pair(1, 'B'),
-				std::make_pair(2, 'C'),
-				std::make_pair(3, 'D')
+				std::tuple(0, 'A'),
+				std::tuple(1, 'B'),
+				std::tuple(2, 'C'),
+				std::tuple(3, 'D')
 				});
 	} (),
 		"monad::zip"
@@ -554,6 +566,7 @@ static_assert(
 
 //
 // zip_transform
+#ifdef __cpp_lib_ranges_zip_transform
 static_assert(
 	[] -> bool {
 		auto fn = [](int i, char c) { return char(c + i); };
@@ -565,9 +578,10 @@ static_assert(
 	} (),
 		"monad::zip_transform"
 		);
-
+#endif
 //
 // adjacent (compiler bug)
+#ifdef __cpp_lib_ranges_adjacent
 static_assert(
 	[] -> bool {
 		constexpr auto v = std::array{ 0, 1, 2, 3 };
@@ -577,9 +591,10 @@ static_assert(
 	} (),
 		"monad::adjacent"
 		);
-
+#endif
 //
 // adjacent_transform (compiler bug)
+#ifdef __cpp_lib_ranges_adjacent_transform
 static_assert(
 	[] -> bool {
 		constexpr auto v = std::array{ 0, 1, 2, 3 };
@@ -589,9 +604,10 @@ static_assert(
 	} (),
 		"monad::adjacent_transform"
 		);
-
+#endif
 //
 // chunk
+#ifdef __cpp_lib_ranges_chunk
 static_assert(
 	[] -> bool {
 		auto v = monad(std::array{ 0, 1, 2, 3 })
@@ -604,9 +620,10 @@ static_assert(
 	} (),
 		"monad::chunk"
 		);
-
+#endif
 //
 // slide
+#ifdef __cpp_lib_ranges_slide
 static_assert(
 	[] -> bool {
 		auto v = monad(std::array{ 0, 1, 2, 3 })
@@ -619,9 +636,10 @@ static_assert(
 	} (),
 		"monad::slide"
 		);
-
+#endif
 //
 // chunk_by
+#ifdef __cpp_lib_ranges_chunk_by
 static_assert(
 	[] -> bool {
 		auto v = monad(std::array{ 0, 1, 0, 3 })
@@ -634,9 +652,10 @@ static_assert(
 	} (),
 		"monad::chunk_by"
 		);
-
+#endif
 //
 // stride
+#ifdef __cpp_lib_ranges_stride
 static_assert(
 	[] -> bool {
 		return monad(std::array{ 0, 1, 2, 3 })
@@ -645,9 +664,10 @@ static_assert(
 	} (),
 		"monad::stride"
 		);
-
+#endif
 //
 // cartesian_product
+#ifdef __cpp_lib_ranges_cartesian_product
 static_assert(
 	[] -> bool {
 		return 6 == monad(std::array{ 0, 1 })
@@ -656,3 +676,4 @@ static_assert(
 	} (),
 		"monad::cartesian_product"
 		);
+#endif

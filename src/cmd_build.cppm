@@ -53,12 +53,15 @@ export bool cmd_build(context& ctx, std::string_view args) {
 			.join()
 			.to<std::string>();
 
+#ifdef _MSCVER
 	if (ctx.selected_cl.name == "msvc") {
 		extern bool init_msvc(context const&);
 		if (!init_msvc(ctx))
 			return false;
 	}
-	else if (ctx.selected_cl.name.starts_with("clang")) {
+	else
+#endif
+		if (ctx.selected_cl.name.starts_with("clang")) {
 	}
 	else if (ctx.selected_cl.name == "gcc") {
 	}
@@ -122,10 +125,16 @@ export bool cmd_build(context& ctx, std::string_view args) {
 		};
 
 	// Compile sources
+#ifdef __clang__
+	#pragma omp parallel for
+	for (auto const& paths : std::views::values(sources)) {
+		std::for_each(paths.begin(), paths.end(), compile_cpp);
+	}
+#else
 	for (auto const& paths : std::views::values(sources)) {
 		std::for_each(std::execution::par_unseq, paths.begin(), paths.end(), compile_cpp);
 	}
-
+#endif
 	// Close the objects file
 	objects.close();
 
