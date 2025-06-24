@@ -12,6 +12,8 @@ using namespace std::string_view_literals;
 export bool cmd_build(context& ctx, std::string_view args) {
 	// Select default compiler if none is selected
 	if (ctx.selected_cl.name.empty()) {
+		std::println(std::cerr, "<gbs> No compiler selected/found.");
+		return false;
 		if (ctx.all_compilers.empty()) {
 			fill_compiler_collection(ctx);
 		}
@@ -49,11 +51,11 @@ export bool cmd_build(context& ctx, std::string_view args) {
 	// TODO std::views::concat("_shared", args)
 	std::string const resp_args = arg_to_str("_shared"sv) + monad(args)
 			.split(',')
-			.transform(arg_to_str)
+			.map(arg_to_str)
 			.join()
 			.to<std::string>();
 
-#ifdef _MSCVER
+#ifdef _MSC_VER
 	if (ctx.selected_cl.name == "msvc") {
 		extern bool init_msvc(context const&);
 		if (!init_msvc(ctx))
@@ -90,7 +92,7 @@ export bool cmd_build(context& ctx, std::string_view args) {
 
 	// Set up the compiler helper
 	bool failed = false;
-	auto compile_cpp = [&](this auto& self, source_info const& in) -> void {
+	auto compile_cpp = [&](source_info const& in) -> void {
 		if (failed)
 			return;
 
@@ -126,7 +128,7 @@ export bool cmd_build(context& ctx, std::string_view args) {
 
 	// Compile sources
 #ifdef __clang__
-	#pragma omp parallel for
+	//#pragma omp parallel for
 	for (auto const& paths : std::views::values(sources)) {
 		std::for_each(paths.begin(), paths.end(), compile_cpp);
 	}

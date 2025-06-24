@@ -27,12 +27,11 @@ export auto get_grouped_source_files(fs::path dir) -> std::map<std::size_t, sour
 	// and find all immediate dependencies for each file
 	auto module_name_to_file_map = monad(fs::recursive_directory_iterator(dir))
 			.filter(&fs::directory_entry::is_regular_file)
-			.transform(&fs::directory_entry::path)
-			.transform(detect_module_dependencies)
-			.passthrough(store_in_map)
+			.map(&fs::directory_entry::path)
+			.map(detect_module_dependencies)
+			.and_then(store_in_map)
 			.filter(&source_dependency::is_export)
-			.as_tuple(&source_dependency::export_name, &source_dependency::path)
-			.to<std::unordered_map>();
+			.to<std::unordered_map>(&source_dependency::export_name, &source_dependency::path);
 
 
 	// Recursively merge a files child dependencies into its current dependencies.

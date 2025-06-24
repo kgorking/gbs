@@ -87,6 +87,7 @@ void enumerate_compilers_msvc(std::filesystem::path msvc_path, auto&& callback) 
 export void enumerate_compilers(auto&& callback) {
 	std::string line, cmd, version;
 
+#ifdef _MSC_VER
 	// Look for installations of Visual Studio
 	std::string msvc_std_module{};
 	int const inst = std::system("\">instpath.txt \"%ProgramFiles(x86)%/Microsoft Visual Studio/Installer/vswhere.exe\" -prerelease -property installationPath 2>nul\"");
@@ -113,7 +114,7 @@ export void enumerate_compilers(auto&& callback) {
 			}
 		}
 	}
-
+#endif
 
 	// Find the users folder
 	auto home_dir = get_home_dir();

@@ -26,7 +26,7 @@ export bool cmd_ide(context&, std::string_view args) {
 }
 
 void create_vs_tasks() {
-	std::string_view tasks = R"({
+	std::string_view const tasks = R"({
   "version": "0.2.1",
   "tasks": [
     {
