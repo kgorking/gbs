@@ -12,17 +12,19 @@ import std;
 template<typename T> concept range_like = requires(T rng) { std::ranges::begin(rng); std::ranges::end(rng); };
 template<typename T> concept optional_like = requires(T const& opt) { opt.has_value(); opt.value(); };
 template<typename T> concept expected_like = optional_like<T> && requires(T const& exp) { exp.error(); };
-template<typename Fn> concept function_like = std::invocable<Fn, decltype([]<typename T>(T const&) -> bool { return true; })>;
+template<typename Fn> concept function_like = std::invocable < Fn, decltype([]<typename T>(T const&) -> bool { return true; }) > ;
 
 template<typename T>
 using in = std::conditional_t<std::is_trivially_copyable_v<T> && sizeof(T) <= 2 * sizeof(void*), T const, T const&>;
 
+#pragma warning(disable : 4324)
 template<typename T>
 struct alignas(std::hardware_destructive_interference_size) task {
 	T data;
 	bool return_value = true;
 	std::binary_semaphore sema{ 0 };
 	std::future<void> future;
+	char _pad[std::hardware_destructive_interference_size - sizeof(bool) - sizeof(std::binary_semaphore) - sizeof(std::future<void>)];
 };
 
 template<typename Container>
@@ -77,7 +79,7 @@ using unwrapped_t = std::remove_cvref_t<decltype(unwrap(std::declval<T>()))>;
 template<typename T>
 constexpr auto make_one(T const& val) {
 	return [val](auto dst) {
-		if(has_value(val))
+		if (has_value(val))
 			return dst(unwrap(val));
 		return true;
 		};
@@ -87,7 +89,7 @@ template<range_like T>
 constexpr auto make_fn(T const& rng) {
 	return [&](auto dst) {
 		for (in<typename T::value_type> v : rng) {
-			if(has_value(v))
+			if (has_value(v))
 				if (!dst(unwrap(v)))
 					return false;
 		}
@@ -132,51 +134,49 @@ public:
 
 		auto f = [&, num_threads](auto dst) {
 			auto tasks = std::vector<task<unwrapped_t<T>>>(num_threads);
-			auto task_bitset = std::atomic_size_t{ -1ull };
-			auto task_counter = std::atomic_size_t{ 0 };
+			auto task_bitset = std::atomic_size_t{ std::numeric_limits<std::size_t>::max() };
 			auto producer_completed = bool{ false };
 
-			for (task<unwrapped_t<T>>& task : tasks)
-				task.future = std::async(std::launch::async, [&] {
-						// Get the task id
-						std::size_t const id = task_counter++;
+			auto receiver = [&](std::size_t const id) {
+				// Enable the task slot
+				task_bitset ^= (1ull << id);
 
-						// Wait for an initial signal. All threads park here until they are fed data.
-						task.sema.acquire();
+				// Wait for an initial signal. All threads park here until they are fed data.
+				tasks[id].sema.acquire();
 
-						// Process data while the producer is not done
-						while (!producer_completed) {
-							// Do the work
-							task.return_value = dst(task.data);
+				// Process data while the producer is not done
+				while (!producer_completed) {
+					// Do the work
+					tasks[id].return_value = dst(tasks[id].data);
 
-							// Re-enable the task slot
-							task_bitset ^= (1 << id);
+					// Re-enable the task slot
+					task_bitset ^= (1ull << id);
 
-							// Wait for signal
-							task.sema.acquire();
-						}
-					});
+					// Wait for signal
+					tasks[id].sema.acquire();
+				}
+				};
+
+			// Start all the threads. The task slot is initially disabled until thread setup is done
+			for (int task_counter = 0; task<unwrapped_t<T>>& task : tasks) {
+				task_bitset ^= (1ull << task_counter);
+				task.future = std::async(std::launch::async, receiver, task_counter++);
+			}
 
 			bool const retval = fn([&](in<T> v) {
 				if (has_value(v)) {
 					// Find available task slot
-					int id = std::countr_zero(task_bitset.load());
-
-					// If all tasks are busy, do the work in the current thread
-					//if (id == num_threads) {
-					//	return dst(unwrap(v));
-					//}
-					// Keep looking until one becomes available
-					while (id >= num_threads) {
+					int id = 0;
+					do {
 						id = std::countr_zero(task_bitset.load());
-					}
+					} while (id >= num_threads);
 
 					// Check last return value
 					if (!tasks[id].return_value)
 						return false;
 
 					// Disable the task slot
-					task_bitset ^= (1 << id);
+					task_bitset ^= (1ull << id);
 
 					// Copy the data to the task slot
 					tasks[id].data = unwrap(v);
@@ -188,21 +188,45 @@ public:
 				});
 
 			// Wait for remaining tasks to finish
-			while (task_bitset != -1)
+			while (task_bitset != std::numeric_limits<std::size_t>::max())
 				;
 
 			// Mark the producer as completed and stop all tasks
 			producer_completed = true;
-			for(auto& task : tasks)
+			for (auto& task : tasks) {
 				task.sema.release();
+				task.future.get(); // Wait for the task to finish
+			}
 
 			return retval;
 			};
 		return monad<unwrapped_t<T>, decltype(f)>{std::move(f)};
 	}
 
-	constexpr auto filter(std::predicate<T const&> auto pred) const {
-		auto f = [=, fn = fn](auto dst) {
+	template<int N>
+		requires (N >= 0 && N < std::tuple_size_v<unwrapped_t<T>>)
+	constexpr auto element() const {
+		auto f = [&](auto dst) {
+			return fn([&](in<T> v) {
+				if (has_value(v)) {
+					return dst(std::get<N>(unwrap(v)));
+				}
+				return true;
+				});
+			};
+		return monad<std::tuple_element_t<N, unwrapped_t<T>>, decltype(f)>{std::move(f)};
+	}
+
+	constexpr auto keys() const requires (std::tuple_size_v<unwrapped_t<T>> >= 2) {
+		return element<0>();
+	}
+
+	constexpr auto values() const requires (std::tuple_size_v<unwrapped_t<T>> >= 2) {
+		return element<1>();
+	}
+
+	constexpr auto filter(std::predicate<unwrapped_t<T>> auto pred) const {
+		auto f = [&](auto dst) {
 			return fn([&](in<T> v) {
 				if (has_value(v)) {
 					in<unwrapped_t<T>> uv = unwrap(v);
@@ -252,8 +276,30 @@ public:
 
 			decltype(n) count = 0;
 			return fn([&](in<T> v) {
-				if(has_value(v))
+				if (has_value(v))
 					return count++ < n && dst(unwrap(v));
+				return true;
+				});
+			};
+		return monad<unwrapped_t<T>, decltype(f)>{std::move(f)};
+	}
+
+	constexpr auto take_while(bool& b) const {
+		auto f = [=, fn = fn, &b](auto dst) {
+			return fn([&](in<T> v) {
+				if (has_value(v))
+					return b && dst(unwrap(v));
+				return true;
+				});
+			};
+		return monad<unwrapped_t<T>, decltype(f)>{std::move(f)};
+	}
+
+	constexpr auto take_while(std::predicate auto pred) const {
+		auto f = [=, fn = fn](auto dst) {
+			return fn([&](in<T> v) {
+				if (has_value(v))
+					return pred(unwrap(v)) && dst(unwrap(v));
 				return true;
 				});
 			};
@@ -267,7 +313,7 @@ public:
 
 			decltype(n) count = 0;
 			return fn([&](in<T> v) {
-				if(has_value(v))
+				if (has_value(v))
 					return count++ < n || dst(unwrap(v));
 				return true;
 				});
@@ -317,7 +363,7 @@ public:
 				if constexpr (range_like<DstT>) {
 					using in_dst_t = in<typename DstT::value_type>;
 					for (in_dst_t p : l) {
-						if(has_value(p))
+						if (has_value(p))
 							if (!dst(unwrap(p)))
 								return false;
 					}
@@ -326,7 +372,7 @@ public:
 				else {
 					return dst(l);
 				}
-				};
+			};
 
 			T last;
 
@@ -358,7 +404,7 @@ public:
 	}
 
 	template<int S>
-	constexpr auto join_with(const char (&pattern)[S]) const {
+	constexpr auto join_with(const char(&pattern)[S]) const {
 		return join_with(std::string_view{ pattern });
 	}
 
@@ -387,7 +433,7 @@ public:
 				});
 
 			return retval && dst(part);
-		};
+			};
 		return monad<Container, decltype(f)>{std::move(f)};
 	}
 
@@ -431,8 +477,8 @@ public:
 
 	template<typename Cast>
 		requires std::constructible_from<Cast, unwrapped_t<T>>
-				|| std::constructible_from<Cast, std::from_range_t, unwrapped_t<T>>
-	constexpr auto as() const {
+	|| std::constructible_from<Cast, std::from_range_t, unwrapped_t<T>>
+		constexpr auto as() const {
 		auto f = [=, fn = fn](auto dst) {
 			return fn([&](in<T> v) {
 				if (has_value(v)) {
@@ -490,7 +536,9 @@ public:
 		return monad<typename T::value_type, decltype(f)>{std::move(f)};
 	}
 
-	constexpr auto and_then(auto user_fn) const {
+	constexpr auto and_then(auto user_fn) const
+		requires std::same_as<void, std::invoke_result_t<decltype(user_fn), unwrapped_t<T>>>
+	{
 		auto f = [=, fn = fn](auto dst) {
 			return fn([&](in<T> v) {
 				if (has_value(v)) {
@@ -520,7 +568,6 @@ public:
 	//
 	// Terminal operations
 	//
-
 	template<typename UserFn>
 	constexpr void then(UserFn&& user_fn) const {
 		fn([&](in<T> v) {
