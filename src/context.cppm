@@ -31,7 +31,8 @@ export struct context {
 
 	// Selects the first compiler in the list
 	void select_first_compiler() {
-		selected_cl = all_compilers.begin()->second.front();
+		if (!all_compilers.empty())
+			selected_cl = all_compilers.begin()->second.front();
 	}
 
 	// Returns the name of the currently selected compiler
@@ -132,7 +133,7 @@ export std::optional<compiler> get_compiler(context const& ctx, std::string_view
 
 	default:
 		std::println("<gbs>   Error: ill-formed compiler descriptor: {}", comp);
-		exit(1);
+		std::exit(1);
 	}
 
 

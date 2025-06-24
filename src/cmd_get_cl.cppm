@@ -103,7 +103,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 		gh_download_url = "https://github.com/xpack-dev-tools/gcc-xpack/releases/download/v{0}/xpack-gcc-{0}-win32-x64.zip";
 		extract_output_dir = "xpack-gcc-{0}";
 #elif __linux__
-		?? cl.arch = "x64";
+		cl.arch = "x64";
 		gh_download_url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-{0}/clang+llvm-{0}-aarch64-linux-gnu.tar.xz";
 		extract_output_dir = "clang+llvm-{0}-aarch64-linux-gnu";
 #elif _ARM // ??
