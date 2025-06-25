@@ -91,7 +91,7 @@ void create_vs_tasks() {
 }
 
 void create_vscode_tasks() {
-    std::string_view tasks = R"({
+    std::string_view const tasks = R"({
     "version": "2.0.0",
     "tasks": [
         {

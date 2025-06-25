@@ -14,18 +14,14 @@ export bool cmd_build(context& ctx, std::string_view args) {
 	if (ctx.selected_cl.name.empty()) {
 		std::println(std::cerr, "<gbs> No compiler selected/found.");
 		return false;
-		//if (ctx.all_compilers.empty()) {
-		//	fill_compiler_collection(ctx);
-		//}
-		//ctx.select_first_compiler();
 	}
-
-	std::println(std::cerr, "<gbs> Building with '{} {}.{}.{}'", ctx.selected_cl.name, ctx.selected_cl.major, ctx.selected_cl.minor, ctx.selected_cl.patch);
 
 	if (!fs::exists("src/")) {
 		std::println("<gbs> Error: no 'src' directory found at '{}'", fs::current_path().generic_string());
 		return false;
 	}
+
+	std::println(std::cerr, "<gbs> Building with '{} {}.{}.{}'", ctx.selected_cl.name, ctx.selected_cl.major, ctx.selected_cl.minor, ctx.selected_cl.patch);
 
 	// Default build config
 	if (args.empty())
@@ -44,12 +40,13 @@ export bool cmd_build(context& ctx, std::string_view args) {
 
 	// Arguments to the compiler.
 	// Converts arguments into response files
-	auto arg_to_str = [&](auto arg) {
-		return " @" + (ctx.response_dir() / std::string{ arg.begin(), arg.end() }).string();
+	auto arg_to_str = [&](std::string_view arg) {
+		return " @" + (ctx.response_dir() / arg).string();
 		};
 
-	// TODO std::views::concat("_shared", args)
-	std::string const resp_args = arg_to_str("_shared"sv) + monad(args)
+	// Create the response file arguments
+	std::string const resp_args = monad("_shared,"sv)
+		.concat(args)
 		.split(',')
 		.map(arg_to_str)
 		.join()
@@ -61,16 +58,7 @@ export bool cmd_build(context& ctx, std::string_view args) {
 		if (!init_msvc(ctx))
 			return false;
 	}
-	else
 #endif
-		if (ctx.selected_cl.name.starts_with("clang")) {
-		}
-		else if (ctx.selected_cl.name == "gcc") {
-		}
-		else {
-			std::println("<gbs> INTERNAL : unknown compiler {:?}", ctx.selected_cl.name);
-			return false;
-		}
 
 	// Get the source files to compile
 	std::map<std::size_t, source_group> source_groups = get_grouped_source_files("src");
@@ -86,9 +74,6 @@ export bool cmd_build(context& ctx, std::string_view args) {
 	// Create file containing the list of objects to link
 	std::ofstream objects(ctx.output_dir() / "OBJLIST");
 	std::shared_mutex mut;
-
-	// Create the build command
-	std::string const cmd_prefix = ctx.build_command_prefix();// +resp_args.data();
 
 	// Set up the compiler helper
 	bool keep_going = true;
@@ -107,7 +92,8 @@ export bool cmd_build(context& ctx, std::string_view args) {
 		};
 	auto make_build_cmd = [&](auto const& tup) {
 		auto const& [path, imports, obj] = tup;
-		std::string cmd = cmd_prefix;
+
+		std::string cmd = ctx.build_command_prefix();
 		cmd += ctx.build_file(path.string(), obj.string());
 		cmd += resp_args.data();
 
@@ -120,18 +106,19 @@ export bool cmd_build(context& ctx, std::string_view args) {
 	auto execute_build_cmd = [&](std::string const& cmd) {
 		keep_going = keep_going && (0 == std::system(cmd.c_str()));
 		};
-	auto compile_source_group = [&](source_group const& sg) {
-		monad(sg)
-			.async()
-			.take_while(keep_going)
-			.map(append_obj)
-			.and_then(log_obj_to_file)
-			.filter(obj_up_to_date)
-			.map(make_build_cmd)
-			.then(execute_build_cmd);
-		};
 
-	monad{ source_groups }.values().then(compile_source_group);
+	monad{ source_groups }
+		.values()
+		.then([&](source_group const& sg) {
+			monad(sg)
+				.async()
+				.take_while(keep_going)
+				.map(append_obj)
+				.and_then(log_obj_to_file)
+				.filter(obj_up_to_date)
+				.map(make_build_cmd)
+				.then(execute_build_cmd);
+				});
 
 	// Close the objects file
 	objects.close();

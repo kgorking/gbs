@@ -21,26 +21,45 @@ using in = std::conditional_t<std::is_trivially_copyable_v<T> && sizeof(T) <= 2 
 template<typename T>
 struct alignas(std::hardware_destructive_interference_size) task {
 	T data;
+	std::size_t id = 0;
 	bool return_value = true;
 	std::binary_semaphore sema{ 0 };
 	std::future<void> future;
-	char _pad[std::hardware_destructive_interference_size - sizeof(bool) - sizeof(std::binary_semaphore) - sizeof(std::future<void>)];
+	char _pad[std::hardware_destructive_interference_size - sizeof(std::size_t) - sizeof(bool) - sizeof(std::binary_semaphore) - sizeof(std::future<void>)]{};
 };
 
-template<typename Container>
+template<typename Container, typename T>
 	requires requires { typename Container::value_type;  }
 //constexpr void add_to_container(Container& c, in<typename Container::value_type> v) {
-constexpr void add_to_container(Container& c, auto const& v) {
-	if constexpr (requires { c.emplace_back(v); })
-		c.emplace_back(v);
-	else if constexpr (requires { c.push_back(v); })
-		c.push_back(v);
-	else if constexpr (requires { c.emplace(v); })
-		c.emplace(v);
-	else if constexpr (requires { c.insert(c.end(), v); })
-		c.insert(c.end(), v);
-	else
-		static_assert(false, "Container does not support adding elements.");
+constexpr void add_to_container(Container& c, T const& v) {
+	if constexpr (range_like<T>) {
+		if constexpr (requires { c.append_range(v); })
+			c.append_range(v);
+		else if constexpr (requires { c.insert_range(v); })
+			c.insert_range(v);
+		else if constexpr (requires { c.insert_range(v.end(), v); })
+			c.insert_range(v.end(), v);
+		else if constexpr (requires { c.insert_range_after(v.end(), v); })
+			c.insert_range_after(v.end(), v);
+		else
+			static_assert(false, "Container does not support adding ranges, or I forgot to add code that can.");
+	}
+	else {
+		if constexpr (requires { c.emplace_back(v); })
+			c.emplace_back(v);
+		else if constexpr (requires { c.push_back(v); })
+			c.push_back(v);
+		else if constexpr (requires { c.insert(v); })
+			c.insert(v);
+		else if constexpr (requires { c.insert(c.end(), v); })
+			c.insert(c.end(), v);
+		else if constexpr (requires { c.insert_range(v); })
+			c.insert_range(v);
+		else if constexpr (requires { c.emplace(v); })
+			c.emplace(v);
+		else
+			static_assert(false, "Container does not support adding elements.");
+	}
 }
 
 template<typename T>
@@ -114,8 +133,7 @@ public:
 
 	// This function does nothing
 	constexpr auto identity() const {
-		auto f = [&](auto dst) {
-
+		auto f = [=, fn = fn](auto dst) {
 			bool const retval = fn([&](in<T> v) {
 				if (has_value(v)) {
 					return dst(unwrap(v));
@@ -128,39 +146,57 @@ public:
 		return monad<unwrapped_t<T>, decltype(f)>{std::move(f)};
 	}
 
+	constexpr auto guard() const {
+		auto f = [fn = fn](auto dst) {
+			bool const retval = fn([&](in<T> v) {
+				try {
+					return dst(v);
+				}
+				catch (...) {
+					return true;
+				}
+				});
+
+			return retval;
+			};
+		return monad<T, decltype(f)>{std::move(f)};
+	}
+
 	auto async(std::size_t num_threads = std::thread::hardware_concurrency()) const {
 		if (num_threads > std::thread::hardware_concurrency())
 			num_threads = std::thread::hardware_concurrency();
 
-		auto f = [&, num_threads](auto dst) {
+		auto f = [=, fn = fn](auto dst) {
 			auto tasks = std::vector<task<unwrapped_t<T>>>(num_threads);
 			auto task_bitset = std::atomic_size_t{ std::numeric_limits<std::size_t>::max() };
 			auto producer_completed = bool{ false };
 
-			auto receiver = [&](std::size_t const id) {
+			auto receiver = [&](task<unwrapped_t<T>>* task) {
 				// Enable the task slot
-				task_bitset ^= (1ull << id);
+				task_bitset ^= (1ull << task->id);
 
 				// Wait for an initial signal. All threads park here until they are fed data.
-				tasks[id].sema.acquire();
+				task->sema.acquire();
 
 				// Process data while the producer is not done
 				while (!producer_completed) {
 					// Do the work
-					tasks[id].return_value = dst(tasks[id].data);
+					task->return_value = dst(task->data);
 
 					// Re-enable the task slot
-					task_bitset ^= (1ull << id);
+					task_bitset ^= (1ull << task->id);
 
 					// Wait for signal
-					tasks[id].sema.acquire();
+					task->sema.acquire();
 				}
 				};
 
-			// Start all the threads. The task slot is initially disabled until thread setup is done
+			// Start all the threads.
+			// The task slot is initially disabled until thread setup is done
 			for (int task_counter = 0; task<unwrapped_t<T>>& task : tasks) {
 				task_bitset ^= (1ull << task_counter);
-				task.future = std::async(std::launch::async, receiver, task_counter++);
+				task.id = task_counter++;
+				task.future = std::async(std::launch::async, receiver, &task);
 			}
 
 			bool const retval = fn([&](in<T> v) {
@@ -172,22 +208,23 @@ public:
 					} while (id >= num_threads);
 
 					// Check last return value
-					if (!tasks[id].return_value)
+					auto* task = &tasks.at(id);
+					if (!task->return_value)
 						return false;
 
 					// Disable the task slot
 					task_bitset ^= (1ull << id);
 
 					// Copy the data to the task slot
-					tasks[id].data = unwrap(v);
+					task->data = unwrap(v);
 
 					// Signal the task to process the data
-					tasks[id].sema.release();
+					task->sema.release();
 				}
 				return true;
 				});
 
-			// Wait for remaining tasks to finish
+			// Wait for tasks to finish
 			while (task_bitset != std::numeric_limits<std::size_t>::max())
 				;
 
@@ -195,7 +232,7 @@ public:
 			producer_completed = true;
 			for (auto& task : tasks) {
 				task.sema.release();
-				task.future.get(); // Wait for the task to finish
+				task.future.get();
 			}
 
 			return retval;
@@ -206,7 +243,7 @@ public:
 	template<int N>
 		requires (N >= 0 && N < std::tuple_size_v<unwrapped_t<T>>)
 	constexpr auto element() const {
-		auto f = [&](auto dst) {
+		auto f = [=, fn = fn](auto dst) {
 			return fn([&](in<T> v) {
 				if (has_value(v)) {
 					return dst(std::get<N>(unwrap(v)));
@@ -226,7 +263,7 @@ public:
 	}
 
 	constexpr auto filter(std::predicate<unwrapped_t<T>> auto pred) const {
-		auto f = [&](auto dst) {
+		auto f = [=, fn = fn](auto dst) {
 			return fn([&](in<T> v) {
 				if (has_value(v)) {
 					in<unwrapped_t<T>> uv = unwrap(v);
@@ -255,10 +292,9 @@ public:
 		return monad<unwrapped_t<T>, decltype(f)>{std::move(f)};
 	}
 
-	template<std::invocable<unwrapped_t<T>> MapFn>
+	template<typename MapFn>
+		requires std::invocable<MapFn, unwrapped_t<T>>
 	constexpr auto map(MapFn mf) const {
-		using Result = std::invoke_result_t<MapFn, unwrapped_t<in<T>>>;
-
 		auto f = [=, fn = fn](auto dst) {
 			return fn([&](in<T> v) {
 				if (has_value(v))
@@ -266,7 +302,7 @@ public:
 				return true;
 				});
 			};
-		return monad<Result, decltype(f)> {std::move(f)};
+		return monad<std::invoke_result_t<MapFn, unwrapped_t<T>>, decltype(f)> {std::move(f)};
 	}
 
 	constexpr auto take(std::signed_integral auto n) const {
@@ -496,7 +532,7 @@ public:
 	}
 
 	template<typename ...Projs>
-	constexpr auto as_tuple(Projs&& ...projs) const {
+	constexpr auto as_tuple(Projs const ...projs) const {
 		using Tuple = std::tuple<std::invoke_result_t<Projs, unwrapped_t<T>>...>;
 
 		auto f = [=, fn = fn](auto dst) {
@@ -569,6 +605,7 @@ public:
 	// Terminal operations
 	//
 	template<typename UserFn>
+		requires std::invocable<UserFn, unwrapped_t<T>>
 	constexpr void then(UserFn&& user_fn) const {
 		fn([&](in<T> v) {
 			if (has_value(v))
@@ -592,6 +629,42 @@ public:
 			c += has_value(v);
 			return true;
 			});
+		return c;
+	}
+
+	template<typename C>
+		requires std::invocable<add_to_container, C&, unwrapped_t<T>>
+	constexpr void dest(C& c) const {
+		fn([&](in<T> v) {
+			if (has_value(v))
+				add_to_container(c, unwrap(v));
+			return true;
+			});
+	}
+
+	template<typename C, typename UserFn>
+		requires std::invocable<UserFn, C&, unwrapped_t<T>>
+	constexpr auto to_dest(UserFn&& user_fn) const {
+		C c;
+
+		fn([&](in<T> v) {
+			if (has_value(v))
+				user_fn(c, unwrap(v));
+			return true;
+			});
+
+		return c;
+	}
+
+	template<typename C>
+	constexpr auto to_dest(C&& c) const {
+		fn([&](T&& v) {
+			if (has_value(v)) {
+				add_to_container(c, unwrap(v));
+			}
+			return true;
+			});
+
 		return c;
 	}
 
