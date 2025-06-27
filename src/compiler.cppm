@@ -21,7 +21,7 @@ export struct compiler {
 };
 
 
-export void extract_compiler_version(std::string_view sv, int& major, int& minor, int & patch) {
+export void extract_compiler_version(std::string_view sv, int& major, int& minor, int& patch) {
 	major = 0;
 	minor = 0;
 	patch = 0;
@@ -147,8 +147,8 @@ export void enumerate_compilers(auto&& callback) {
 					comp.linker = comp.compiler;
 
 					comp.build_source = " {0:?} -o {1:?} ";
-					comp.build_module = " {0:?} -o {1:?} -fmodule-output ";
-					comp.build_command_prefix = "call \"{0}\" -c --language=c++-module ";
+					comp.build_module = " --language=c++-module {0:?} -o {1:?} -fmodule-output ";
+					comp.build_command_prefix = "call \"{0}\" -c ";
 					comp.link_command = "call \"{0}\"  @{1}/OBJLIST -o {1}/{2}.exe";
 					comp.reference = " -fmodule-file={}={}.pcm ";
 					callback(std::move(comp));

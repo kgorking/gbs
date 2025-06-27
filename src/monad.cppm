@@ -32,19 +32,7 @@ template<typename Container, typename T>
 	requires requires { typename Container::value_type;  }
 //constexpr void add_to_container(Container& c, in<typename Container::value_type> v) {
 constexpr void add_to_container(Container& c, T const& v) {
-	if constexpr (range_like<T>) {
-		if constexpr (requires { c.append_range(v); })
-			c.append_range(v);
-		else if constexpr (requires { c.insert_range(v); })
-			c.insert_range(v);
-		else if constexpr (requires { c.insert_range(v.end(), v); })
-			c.insert_range(v.end(), v);
-		else if constexpr (requires { c.insert_range_after(v.end(), v); })
-			c.insert_range_after(v.end(), v);
-		else
-			static_assert(false, "Container does not support adding ranges, or I forgot to add code that can.");
-	}
-	else {
+	if constexpr (std::constructible_from<typename Container::value_type, T>) {
 		if constexpr (requires { c.emplace_back(v); })
 			c.emplace_back(v);
 		else if constexpr (requires { c.push_back(v); })
@@ -59,6 +47,21 @@ constexpr void add_to_container(Container& c, T const& v) {
 			c.emplace(v);
 		else
 			static_assert(false, "Container does not support adding elements.");
+	}
+	else if constexpr (range_like<T>) {
+		if constexpr (requires { c.append_range(v); })
+			c.append_range(v);
+		else if constexpr (requires { c.insert_range(v); })
+			c.insert_range(v);
+		else if constexpr (requires { c.insert_range(v.end(), v); })
+			c.insert_range(v.end(), v);
+		else if constexpr (requires { c.insert_range_after(v.end(), v); })
+			c.insert_range_after(v.end(), v);
+		else
+			static_assert(false, "Container does not support adding ranges, or I forgot to add code that can.");
+	}
+	else {
+		static_assert(false, "Not sure how to insert this type T into the container. Do the types match?");
 	}
 }
 
@@ -193,7 +196,7 @@ public:
 
 			// Start all the threads.
 			// The task slot is initially disabled until thread setup is done
-			for (int task_counter = 0; task<unwrapped_t<T>>& task : tasks) {
+			for (std::size_t task_counter = 0; task<unwrapped_t<T>>& task : tasks) {
 				task_bitset ^= (1ull << task_counter);
 				task.id = task_counter++;
 				task.future = std::async(std::launch::async, receiver, &task);
@@ -202,9 +205,9 @@ public:
 			bool const retval = fn([&](in<T> v) {
 				if (has_value(v)) {
 					// Find available task slot
-					int id = 0;
+					std::size_t id = 0;
 					do {
-						id = std::countr_zero(task_bitset.load());
+						id = static_cast<std::size_t>(std::countr_zero(task_bitset.load()));
 					} while (id >= num_threads);
 
 					// Check last return value
@@ -633,7 +636,7 @@ public:
 	}
 
 	template<typename C>
-		requires std::invocable<add_to_container, C&, unwrapped_t<T>>
+		requires std::invocable<decltype(add_to_container<C, unwrapped_t<T>>), C&, unwrapped_t<T>>
 	constexpr void dest(C& c) const {
 		fn([&](in<T> v) {
 			if (has_value(v))
