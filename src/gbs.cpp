@@ -12,7 +12,7 @@ import cmd_cl;
 import cmd_ide;
 
 int main(int argc, char const* argv[]) {
-	std::println("<gbs> Gorking build system v0.13.3");
+	std::println("<gbs> Gorking build system v0.13.1");
 
 	context ctx;
 

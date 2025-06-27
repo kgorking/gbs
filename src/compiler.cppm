@@ -2,7 +2,7 @@ export module compiler;
 import std;
 import env;
 
-constexpr auto archs = std::to_array<std::string_view>({ /*"arm64",*/ "x64" });
+constexpr std::string_view archs[] = { /*"arm64",*/ "x64" };
 
 export struct compiler {
 	int major = 0, minor = 0, patch = 0;
