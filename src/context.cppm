@@ -121,9 +121,11 @@ export std::optional<compiler> get_compiler(context const& ctx, std::string_view
 	case 3:
 		// Version and architecture requested
 		arch = std::string_view{ *std::next(split.begin(), 2) };
+
 	case 2:
 		// Version requested
 		version = std::string_view{ *std::next(split.begin()) };
+
 	case 1:
 		// No version requested, returns newest
 		cl = std::string_view{ *split.begin() };
@@ -152,7 +154,6 @@ export std::optional<compiler> get_compiler(context const& ctx, std::string_view
 	auto version_compilers = named_compilers | std::views::filter([&](compiler const& c) {
 		bool match = true;
 		switch (dots) {
-		default: throw std::runtime_error("<gbs>   Error: ill-formed compiler version: " + std::string{ version });
 		case 2: match = match && (c.patch == patch);
 		case 1: match = match && (c.minor == minor);
 		case 0: match = match && (c.major == major);
