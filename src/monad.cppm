@@ -100,22 +100,9 @@ using unwrapped_t = std::remove_cvref_t<decltype(unwrap(std::declval<T>()))>;
 
 template<typename T>
 constexpr auto make_one(T const& val) {
-	return [val](auto dst) {
+	return [&val](auto dst) {
 		if (has_value(val))
 			return dst(unwrap(val));
-		return true;
-		};
-}
-
-template<range_like T>
-constexpr auto make_fn(T const& rng) {
-	return [&](auto dst) {
-		for (in<typename T::value_type> v : rng) {
-			if (has_value(v))
-				if (!dst(unwrap(v)))
-					return false;
-		}
-
 		return true;
 		};
 }
@@ -131,7 +118,6 @@ class monad {
 
 	constexpr explicit monad(Fn&& fn) : fn(std::forward<Fn>(fn)) {}
 public:
-	constexpr explicit monad(range_like auto const& rng) : fn(make_fn(rng)) {}
 	constexpr explicit monad(auto const& val) : fn(make_one(val)) {}
 
 	// This function does nothing
@@ -147,6 +133,30 @@ public:
 			return retval;
 			};
 		return monad<unwrapped_t<T>, decltype(f)>{std::move(f)};
+	}
+
+	// Iterates over a range
+	constexpr auto iter() const
+		requires range_like<T>
+	{
+		using VT = typename unwrapped_t<T>::value_type;
+
+		auto f = [=, fn = fn](auto dst) {
+			bool const retval = fn([&](in<T> rng) {
+
+				if (has_value(rng)) {
+					for (in<VT> v : rng) {
+						if (has_value(v))
+							if (!dst(unwrap(v)))
+								return false;
+					}
+				}
+				return true;
+				});
+
+			return retval;
+			};
+		return monad<VT, decltype(f)>{std::move(f)};
 	}
 
 	constexpr auto guard() const {
@@ -447,7 +457,10 @@ public:
 		return join_with(std::string_view{ pattern });
 	}
 
-	constexpr auto split(auto delimiter) const {
+	template<typename D>
+	constexpr auto split(D const delimiter) const {
+		static_assert(std::is_same<unwrapped_t<T>, D>::value, "Input type 'T' and delimiter type 'D' are not comparable; maybe call 'iter()' before this function?");
+
 		constexpr bool use_string_as_container = std::same_as<T, char>;
 		using Container = std::conditional_t<use_string_as_container, std::basic_string<T>, std::vector<T>>;
 
@@ -457,6 +470,7 @@ public:
 			bool const retval = fn([&](in<T> v) {
 				if (has_value(v)) {
 					in<unwrapped_t<T>> uv = unwrap(v);
+					
 					if (uv == delimiter) {
 						if (!dst(part)) {
 							return false;
@@ -706,9 +720,6 @@ public:
 };
 
 
-export template<range_like T>
-monad(T const& t) -> monad<typename T::value_type, decltype(make_fn(t))>;
-
 export template<typename T>
-	requires (!function_like<T>) && (!range_like<T>)
+	requires (!function_like<T>)
 monad(T const& val)->monad<T, decltype(make_one(val))>;
