@@ -14,10 +14,6 @@ export bool cmd_build(context& ctx, std::string_view args) {
 	if (ctx.selected_cl.name.empty()) {
 		std::println(std::cerr, "<gbs> No compiler selected/found.");
 		return false;
-		if (ctx.all_compilers.empty()) {
-			fill_compiler_collection(ctx);
-		}
-		ctx.select_first_compiler();
 	}
 
 	std::println(std::cerr, "<gbs> Building with '{} {}.{}.{}'", ctx.selected_cl.name, ctx.selected_cl.major, ctx.selected_cl.minor, ctx.selected_cl.patch);
@@ -50,6 +46,7 @@ export bool cmd_build(context& ctx, std::string_view args) {
 
 	// TODO std::views::concat("_shared", args)
 	std::string const resp_args = arg_to_str("_shared"sv) + monad(args)
+			.iter()
 			.split(',')
 			.map(arg_to_str)
 			.join()
