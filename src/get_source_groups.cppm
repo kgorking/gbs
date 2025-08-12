@@ -21,7 +21,9 @@ export using source_group = std::vector<source_info>;
 export auto get_grouped_source_files(fs::path dir) -> std::map<std::size_t, source_group> {
 	// Maps a filename to _all_ its module dependencies
 	auto file_to_imports_map = std::unordered_map<fs::path, import_set>{};
-	auto store_in_map = [&](source_dependency const& sd) { file_to_imports_map[sd.path.string()].insert_range(sd.import_names); };
+	auto store_in_map = [&](source_dependency const& sd) {
+		file_to_imports_map[sd.path].insert_range(sd.import_names);
+		};
 
 	// Maps an export module name to its filename
 	// and find all immediate dependencies for each file
