@@ -8,52 +8,68 @@ namespace fs = std::filesystem;
 // A set of imports for a module
 using import_set = std::set<std::string>;
 
-// Holds a single source files module dependencies,
-// including its dependencies dependencies
-export using source_info = std::pair<fs::path, import_set>;
+// Holds a single source files module dependencies
+export using source_info = std::pair<fs::path const, import_set>;
 
-// A single group of source files
-// that can be compiled in parallel.
-export using source_group = std::vector<source_info>;
+// A map of source files to their module dependencies
+using file_to_imports_map = std::unordered_map<fs::path, import_set>;
 
+// A single group of source files that can be compiled in parallel
+using source_group = std::vector<source_info>;
+
+// A map of source files grouped by their dependency depth
+using depth_ordered_sources_map = std::map<std::size_t, source_group>;
+
+
+// Maps a filename to _all_ its module dependencies
+void store_in_map(source_dependency const& sd, file_to_imports_map& fi) {
+	fi[sd.path] = sd.import_names;
+}
+
+// Recursively merge a files child dependencies with its own dependencies.
+//   Fx. A -> B -> C
+//   Results in A's dependencies being [B, C]
+source_info recursive_merge(source_info const& pair, std::unordered_map<std::string, fs::path> const& module_name_to_file_map, file_to_imports_map const& file_imports) {
+	auto const& [file, deps] = pair;
+	import_set all_merged_deps{ deps };
+
+	for (auto const& dep : deps) {
+		if (module_name_to_file_map.contains(dep)) {
+			auto const& dep_path = module_name_to_file_map.at(dep);
+			auto merged_deps = recursive_merge({ dep_path, file_imports.at(dep_path) }, module_name_to_file_map, file_imports);
+			all_merged_deps.insert_range(merged_deps.second);
+		}
+	}
+
+	return { file, all_merged_deps };
+}
+
+// Group files according to how deep their dependency chain is
+void group_by_dependency_depth(depth_ordered_sources_map& sources, source_info const& si) {
+	auto& [path, imports] = si;
+	std::size_t const dep_size = imports.size();
+	sources[dep_size].emplace_back(path, std::move(imports));
+}
 
 // Find the source files and dependencies
-export auto get_grouped_source_files(fs::path dir) -> std::map<std::size_t, source_group> {
-	// Maps a filename to _all_ its module dependencies
-	auto file_to_imports_map = std::unordered_map<fs::path, import_set>{};
-	auto store_in_map = [&](source_dependency const& sd) { file_to_imports_map[sd.path.string()].insert_range(sd.import_names); };
+export depth_ordered_sources_map get_grouped_source_files(fs::path dir) {
+	file_to_imports_map file_imports;
 
 	// Maps an export module name to its filename
 	// and find all immediate dependencies for each file
-	auto module_name_to_file_map = monad(fs::recursive_directory_iterator(dir))
-			.filter(&fs::directory_entry::is_regular_file)
-			.map(&fs::directory_entry::path)
-			.map(detect_module_dependencies)
-			.and_then(store_in_map)
-			.filter(&source_dependency::is_export)
-			.to<std::unordered_map>(&source_dependency::export_name, &source_dependency::path);
+	auto const module_name_to_file_map = as_monad(fs::recursive_directory_iterator(dir))
+		.iter()
+		.filter(&fs::directory_entry::is_regular_file)
+		.map(&fs::directory_entry::path)
+		.map(extract_module_dependencies)
+		.and_then(store_in_map, file_imports)
+		.filter(&source_dependency::is_export)
+		.to<std::unordered_map>(&source_dependency::export_name, &source_dependency::path);
 
-
-	// Recursively merge a files child dependencies into its current dependencies.
-	//   Fx. A -> B -> C
-	//   Results in A's dependencies being [B, C]
-	auto const recursive_merge = [&](this auto& self, import_set& deps) -> void {
-		for (auto const& dep : deps) {
-			if (module_name_to_file_map.contains(dep)) {
-				auto const& dep_path = module_name_to_file_map[dep];
-				self(file_to_imports_map[dep_path]);
-				deps.insert_range(file_to_imports_map[dep_path]);
-			}
-		}
-		};
-	std::ranges::for_each(file_to_imports_map | std::views::values, recursive_merge);
-
-	// Group files according to how deep their dependency chain is
-	auto sources = std::map<std::size_t, source_group>{};
-	for (auto&& [path, imports] : file_to_imports_map) {
-		auto const dep_size = imports.size();
-		sources[dep_size].emplace_back(path, std::move(imports));
-	}
-
-	return sources;
+	// Merge all dependencies for each file and
+	// return a ordered map of files grouped by their dependency depth
+	return as_monad(file_imports)
+		.iter()
+		.map(recursive_merge, module_name_to_file_map, file_imports)
+		.to_dest(group_by_dependency_depth);
 }
