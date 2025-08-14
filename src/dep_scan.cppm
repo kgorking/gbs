@@ -12,7 +12,7 @@ export struct source_dependency {
 };
 
 // Returns a source files module dependencies.
-export auto detect_module_dependencies(std::filesystem::path path) -> source_dependency {
+export auto extract_module_dependencies(std::filesystem::path path) -> source_dependency {
 	source_dependency dependencies{ path };
 
 	std::string line;

@@ -9,21 +9,30 @@ import monad;
 namespace fs = std::filesystem;
 using namespace std::string_view_literals;
 
+// Converts arguments into response files
+std::string convert_arg_to_response(std::string_view arg, fs::path response_dir) {
+	return std::format(" @{}/{}", response_dir.string(), arg);
+	//return " @" + (ctx.response_dir() / std::string{ arg.begin(), arg.end() }).string();
+}
+
+// The build command
 export bool cmd_build(context& ctx, std::string_view args) {
-	// Select default compiler if none is selected
+	// Bail if no compiler is selected
 	if (ctx.selected_cl.name.empty()) {
 		std::println(std::cerr, "<gbs> No compiler selected/found.");
 		return false;
 	}
 
-	std::println(std::cerr, "<gbs> Building with '{} {}.{}.{}'", ctx.selected_cl.name, ctx.selected_cl.major, ctx.selected_cl.minor, ctx.selected_cl.patch);
-
+	// Ensure the current working directory is valid
 	if (!fs::exists("src/")) {
 		std::println("<gbs> Error: no 'src' directory found at '{}'", fs::current_path().generic_string());
 		return false;
 	}
 
-	// Default build config
+	// Print the compiler version
+	std::println(std::cerr, "<gbs> Building with '{} {}.{}.{}'", ctx.selected_cl.name, ctx.selected_cl.major, ctx.selected_cl.minor, ctx.selected_cl.patch);
+
+	// Set the default build config if none is specified
 	if (args.empty())
 		args = "release,warnings";
 
@@ -31,7 +40,7 @@ export bool cmd_build(context& ctx, std::string_view args) {
 	init_response_files(ctx);
 	check_response_files(ctx, args);
 
-	// Build output
+	// Get the build output directory
 	ctx.config = args.substr(0, args.find(','));
 	auto const output_dir = ctx.output_dir();
 
@@ -39,16 +48,12 @@ export bool cmd_build(context& ctx, std::string_view args) {
 	fs::create_directories(ctx.output_dir());
 
 	// Arguments to the compiler.
-	// Converts arguments into response files
-	auto arg_to_str = [&](auto arg) {
-		return " @" + (ctx.response_dir() / std::string{ arg.begin(), arg.end() }).string();
-		};
-
 	// TODO std::views::concat("_shared", args)
-	std::string const resp_args = arg_to_str("_shared"sv) + monad(args)
+	std::string const resp_args = convert_arg_to_response("_shared"sv, ctx.response_dir())
+		+ as_monad(args)
 			.iter()
 			.split(',')
-			.map(arg_to_str)
+			.map(convert_arg_to_response, ctx.response_dir())
 			.join()
 			.to<std::string>();
 
