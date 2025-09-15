@@ -17,7 +17,7 @@ export struct compiler {
 	std::filesystem::path dir;
 	std::filesystem::path compiler;
 	std::filesystem::path linker;
-	std::filesystem::path std_module;
+	std::optional<std::filesystem::path> std_module;
 };
 
 

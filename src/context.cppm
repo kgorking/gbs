@@ -48,7 +48,7 @@ export struct context {
 	}
 
 	// Create build args for a single file
-	std::string build_file(std::string_view file, std::string_view obj_file) const {
+	std::string build_command(std::string_view file, std::string_view obj_file) const {
 		std::string_view const build_cmd = file.ends_with(".cpp")
 			? selected_cl.build_source
 			: selected_cl.build_module;
@@ -67,6 +67,18 @@ export struct context {
 	auto build_reference(std::string_view module_name) const -> std::string {
 		auto const out = (output_dir() / module_name).string();
 		return std::vformat(selected_cl.reference, std::make_format_args(module_name, out));
+	}
+
+	// Create a reference to modules
+	auto build_references(std::set<std::string> const& module_names) const -> std::string {
+		std::string refs;
+		if (!selected_cl.reference.empty()) {
+			for (auto const& s : module_names) {
+				auto const out = (output_dir() / s).string();
+				refs += std::vformat(selected_cl.reference, std::make_format_args(s, out));
+			}
+		}
+		return refs;
 	}
 };
 
@@ -94,7 +106,7 @@ export void fill_compiler_collection(context& ctx) {
 	if(ctx.all_compilers.contains("clang") && ctx.all_compilers.contains("msvc")) {
 		// Get the newest msvc compiler
 		compiler const& msvc_compiler = ctx.all_compilers["msvc"].front();
-		auto const std_module = std::filesystem::path(msvc_compiler.std_module);
+		auto const std_module = std::filesystem::path(*msvc_compiler.std_module);
 
 		for(compiler& clang : ctx.all_compilers["clang"]) {
 			//ctx.selected_cl = clang;

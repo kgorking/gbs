@@ -9,16 +9,16 @@ namespace fs = std::filesystem;
 using import_set = std::set<std::string>;
 
 // Holds a single source files module dependencies
-export using source_info = std::pair<fs::path const, import_set>;
+export using source_info = std::pair<fs::path, import_set>;
 
 // A map of source files to their module dependencies
 using file_to_imports_map = std::unordered_map<fs::path, import_set>;
 
 // A single group of source files that can be compiled in parallel
-using source_group = std::vector<source_info>;
+export using source_group = std::vector<source_info>;
 
 // A map of source files grouped by their dependency depth
-using depth_ordered_sources_map = std::map<std::size_t, source_group>;
+export using depth_ordered_sources_map = std::map<std::size_t, source_group>;
 
 
 // Maps a filename to _all_ its module dependencies
@@ -58,7 +58,7 @@ export depth_ordered_sources_map get_grouped_source_files(fs::path dir) {
 	// Maps an export module name to its filename
 	// and find all immediate dependencies for each file
 	auto const module_name_to_file_map = as_monad(fs::recursive_directory_iterator(dir))
-		.iter()
+		.join()
 		.filter(&fs::directory_entry::is_regular_file)
 		.map(&fs::directory_entry::path)
 		.map(extract_module_dependencies)
@@ -69,7 +69,7 @@ export depth_ordered_sources_map get_grouped_source_files(fs::path dir) {
 	// Merge all dependencies for each file and
 	// return a ordered map of files grouped by their dependency depth
 	return as_monad(file_imports)
-		.iter()
+		.join()
 		.map(recursive_merge, module_name_to_file_map, file_imports)
 		.to_dest(group_by_dependency_depth);
 }
