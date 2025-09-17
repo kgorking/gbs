@@ -92,7 +92,7 @@ export void init_response_files(context& ctx) {
 			"-Wuseless-cast "           // warn if you perform a cast to the same type
 			"-Wsuggest-override "       // warn if an overridden member function is not marked 'override' or 'final'
 		},
-		{"_shared", "-std=c++2b -fmodules-ts"},
+		{"_shared", "-std=c++2b -fmodules"},
 		{"debug", "-O0 -g3"},
 		{"release", "-O3"},
 		{"analyze", "--analyze"}

@@ -4,6 +4,26 @@ import compiler;
 import context;
 import env;
 
+std::string gcc_get_download_url(std::string_view const version) {
+	// Input:  15.2.0posix-13.0.0-msvcrt-r1
+	// Output: https://github.com/brechtsanders/winlibs_mingw/releases/download/15.2.0posix-13.0.0-ucrt-r1/winlibs-x86_64-posix-seh-gcc-15.2.0-mingw-w64msvcrt-13.0.0-r1.zip
+	//         https://github.com/brechtsanders/winlibs_mingw/releases/download/15.2.0posix-13.0.0-msvcrt-r1/winlibs-x86_64-posix-seh-gcc-15.2.0-mingw-w64msvcrt-13.0.0-r1.zip
+
+	static constexpr std::string_view template_url = "https://github.com/brechtsanders/winlibs_mingw/releases/download/{0}/winlibs-x86_64-posix-seh-gcc-{1}-mingw-w64msvcrt-{2}-{3}.zip";
+	std::string_view const gcc_ver = version.substr(0, version.find_first_not_of("0123456789."));
+
+	std::string_view posix_ver = version.substr(version.find_first_of('-') + 1);
+	posix_ver = posix_ver.substr(0, posix_ver.find_first_of('-'));
+
+	std::string_view const release_ver = version.substr(version.rfind('-') + 1);
+
+	return std::vformat(template_url, std::make_format_args(version, gcc_ver, posix_ver, release_ver));
+}
+
+std::string clang_get_download_url(std::string_view const version) {
+	return std::string{ version };
+}
+
 export bool cmd_get_cl(context& ctx, std::string_view args) {
 	std::println("<gbs> get_cl : Searching for '{}'", args);
 
@@ -44,7 +64,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 	std::string_view version_prefix;
 	std::string version;
 	std::string git_search_cmd;
-	std::string_view gh_download_url;
+	std::string gh_download_url;
 	std::string_view extract_output_dir;
 
 	args.remove_prefix(cl.name.size());
@@ -60,6 +80,8 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 		version = args;
 	}
 
+	std::string(*get_download_url)(std::string_view);
+
 	if (cl.name == "clang") {
 		cl.compiler = "bin/clang";
 
@@ -74,6 +96,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 			"version_list.txt");
 
 		// Prepare the download url
+		get_download_url = clang_get_download_url;
 #ifdef _WIN64
 		cl.arch = "x64";
 		gh_download_url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-{0}/clang+llvm-{0}-x86_64-pc-windows-msvc.tar.xz";
@@ -91,17 +114,20 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 	else if (cl.name == "gcc") {
 		// git ls-remote --exit-code --refs --tags --sort="-version:refname" https://github.com/xpack-dev-tools/gcc-xpack v*
 		// https://github.com/xpack-dev-tools/gcc-xpack/releases/download/v14.2.0-2/xpack-gcc-14.2.0-2-win32-x64.zip
-		cl.compiler = "bin/gcc";
-		version_prefix = "refs/tags/v";
+		// https://github.com/brechtsanders/winlibs_mingw/releases/tag/15.2.0posix-13.0.0-msvcrt-r1
+		// download/15.2.0posix-13.0.0-msvcrt-r1/winlibs-x86_64-posix-seh-gcc-15.2.0-mingw-w64msvcrt-13.0.0-r1.zip
+		cl.compiler = "mingw64/bin/gcc";
+		version_prefix = "refs/tags/";
 
-		git_search_cmd = std::format("git ls-remote --exit-code --refs --tags --sort=\"-version:refname\" https://github.com/xpack-dev-tools/gcc-xpack *v{}* > {}",
+		git_search_cmd = std::format("git ls-remote --exit-code --refs --tags --sort=\"-version:refname\" https://github.com/brechtsanders/winlibs_mingw *{}*posix*msvcrt* > {}",
 			version,
 			"version_list.txt");
 
+		get_download_url = gcc_get_download_url;
 #ifdef _WIN64
 		cl.arch = "x64";
-		gh_download_url = "https://github.com/xpack-dev-tools/gcc-xpack/releases/download/v{0}/xpack-gcc-{0}-win32-x64.zip";
-		extract_output_dir = "xpack-gcc-{0}";
+		gh_download_url = "https://github.com/brechtsanders/winlibs_mingw/releases/download/{0}/xpack-gcc-{0}-win32-x64.zip";
+		extract_output_dir = "gcc-{0}";
 #elif __linux__
 		cl.arch = "x64";
 		gh_download_url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-{0}/clang+llvm-{0}-aarch64-linux-gnu.tar.xz";
@@ -168,7 +194,8 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 			version = version.substr(version_prefix.size());
 
 			// Build url
-			url = std::vformat(gh_download_url, std::make_format_args(version));
+			//url = std::vformat(gh_download_url, std::make_format_args(version));
+			url = get_download_url(version);
 
 			// Check for file
 			std::print("<gbs>    Checking for {} {} ...", cl.name, version);
@@ -190,7 +217,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 	auto const downloaded_file_path = gbs_user_path / filename;
 	auto const compiler_dir = gbs_user_path / cl.name;
 	auto const download_dir = compiler_dir / std::vformat(extract_output_dir, std::make_format_args(version));
-	auto const dest_dir = compiler_dir / std::format("{}_{}", cl.name, version);
+	auto const dest_dir = compiler_dir / std::format("{}_{}.{}.{}", cl.name, cl.major, cl. minor, cl.patch);
 
 	// Check if already downloaded
 	cl.dir = dest_dir;
@@ -204,17 +231,13 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 	}
 
 	// Prep the destination dir
-	std::filesystem::create_directories(compiler_dir);
+	std::filesystem::create_directories(dest_dir);
 
 	// Download
-	if (!std::filesystem::exists(downloaded_file_path)) {
-		std::println("<gbs>    {}", url);
-		if (0 != std::system(std::format("curl -fSL {} | tar -xf - -C {}", url, compiler_dir.generic_string()).c_str())) {
-			std::println("<gbs> Error downloading and unpacking {} {}", cl.name, version);
-			return false;
-		}
-
-		std::filesystem::rename(download_dir, dest_dir);
+	std::println("<gbs>    {}", url);
+	if (0 != std::system(std::format("curl -fSL {} | tar -xf - -C {}", url, dest_dir.generic_string()).c_str())) {
+		std::println("<gbs> Error downloading and unpacking {} {}", cl.name, version);
+		return false;
 	}
 
 	// Add it to the list of supported compilers

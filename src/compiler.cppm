@@ -168,18 +168,22 @@ export void enumerate_compilers(auto&& callback) {
 					comp.name_and_version = gcc_version;
 					gcc_version.remove_prefix(4);
 
+					comp.compiler = dir.path();
+					if (std::filesystem::exists(dir.path() / "mingw64"))
+						comp.compiler /= "mingw64";
+
 					extract_compiler_version(gcc_version, comp.major, comp.minor, comp.patch);
 					comp.name = "gcc";
 					comp.arch = "x64";
 					comp.dir = dir;
-					comp.compiler = dir.path() / "bin" / "gcc";
+					comp.compiler = comp.compiler / "bin" / "gcc";
 					comp.linker = comp.compiler;
 					if (comp.major >= 15)
-						comp.std_module = "-fsearch-include-path bits/std.cc";
+						comp.std_module = "bits/std.cc"; //
 
 					comp.build_source = " {0:?} -o {1:?} ";
 					comp.build_module = " -xc++ {0:?} -o {1:?} ";
-					comp.build_command_prefix = "call \"{0}\" -c ";
+					comp.build_command_prefix = "call \"{0}\" -c -fsearch-include-path ";
 					comp.link_command = "call \"{0}\"  @{1}/OBJLIST -o {1}/{2}.exe";
 					comp.reference = "";
 					callback(std::move(comp));
