@@ -12,9 +12,11 @@ import std;
 template<typename T> concept range_like = requires(T rng) { std::ranges::begin(rng); std::ranges::end(rng); };
 template<typename T> concept optional_like = requires(T opt) { opt.has_value(); opt.value(); };
 template<typename T> concept expected_like = optional_like<T> && requires(T exp) { exp.error(); };
-template<typename F> concept function_like = std::invocable < F, decltype([]<typename T>(T const&) { return true; }) > ;
+//template<typename F> concept function_like = std::invocable < F, decltype([]<typename T>(T const&) { return true; }) > ;
 
+#ifdef _MSC_VER
 #pragma warning(disable : 4324)
+#endif
 template<typename T>
 struct alignas(std::hardware_destructive_interference_size) thread_data {
 	T data;
@@ -26,7 +28,7 @@ struct alignas(std::hardware_destructive_interference_size) thread_data {
 
 template<typename Container, typename T>
 	requires requires { typename Container::value_type;  }
-static constexpr void add_to_container(Container& c, T const& v) {
+constexpr void add_to_container(Container& c, T const& v) {
 	if constexpr (std::constructible_from<typename Container::value_type, T>) {
 		if constexpr (requires { c.emplace_back(v); })
 			c.emplace_back(v);
@@ -68,21 +70,21 @@ template<typename T>				using  unwrapped_t = typename unwrapped<T>::type;
 
 
 template<typename T>
-static constexpr bool has_value(T const& v) noexcept {
+constexpr bool has_value(T const& v) noexcept {
 	if constexpr (optional_like<T>)
 		return v.has_value();
 	else
 		return true;
 }
 template<typename T>
-static constexpr decltype(auto) unwrap(T&& v) noexcept {
+constexpr decltype(auto) unwrap(T&& v) noexcept {
 	if constexpr (optional_like<T>)
 		return std::forward<T>(v).value();
 	else
 		return std::forward<T>(v);
 }
 template<typename T>
-static constexpr decltype(auto) unwrap_or(T&& v, auto const val) noexcept {
+constexpr decltype(auto) unwrap_or(T&& v, auto const val) noexcept {
 	if constexpr (optional_like<T>)
 		return std::forward<T>(v).value_or(val);
 	else
@@ -93,17 +95,19 @@ template<typename UserFn, typename ...Args>
 concept must_return_void = std::is_same_v<void, std::invoke_result_t<UserFn, Args...>>;
 
 
-export template<typename T, function_like Fn>
+export template<typename T, typename Fn>
+requires (std::invocable<Fn, decltype([]<typename V>(V const&) { }) > )
 class monad {
 	Fn fn;
 
-	// Allow acces to private constructor of other monads
-	template<typename, function_like>
+	// Allow access to private constructor of other monads
+	template<typename, typename InFn>
+		requires (std::invocable<InFn, decltype([]<typename V>(V const&) { })>)
 	friend class monad;
 
-	// Allow acces to 'as_monad' function
-	template<typename MT>
-	friend constexpr auto as_monad(MT const&) noexcept;
+	// Allow access to 'as_monad' function
+	template<typename Mt>
+	friend constexpr auto as_monad(Mt const&) noexcept;
 
 	// This function does nothing. Good for reference.
 	constexpr auto identity() const {
@@ -121,7 +125,7 @@ class monad {
 		return monad<unwrapped_t<T>, F>{std::move(f)};
 	}
 
-	constexpr explicit monad(Fn&& fn) : fn(std::forward<Fn>(fn)) {}
+	constexpr explicit monad(Fn&& in_fn) : fn(std::forward<Fn>(in_fn)) {}
 public:
 	// Disable construction and assignment
 	monad() = delete REASON("Use 'as_monad()'");
@@ -180,8 +184,8 @@ public:
 	}
 
 	// Extract the N'th element from a tuple-like type.
-	template<int N>
-		requires (N >= 0 && N < std::tuple_size_v<unwrapped_t<T>>)
+	template<std::size_t N>
+		requires (N < std::tuple_size_v<unwrapped_t<T>>)
 	constexpr auto element() const {
 		auto f = [=, fn = fn](auto dst) {
 			return fn([=](auto const& v) {
@@ -397,7 +401,7 @@ public:
 	}
 
 	// Joins a contained range-like type into a sequence of its elements, separated by the provided pattern.
-	template<int S>
+	template<std::size_t S>
 	constexpr auto join_with(const char(&pattern)[S], std::int64_t drop = 0, std::int64_t take = std::numeric_limits<std::int64_t>::max()) const {
 		return join_with(std::string_view{ pattern }, drop, take);
 	}
@@ -444,8 +448,7 @@ public:
 	}
 
 	// Split the incoming sequence into parts, separated by the provided delimiter. Faster than 'split', but requires a maximum size for each part.
-	template<int MaxSplitSize, typename D>
-		requires (MaxSplitSize > 0)
+	template<std::size_t MaxSplitSize, typename D>
 	constexpr auto split_fast(D const delimiter) const {
 		static_assert(std::is_same_v<unwrapped_t<T>, D>, "Input type 'T' and delimiter type 'D' are not comparable; maybe call 'join()' before this function?");
 
