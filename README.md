@@ -2,7 +2,7 @@
 Creating my own build system for fun.
 
 # Features
-Uses a set directory structure to automatically find source files and compile them.
+Uses a fixed directory structure to automatically find source files and compile them.
 
 - top-level directory
   - `src` - source files for main executeable
@@ -22,6 +22,7 @@ Yes, I am aware of the irony of using CMake to make a build system.
 
 # Upcoming versions (not in a specific order)
 - Make `import std;` work for gcc
+- Wait for clang to stop crashing
 - Compile and link libraries in 'lib'
 - Compile unit tests in 'unittest'
 - Fetch dependencies in 'deps'
