@@ -1,8 +1,21 @@
 # Gorking Build System v0.13
-I wanted to try and create my own build system, just for fun.
+Creating my own build system for fun.
 
 # Features
-- TODO
+Uses a set directory structure to automatically find source files and compile them.
+
+- top-level directory
+  - `src` - source files for main executeable
+  - `lib` - libraries (not implemented yet)
+	- named subdirectory per library.
+	  - name + `.d` for dynamic library
+	  - name + `.s` for static library
+  - `unittest` - unit tests (not implemented yet)
+	- One `.cpp` file per test.
+  - `deps` - dependencies (not implemented yet)
+	- TODO somehow fetch from eg. github and build them
+  - `gbs.out` - build output (created automatically)
+  - `*` - other directories, not starting with `.`, are compiled to their own executables (not implemented yet)
 
 # Note
 Yes, I am aware of the irony of using CMake to make a build system.
@@ -16,6 +29,7 @@ Yes, I am aware of the irony of using CMake to make a build system.
 - Custom build steps (via 'run'?)
 
 ## Todo
+- [ ] Good documentation for all commands
 - [x] Create a simple build system
 - [x] Automatic compilation without build scripts
 	- [x] Find source files automatically

@@ -48,7 +48,7 @@ source_info recursive_merge(source_info const& pair, std::unordered_map<std::str
 void group_by_dependency_depth(depth_ordered_sources_map& sources, source_info const& si) {
 	auto& [path, imports] = si;
 	std::size_t const dep_size = imports.size();
-	sources[dep_size].emplace_back(path, std::move(imports));
+	sources[dep_size].emplace_back(path, imports);
 }
 
 // Find the source files and dependencies

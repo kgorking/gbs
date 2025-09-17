@@ -93,6 +93,7 @@
       ]
     },
     {
+      "name": "[msvc] self",
       "type": "default",
       "project": "CMakeLists.txt",
       "currentDir": ".",
@@ -100,9 +101,9 @@
       "args": [
         "clean cl=msvc build=debug,warnings"
       ],
-      "name": "[msvc] self"
     },
     {
+      "name": "[clang] self analyze",
       "type": "default",
       "project": "CMakeLists.txt",
       "currentDir": "./test",
@@ -110,9 +111,9 @@
       "args": [
         "clean cl=clang build=debug,analyze,warnings"
       ],
-      "name": "[clang] self analyze"
     },
     {
+      "name": "[msvc] self analyze",
       "type": "default",
       "project": "CMakeLists.txt",
       "currentDir": "./",
@@ -120,7 +121,6 @@
       "args": [
         "clean cl=msvc build=debug,analyze,warnings"
       ],
-      "name": "[msvc] self analyze"
     }
   ]
 }

@@ -1,60 +1,204 @@
 {
   "version": "0.2.1",
   "outDir": "\"${workspaceRoot}\\gbs.out\"",
-  "tasks": [
-    {
-      "taskLabel": "Build",
-      "appliesTo": "/",
-      "type": "launch",
-      "contextType": "build",
-      "workingDirectory": "${workspaceRoot}/",
-      "command": "pwsh",
-      "args": [
-        "-Command Start-Process",
-        "-Wait",
-        "-UseNewEnvironment",
-        "-NoNewWindow",
-        "-FilePath",
-        "'${env.GBS_BIN}'",
-        "-ArgumentList",
-        "'build=release,warnings'"
-      ]
-    },
-    {
-      "taskLabel": "Rebuild",
-      "appliesTo": "/",
-      "type": "default",
-      "contextType": "rebuild",
-      "workingDirectory": "${workspaceRoot}/",
-      "command": "pwsh",
-      "args": [
-        "-Command Start-Process",
-        "-Wait",
-        "-UseNewEnvironment",
-        "-NoNewWindow",
-        "-FilePath",
-        "'${env.GBS_BIN}'",
-        "-ArgumentList",
-        "'clean build=release,warnings'"
-      ]
-    },
-    {
-      "taskLabel": "Clean",
-      "appliesTo": "/",
-      "type": "default",
-      "contextType": "clean",
-      "workingDirectory": "${workspaceRoot}/",
-      "command": "pwsh",
-      "args": [
-        "-Command Start-Process",
-        "-Wait",
-        "-UseNewEnvironment",
-        "-NoNewWindow",
-        "-FilePath",
-        "'${env.GBS_BIN}'",
-        "-ArgumentList",
-        "clean"
-      ]
-    }
-  ]
+    "tasks": [
+        {
+            "taskLabel": "Enumerate compilers",
+            "appliesTo": "/",
+            "type": "launch",
+            "contextType": "custom",
+            "workingDirectory": "${workspaceRoot}/",
+            "command": "pwsh",
+            "args": [
+                "-Command Start-Process",
+                "-Wait",
+                "-UseNewEnvironment",
+                "-NoNewWindow",
+                "-FilePath",
+                "'${env.GBS_BIN}'",
+                "-ArgumentList",
+                "'enum_cl'"
+            ]
+        },
+        {
+            "taskLabel": "Build",
+            "appliesTo": "/",
+            "type": "launch",
+            "contextType": "build",
+            "workingDirectory": "${workspaceRoot}/",
+            "command": "pwsh",
+            "args": [
+                "-Command Start-Process",
+                "-Wait",
+                "-UseNewEnvironment",
+                "-NoNewWindow",
+                "-FilePath",
+                "'${env.GBS_BIN}'",
+                "-ArgumentList",
+                "'cl=msvc build=release,warnings'"
+            ]
+        },
+        {
+            "taskLabel": "Rebuild",
+            "appliesTo": "/",
+            "type": "launch",
+            "contextType": "rebuild",
+            "workingDirectory": "${workspaceRoot}/",
+            "command": "pwsh",
+            "args": [
+                "-Command Start-Process",
+                "-Wait",
+                "-UseNewEnvironment",
+                "-NoNewWindow",
+                "-FilePath",
+                "'${env.GBS_BIN}'",
+                "-ArgumentList",
+                "'clean cl=msvc build=release,warnings'"
+            ]
+        },
+        {
+            "taskLabel": "Clean",
+            "appliesTo": "/",
+            "type": "launch",
+            "contextType": "clean",
+            "workingDirectory": "${workspaceRoot}/",
+            "command": "pwsh",
+            "args": [
+                "-Command Start-Process",
+                "-Wait",
+                "-UseNewEnvironment",
+                "-NoNewWindow",
+                "-FilePath",
+                "'${env.GBS_BIN}'",
+                "-ArgumentList",
+                "clean"
+            ]
+        },
+        {
+            "taskLabel": "build [msvc]",
+            "appliesTo": "/",
+            "type": "launch",
+            "contextType": "custom",
+            "workingDirectory": "${workspaceRoot}/",
+            "command": "pwsh",
+            "args": [
+                "-Command Start-Process",
+                "-Wait",
+                "-UseNewEnvironment",
+                "-NoNewWindow",
+                "-FilePath",
+                "'${env.GBS_BIN}'",
+                "-ArgumentList",
+                "'cl=msvc build=debug,warnings'"
+            ]
+        },
+        {
+            "taskLabel": "build [clang]",
+            "appliesTo": "/",
+            "type": "launch",
+            "contextType": "custom",
+            "workingDirectory": "${workspaceRoot}/",
+            "command": "pwsh",
+            "args": [
+                "-Command Start-Process",
+                "-Wait",
+                "-UseNewEnvironment",
+                "-NoNewWindow",
+                "-FilePath",
+                "'${env.GBS_BIN}'",
+                "-ArgumentList",
+                "'cl=clang build=debug,warnings'"
+            ]
+        },
+        {
+            "taskLabel": "build [gcc]",
+            "appliesTo": "/",
+            "type": "launch",
+            "contextType": "custom",
+            "workingDirectory": "${workspaceRoot}/",
+            "command": "pwsh",
+            "args": [
+                "-Command Start-Process",
+                "-Wait",
+                "-UseNewEnvironment",
+                "-NoNewWindow",
+                "-FilePath",
+                "'${env.GBS_BIN}'",
+                "-ArgumentList",
+                "'cl=gcc build=debug,warnings'"
+            ]
+        },
+        {
+            "taskLabel": "download [clang]",
+            "appliesTo": "/",
+            "type": "launch",
+            "contextType": "custom",
+            "workingDirectory": "${workspaceRoot}/",
+            "command": "pwsh",
+            "args": [
+                "-Command Start-Process",
+                "-Wait",
+                "-UseNewEnvironment",
+                "-NoNewWindow",
+                "-FilePath",
+                "'${env.GBS_BIN}'",
+                "-ArgumentList",
+                "get_cl=clang"
+            ]
+        },
+        {
+            "taskLabel": "download [gcc]",
+            "appliesTo": "/",
+            "type": "launch",
+            "contextType": "custom",
+            "workingDirectory": "${workspaceRoot}/",
+            "command": "pwsh",
+            "args": [
+                "-Command Start-Process",
+                "-Wait",
+                "-UseNewEnvironment",
+                "-NoNewWindow",
+                "-FilePath",
+                "'${env.GBS_BIN}'",
+                "-ArgumentList",
+                "get_cl=gcc"
+            ]
+        },
+        {
+            "taskLabel": "analyze [msvc]",
+            "appliesTo": "/",
+            "type": "launch",
+            "contextType": "custom",
+            "workingDirectory": "${workspaceRoot}/",
+            "command": "pwsh",
+            "args": [
+                "-Command Start-Process",
+                "-Wait",
+                "-UseNewEnvironment",
+                "-NoNewWindow",
+                "-FilePath",
+                "'${env.GBS_BIN}'",
+                "-ArgumentList",
+                "'cl=msvc build=analyze,debug,warnings'"
+            ]
+        },
+        {
+            "taskLabel": "analyze [clang]",
+            "appliesTo": "/",
+            "type": "launch",
+            "contextType": "custom",
+            "workingDirectory": "${workspaceRoot}/",
+            "command": "pwsh",
+            "args": [
+                "-Command Start-Process",
+                "-Wait",
+                "-UseNewEnvironment",
+                "-NoNewWindow",
+                "-FilePath",
+                "'${env.GBS_BIN}'",
+                "-ArgumentList",
+                "'cl=clang build=analyze,debug,warnings'"
+            ]
+        }
+    ]
 }

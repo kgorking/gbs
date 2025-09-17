@@ -3,7 +3,7 @@ module;
 export module monad;
 import std;
 
-#ifdef __cpp_deleted_function
+#if 0//def __cpp_deleted_function
 #define REASON(x) (x)
 #else
 #define REASON(x)
@@ -16,7 +16,7 @@ template<typename F> concept function_like = std::invocable < F, decltype([]<typ
 
 #pragma warning(disable : 4324)
 template<typename T>
-struct alignas(std::hardware_destructive_interference_size) task {
+struct alignas(std::hardware_destructive_interference_size) thread_data {
 	T data;
 	std::size_t id = 0;
 	std::binary_semaphore sema{ 0 };
@@ -150,12 +150,12 @@ public:
 
 	template<typename TypeHack = std::conditional_t<std::is_class_v<T>, T, std::nullopt_t>>
 		requires std::is_class_v<T>
-	constexpr auto filter(bool (TypeHack::* pred)() const) const {
+	constexpr auto filter(bool (TypeHack::* predicate)() const) const {
 		auto f = [=, fn = fn](auto dst) {
 			return fn([&](const auto& v) {
 				if (has_value(v)) {
 					unwrapped_t<T> const& uv = unwrap(v);
-					if (std::invoke(pred, uv))
+					if (std::invoke(predicate, uv))
 						dst(uv);
 				}
 				});
@@ -252,18 +252,70 @@ public:
 		return monad<T, F>{std::move(f)};
 	}
 
+	// ...
+	template<typename OtherT, typename OtherFn>
+	constexpr auto cartesion_product(monad<OtherT, OtherFn> const& m) const {
+		auto f = [fn = fn, &m](auto dst) {
+			m.fn([=](auto const& v_outer) {
+				fn([=](auto const& v_inner) {
+					if (has_value(v_inner) && has_value(v_outer)) {
+						dst(std::make_tuple(unwrap(v_inner), unwrap(v_outer)));
+					}
+					});
+				});
+			};
+		using F = decltype(f);
+		return monad<T, F>{std::move(f)};
+	}
+
+	// Zip two monads together. Due to the architecture of this monad implementation, the zipping is done using a separate thread.
+	template<typename OtherT, typename OtherFn>
+	constexpr auto zip(monad<OtherT, OtherFn> const& m) const {
+		auto f = [fn = fn, &m](auto dst) -> void {
+			OtherT right{};
+			std::binary_semaphore sema_left{ 0 };
+			std::binary_semaphore sema_right{ 1 };
+			std::atomic_bool done = false;
+
+			std::jthread t{ [&]() {
+				m.fn([&](OtherT const& v_right) {
+					if (done) return;
+
+					if (has_value(v_right)) {
+						sema_right.acquire();
+						right = v_right;
+						sema_left.release();
+					}
+					});
+				done = true;
+				} };
+
+			fn([&](auto const& v_left) {
+				if (done) return;
+
+				sema_left.acquire();
+				if (has_value(v_left) /*&& has_value(right)*/) {
+					dst(std::make_tuple(unwrap(v_left), unwrap(right)));
+				}
+				sema_right.release();
+				});
+			done = true;
+			};
+		using F = decltype(f);
+		return monad<std::tuple<unwrapped_t<T>, unwrapped_t<OtherT>>, F>{std::move(f)};
+	}
+
 	// Flattens a contained range-like type into a sequence of its elements.
 	constexpr auto join(std::int64_t const drop = 0, std::int64_t const take = std::numeric_limits<std::int64_t>::max()) const requires range_like<unwrapped_t<T>> {
 		auto f = [=, fn = fn](auto dst) {
-			return fn([=](auto const& v) {
+			fn([=](auto const& v) {
 				if (has_value(v)) {
 					auto const& uv = unwrap(v);
-
-					int64_t const first = std::max(0ll, drop);
+					std::int64_t const first = std::max(0ll, drop);
 					auto it = std::next(std::ranges::begin(uv), first);
 					auto const end = std::ranges::end(uv);
 
-					for (int64_t i = 0; i < take && it != end; ++i, it++) {
+					for (std::int64_t i = 0; i < take && it != end; ++i, ++it) {
 						dst(*it);
 					}
 				}
@@ -280,7 +332,7 @@ public:
 			return fn([=](auto const& v) {
 				if (has_value(v)) {
 					auto const& uv = unwrap(v);
-					std::for_each(std::execution::par, std::ranges::begin(uv), std::ranges::end(uv), [&](auto const& item) {
+					std::for_each(std::execution::par, std::ranges::begin(uv), std::ranges::end(uv), [dst](auto const& item) {
 						dst(item);
 						});
 				}
@@ -293,14 +345,14 @@ public:
 	}
 
 	// Flattens a contained range-like type into a sequence of its elements, in parallel.
-	constexpr auto join_par(std::int64_t const drop, std::int64_t const take) const requires range_like<unwrapped_t<T>> {
+	constexpr auto join_par(std::int64_t const drop, std::int64_t const take) const requires range_like<unwrapped_t<T>>&& std::ranges::sized_range<unwrapped_t<T>> {
 		auto f = [=, fn = fn](auto dst) {
 			return fn([=](auto const& v) {
 				if (has_value(v)) {
 					auto const& uv = unwrap(v);
-					int64_t const begin = std::max(0ll, drop);
+					std::int64_t const begin = std::max(0ll, drop);
 					std::int64_t const count = std::min(std::ranges::ssize(uv) - begin, take);
-					int64_t const end = begin + count;
+					//int const end = begin + count;
 
 					auto it = uv.begin() + begin;
 					std::for_each(std::execution::par, it, it + count, [&](auto const& item) {
@@ -317,7 +369,7 @@ public:
 
 	// Joins a contained range-like type into a sequence of its elements, separated by the provided pattern.
 	template<typename P>
-		requires range_like<unwrapped_t<T>>&& std::is_same_v<P, std::ranges::range_value_t<unwrapped_t<T>>>
+		requires range_like<unwrapped_t<T>>&& std::is_same_v<P, unwrapped_t<std::ranges::range_value_t<unwrapped_t<T>>>>
 	constexpr auto join_with(P&& pattern, std::int64_t drop = 0, std::int64_t take = std::numeric_limits<std::int64_t>::max()) const {
 		auto f = [=, fn = fn](auto dst) {
 			return fn([=](auto const& v) {
@@ -528,7 +580,7 @@ public:
 			return fn([&](auto const& v) {
 				if (has_value(v)) {
 					unwrapped_t<T> const& ub = unwrap(v);
-					std::invoke(user_fn, ub, args...);
+					std::invoke(user_fn, ub, std::forward<Args>(args)...);
 					dst(ub);
 				}
 				});
@@ -557,7 +609,9 @@ public:
 		auto f = [=, fn = fn, eh = std::forward<ExceptionHandler>(exception_handler)](auto dst) {
 			fn([=](auto const& v) {
 				try {
-					dst(v);
+					if (has_value(v)) {
+						dst(unwrap(v));
+					}
 				}
 				catch (Exception const& e) {
 					std::invoke(eh, e);
@@ -582,11 +636,11 @@ public:
 			num_threads = std::thread::hardware_concurrency();
 
 		auto f = [=, fn = fn](auto dst) {
-			auto tasks = std::vector<task<T>>(num_threads);
+			auto tasks = std::vector<thread_data<T>>(num_threads);
 			auto task_bitset = std::atomic_size_t{ std::numeric_limits<std::size_t>::max() };
 			auto producer_completed = bool{ false };
 
-			auto receiver = [&](task<T>* task) {
+			auto receiver = [&](thread_data<T>* task) {
 				// Enable the task slot
 				task_bitset ^= (1ull << task->id);
 
@@ -608,7 +662,7 @@ public:
 
 			// Start all the threads.
 			// The task slot is initially disabled until thread setup is done
-			for (std::size_t task_counter = 0; task<T>& task : tasks) {
+			for (std::size_t task_counter = 0; thread_data<T>& task : tasks) {
 				task_bitset ^= (1ull << task_counter);
 				task.id = task_counter;
 				task.future = std::async(std::launch::async, receiver, &task);
@@ -684,7 +738,7 @@ public:
 
 	// Sums up the values in the monad.
 	template<typename I = unwrapped_t<T>>
-		requires !std::ranges::range<unwrapped_t<T>>
+		requires (!std::ranges::range<unwrapped_t<T>>)
 	constexpr I sum(I init = {}) const {
 		fn([&](auto const& v) {
 			init += unwrap_or(v, 0);
@@ -693,7 +747,7 @@ public:
 	}
 
 	// Sums up the values in the monad.
-	template <typename I = typename unwrapped_t<T>::value_type>
+	template <typename I = std::int64_t>
 		requires std::ranges::range<unwrapped_t<T>>
 	constexpr auto sum(I init = I{}) const {
 		fn([&](auto const& v) {
@@ -730,6 +784,7 @@ public:
 	}
 
 	// Sends the final values to the provided function.
+	// TODO unneeded?
 	template<typename C>
 	constexpr auto to_dest(void (*user_fn)(C&, unwrapped_t<T> const&)) const {
 		C c{};

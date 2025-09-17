@@ -32,8 +32,7 @@ int main(int argc, char const* argv[]) {
 		{"ide", cmd_ide},
 	};
 
-	//auto const args = std::span<char const*>(argv, argc);
-	auto const args = std::span<char const*>(argv, argv + argc);
+	auto const args = std::span<char const*>(argv, argc);
 	for (std::string_view arg : args | std::views::drop(1)) {
 		std::string_view const left = arg.substr(0, arg.find('='));
 		if (!commands.contains(left)) {

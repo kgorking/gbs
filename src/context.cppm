@@ -109,17 +109,7 @@ export void fill_compiler_collection(context& ctx) {
 		auto const std_module = std::filesystem::path(*msvc_compiler.std_module);
 
 		for(compiler& clang : ctx.all_compilers["clang"]) {
-			//ctx.selected_cl = clang;
-			//auto const link = ctx.output_dir() / "std.cppm";
-			//if (!std::filesystem::exists(link)) {
-				//std::filesystem::create_directories(link.parent_path());
-
-				// Copy the msvc std module
-				//std::filesystem::copy_file(std_module, link);
-
-				// Update the clang compiler to use the msvc std module
 			clang.std_module = std_module;
-			//}
 		}
 	}
 #endif

@@ -6,7 +6,7 @@ export struct source_dependency {
 	std::string export_name{};
 	std::set<std::string> import_names{};
 
-	bool is_export() const {
+	bool is_export() const noexcept {
 		return !export_name.empty();
 	}
 };

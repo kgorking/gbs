@@ -87,7 +87,7 @@ export bool cmd_build(context& ctx, std::string_view args) {
 			.to<std::string>();
 
 #ifdef _MSC_VER
-	if (ctx.selected_cl.name == "msvc") {
+	if (ctx.selected_cl.name == "msvc" || ctx.selected_cl.name == "clang") {
 		extern bool init_msvc(context const&);
 		if (!init_msvc(ctx))
 			return false;
@@ -106,7 +106,8 @@ export bool cmd_build(context& ctx, std::string_view args) {
 		.guard([](std::exception const& e) { std::println(std::cerr, "<gbs> Error: {}", e.what()); })
 		.map(write_object_file_and_check_date, ctx, std::ref(mut), std::ref(objects))
 		.map(make_build_command, ctx, ctx.build_command_prefix(), resp_args)
-		.until(+[](std::string_view cmd) {
+		.until(+[](std::string_view cmd) noexcept {
+			std::puts(cmd.data());
 			return (0 == std::system(cmd.data()));
 		});
 
