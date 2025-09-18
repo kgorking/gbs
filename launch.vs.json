@@ -80,7 +80,7 @@
       "projectTarget": "gbs.exe",
       "args": [
         "clean cl=msvc build=debug,warnings"
-      ],
+      ]
     },
     {
       "name": "[clang] self analyze",
@@ -90,7 +90,7 @@
       "projectTarget": "gbs.exe",
       "args": [
         "clean cl=clang build=debug,analyze,warnings"
-      ],
+      ]
     },
     {
       "name": "[msvc] self analyze",
@@ -100,7 +100,7 @@
       "projectTarget": "gbs.exe",
       "args": [
         "clean cl=msvc build=debug,analyze,warnings"
-      ],
+      ]
     }
   ]
 }
