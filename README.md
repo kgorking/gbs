@@ -1,4 +1,4 @@
-# Gorking Build System v0.13
+# Gorking Build System v0.14
 Creating my own build system for fun.
 
 # Features
@@ -21,11 +21,10 @@ Uses a fixed directory structure to automatically find source files and compile 
 - [x] msvc 19.38+
 - [ ] clang 19+ (crashes when using modules)
 - [ ] gcc 15+   (needs mods to stdlib, crashes when using modules)
+  - Change some `WINPTHREAD_COND_DECL` to `WINPTHREAD_API` in `pthread.h`
+  - Add `#undef _GLIBCXX_USE_NANOSLEEP` to `this_thread_sleep.h`
 
 # Upcoming versions (not in a specific order)
-- Make `import std;` work for gcc
-- Wait for clang to stop crashing
-- Wait for gcc to stop crashing
 - Compile and link libraries in 'lib'
 - Compile unit tests in 'unittest'
 - Fetch dependencies in 'deps'
