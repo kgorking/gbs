@@ -21,7 +21,8 @@ std::string gcc_get_download_url(std::string_view const version) {
 }
 
 std::string clang_get_download_url(std::string_view const version) {
-	return std::string{ version };
+	// "https://github.com/llvm/llvm-project/releases/download/llvmorg-{0}/clang+llvm-{0}-x86_64-pc-windows-msvc.tar.xz";
+	return std::format("https://github.com/llvm/llvm-project/releases/download/llvmorg-{0}/clang+llvm-{0}-x86_64-pc-windows-msvc.tar.xz", version);
 }
 
 export bool cmd_get_cl(context& ctx, std::string_view args) {
@@ -63,7 +64,6 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 	std::string_view version_prefix;
 	std::string version;
 	std::string git_search_cmd;
-	std::string gh_download_url;
 	std::string_view extract_output_dir;
 
 	args.remove_prefix(cl.name.size());
@@ -81,6 +81,14 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 
 	std::string(*get_download_url)(std::string_view);
 
+#ifdef _WIN64
+	cl.arch = "x64";
+#elif __linux__
+	cl.arch = "x64";
+#elif _ARM // ??
+	cl.arch = "arm64";
+#endif
+
 	if (cl.name == "clang") {
 		cl.executable = "bin/clang";
 
@@ -96,19 +104,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 
 		// Prepare the download url
 		get_download_url = clang_get_download_url;
-#ifdef _WIN64
-		cl.arch = "x64";
-		gh_download_url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-{0}/clang+llvm-{0}-x86_64-pc-windows-msvc.tar.xz";
-		extract_output_dir = "clang+llvm-{0}-x86_64-pc-windows-msvc";
-#elif __linux__
-		cl.arch = "x64";
-		gh_download_url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-{0}/clang+llvm-{0}-aarch64-linux-gnu.tar.xz";
-		extract_output_dir = "clang+llvm-{0}-aarch64-linux-gnu";
-#elif _ARM // ??
-		cl.arch = "arm64";
-		gh_download_url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-{0}/clang+llvm-{0}-armv7a-linux-gnueabihf.tar.gz";
-		extract_output_dir = "clang+llvm-{0}-armv7a-linux-gnueabihf";
-#endif
+		extract_output_dir = "clang-{0}-{1}";
 	}
 	else if (cl.name == "gcc") {
 		// git ls-remote --exit-code --refs --tags --sort="-version:refname" https://github.com/xpack-dev-tools/gcc-xpack v*
@@ -123,24 +119,12 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 			"version_list.txt");
 
 		get_download_url = gcc_get_download_url;
-#ifdef _WIN64
-		cl.arch = "x64";
-		gh_download_url = "https://github.com/brechtsanders/winlibs_mingw/releases/download/{0}/xpack-gcc-{0}-win32-x64.zip";
-		extract_output_dir = "gcc-{0}";
-#elif __linux__
-		cl.arch = "x64";
-		gh_download_url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-{0}/clang+llvm-{0}-aarch64-linux-gnu.tar.xz";
-		extract_output_dir = "clang+llvm-{0}-aarch64-linux-gnu";
-#elif _ARM // ??
-		?? cl.arch = "arm64";
-		gh_download_url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-{0}/clang+llvm-{0}-armv7a-linux-gnueabihf.tar.gz";
-		extract_output_dir = "clang+llvm-{0}-armv7a-linux-gnueabihf";
-#endif
+		extract_output_dir = "gcc-{0}_{1}";
 	}
 	else if (cl.name == "msvc") {
 		auto const vs_buildtools = homedir / ".gbs" / "vs_BuildTools.exe";
 		std::println("<gbs>    downloading Visual Studio build tools...");
-		if (0 != std::system(std::format("curl -fSL https://aka.ms/vs/17/release/vs_BuildTools.exe --output \"{}\"", vs_buildtools.generic_string()).c_str())) {
+		if (0 != std::system(std::format("curl -fSL https://aka.ms/vs/{1}/release/vs_BuildTools.exe --output \"{0}\"", vs_buildtools.generic_string(), version).c_str())) {
 			std::filesystem::remove(vs_buildtools);
 			std::println("<gbs>    Error downloading msvc build tools");
 			return false;
@@ -215,7 +199,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 	auto const gbs_user_path = std::filesystem::path(homedir) / ".gbs";
 	auto const downloaded_file_path = gbs_user_path / filename;
 	auto const compiler_dir = gbs_user_path / cl.name;
-	auto const download_dir = compiler_dir / std::vformat(extract_output_dir, std::make_format_args(version));
+	auto const download_dir = compiler_dir / std::vformat(extract_output_dir, std::make_format_args(version, cl.arch));
 	auto const dest_dir = compiler_dir / std::format("{}_{}.{}.{}", cl.name, cl.major, cl. minor, cl.patch);
 
 	// Check if already downloaded

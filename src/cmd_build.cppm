@@ -92,16 +92,15 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 			return (0 == std::system(cmd.data()));
 		});
 
+	if (!succeeded)
+		return false;
+
 	// Close the objects file
 	objects.close();
 
 	// Link sources
-	if (succeeded) {
-		std::println("<gbs> Linking...");
-		std::string const executable = fs::current_path().stem().string();
-		std::string const link = ctx.link_command(executable);
-		return 0 == std::system(link.c_str());
-	}
-
-	return false;
+	std::println("<gbs> Linking...");
+	std::string const executable = fs::current_path().stem().string();
+	std::string const link = ctx.link_command(executable);
+	return 0 == std::system(link.c_str());
 }

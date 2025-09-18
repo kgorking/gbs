@@ -8,16 +8,14 @@ The following commands are supported:
 - **version**
 	- Shows the current version of the build system
 
-- **enum_cl**
-	- Enumerates installed compilers
-
-- **get_cl**=_compiler_:_version_
-	- Downloads the compiler with at least the specified version. Supports clang and gcc.
-
-- **cl**=_compiler_:_version_
-	- Selects the compiler to use for subsequent commands.
-		- If the compiler is not found, an error is returned.
-	- Example: `gbs cl=msvc:19 build cl=clang:17.3.1 build`
+- _TODO_ **new**=_project_name_
+	- Creates a new project with the specified name in the current directory.
+	- The project will have the following structure:
+		- `src` - source files for main executeable
+		- `lib` - libraries
+		- `unittest` - unit tests
+		- `deps` - dependencies
+	- _Not implemented yet_
 
 - **config**=_[configuration]_
 	- Sets the configurations to use for compilation. Currently `debug`, `release`, `analyze` have built-in support, and will be created if not found.
@@ -26,8 +24,9 @@ The following commands are supported:
 		- They can be created manually or you can use the auto generated ones. You are free to change them as you see fit.
 	- Example: `gbs config=release,analyze build` will perform a release build with additional analysis enabled.
 
-- **clean**
+- **clean**=_[configuration]_
 	- Cleans the build output folder (`gbs.out`).
+	- TODO: only clean specified configuration.
  
 - **build**_=[directories]_
 	- Builds the specified directories. If no directories are specified, the current directory is built.
@@ -38,10 +37,28 @@ The following commands are supported:
 	- If no executable is found, an error is returned.
 	- Example: `gbs build run=version` run in gbs' directory will build gbs and run the built executable as `gbs version`.
 
+- _TODO_ **unittest**_=[directories]_
+	- Builds and runs unit tests in the specified directories. If no directories are specified, the current directory is used.
+	- Unit tests are expected to be in the `unittest` subdirectory of the specified directory.
+	- _Not implemented yet_
+
+- **enum_cl**
+	- Enumerates installed compilers
+
+- **get_cl**=_compiler_:_version_
+	- Downloads the compiler with at least the specified version. Supports clang and gcc.
+	- Example: `gbs get_cl=gcc` will try and download the latest version of gcc.
+	- Example: `gbs get_cl=clang:18` will try and download the latest version 18 of clang _(currently 18.1.8)_.
+	- Example: `gbs get_cl=clang:17.2.2` will try and download version 17.2.2 of clang.
+
+- **cl**=_compiler_:_version_
+	- Selects the compiler to use for subsequent commands.
+		- If the compiler is not found, an error is returned.
+	- Example: `gbs cl=msvc:19 build cl=clang:17.3.1 build`
+
 - **ide**=_[ide]_
 	- Generates **tasks.vs.json** for the specified IDE. Supported IDEs are `vscode` and `vs`.
 	- Example: `gbs ide=vs` will allow a folder to be opened in Visual Studio and allow the user to right-click the top-most folder and have several build options available, without needing a project or solution.
-
 
 # Features
 Uses a fixed directory structure to automatically find source files and compile them.
