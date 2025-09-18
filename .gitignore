@@ -1,10 +1,9 @@
 ## Ignore Visual Studio temporary files, build results, and
 /std.ifc
-/.gbs
-/gbs.out
-/test/.gbs/*
-/test/gbs.out
-/test/gcm.cache
+.gbs
+gbs.out
+gcm.cache
+
 
 !/.vs/task.vs.json
 !/.vs/launch.vs.json
