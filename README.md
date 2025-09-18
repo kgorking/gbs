@@ -1,6 +1,48 @@
 # Gorking Build System v0.14
 Creating my own build system for fun.
 
+# Usage
+`gbs` **_[commands...]_**
+
+The following commands are supported:
+- **version**
+	- Shows the current version of the build system
+
+- **enum_cl**
+	- Enumerates installed compilers
+
+- **get_cl**=_compiler_:_version_
+	- Downloads the compiler with at least the specified version. Supports clang and gcc.
+
+- **cl**=_compiler_:_version_
+	- Selects the compiler to use for subsequent commands.
+		- If the compiler is not found, an error is returned.
+	- Example: `gbs cl=msvc:19 build cl=clang:17.3.1 build`
+
+- **config**=_[configuration]_
+	- Sets the configurations to use for compilation. Currently `debug`, `release`, `analyze` have built-in support, and will be created if not found.
+	- A configuration name corresponds to a response file in the folder `.gbs/`.
+		- Response files are simple text files containing command line arguments for the selected compiler.
+		- They can be created manually or you can use the auto generated ones. You are free to change them as you see fit.
+	- Example: `gbs config=release,analyze build` will perform a release build with additional analysis enabled.
+
+- **clean**
+	- Cleans the build output folder (`gbs.out`).
+ 
+- **build**_=[directories]_
+	- Builds the specified directories. If no directories are specified, the current directory is built.
+	- If no `config` is specified, `debug,warnings` is used by default.
+
+- **run**_=[parameters]_
+	- Runs the last built executable with the optinally specified parameters. If no parameters are specified, the executable is run without parameters.
+	- If no executable is found, an error is returned.
+	- Example: `gbs build run=version` run in gbs' directory will build gbs and run the built executable as `gbs version`.
+
+- **ide**=_[ide]_
+	- Generates **tasks.vs.json** for the specified IDE. Supported IDEs are `vscode` and `vs`.
+	- Example: `gbs ide=vs` will allow a folder to be opened in Visual Studio and allow the user to right-click the top-most folder and have several build options available, without needing a project or solution.
+
+
 # Features
 Uses a fixed directory structure to automatically find source files and compile them.
 
@@ -18,7 +60,7 @@ Uses a fixed directory structure to automatically find source files and compile 
   - `*` - other directories, not starting with `.`, are compiled to their own executables (not implemented yet)
 
 # Supported compilers
-That can be used to produced an executeable.
+The following compilers can produce a working executeable:
 
 - [x] msvc 19.38+
 - [ ] clang 19+ (crashes when using modules)

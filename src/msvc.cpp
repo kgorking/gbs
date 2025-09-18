@@ -19,7 +19,7 @@ bool init_msvc(context const& ctx) {
 		vcvars.string(),
 		include_cmd,
 		libpath_cmd);
-	std::puts(vcvars_cmd.c_str());
+	//std::puts(vcvars_cmd.c_str());
 
 	if (0 != std::system(vcvars_cmd.c_str())) {
 		std::println("<gbs> Error: failed to extract vars from 'vcvars64.bat'");
