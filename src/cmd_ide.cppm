@@ -232,7 +232,6 @@ void create_vs_tasks() {
 })";
 	std::ofstream tasks_file("tasks.vs.json");
     tasks_file << tasks;
-    return;
 }
 
 void create_vscode_tasks() {
@@ -273,5 +272,4 @@ void create_vscode_tasks() {
 })";
 	std::ofstream tasks_file("tasks.vs.json");
     tasks_file << tasks;
-    return;
 }

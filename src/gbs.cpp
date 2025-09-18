@@ -3,6 +3,7 @@ import compiler;
 import context;
 import monad;
 
+import cmd_version;
 import cmd_build;
 import cmd_get_cl;
 import cmd_enum_cl;
@@ -12,8 +13,6 @@ import cmd_cl;
 import cmd_ide;
 
 int main(int argc, char const* argv[]) {
-	std::println("<gbs> Gorking build system v0.14.0");
-
 	context ctx;
 
 	if (argc == 1) {
@@ -23,6 +22,7 @@ int main(int argc, char const* argv[]) {
 	}
 
 	static std::unordered_map<std::string_view, bool(*)(context&, std::string_view)> const commands = {
+		{"version", cmd_version},
 		{"enum_cl", cmd_enum_cl},
 		{"get_cl", cmd_get_cl},
 		{"cl", cmd_cl},
