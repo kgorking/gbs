@@ -20,11 +20,11 @@ export void init_response_files(context& ctx) {
 			"/w14311 "     // 'variable': pointer truncation from 'type1' to 'type2' 
 			"/w14545 "     // expression before comma evaluates to a function which is missing an argument list 
 			"/w14546 "     // function call before comma missing argument list 
-			"/w14547 "     // 'operator': operator before comma has no effect; expected operator with side-effect 
+			"/w14547 "     // 'operator': operator before comma has no effect; expected operator with side effect 
 			"/w14549 "     // 'operator': operator before comma has no effect; did you intend 'operator'? 
-			"/w14555 "     // expression has no effect; expected expression with side- effect 
+			"/w14555 "     // expression has no effect; expected expression with side effect 
 			"/w14619 "     // pragma warning: there is no warning number 'number' 
-			"/w14640 "     // Enable warning on thread un-safe static member initialization 
+			"/w14640 "     // Enable warning on thread unsafe static member initialization 
 			"/w14826 "     // Conversion from 'type1' to 'type2' is sign-extended. This may cause unexpected runtime behavior. 
 			"/w14905 "     // wide string literal cast to 'LPSTR' 
 			"/w14906 "     // string literal cast to 'LPWSTR' 
@@ -86,8 +86,8 @@ export void init_response_files(context& ctx) {
 			"-Wformat=2 "               // warn on security issues around functions that format output (ie printf)
 			"-Wimplicit-fallthrough "   // warn on statements that fallthrough without an explicit annotation
 			"-Wmisleading-indentation " // warn if indentation implies blocks where blocks do not exist
-			"-Wduplicated-cond "        // warn if if / else chain has duplicated conditions
-			"-Wduplicated-branches "    // warn if if / else branches have duplicated code
+			"-Wduplicated-cond "        // warn on 'if/else' chain with duplicated conditions
+			"-Wduplicated-branches "    // warn on 'if/else' branches with duplicated code
 			"-Wlogical-op "             // warn about logical operations being used where bitwise were probably wanted
 			"-Wuseless-cast "           // warn if you perform a cast to the same type
 			"-Wsuggest-override "       // warn if an overridden member function is not marked 'override' or 'final'
@@ -105,7 +105,7 @@ export bool ensure_response_file_exists(context const& ctx, std::string_view res
 		return false;
 	}
 
-	auto& map = ctx.response_map.at(ctx.selected_cl.name);
+	auto const& map = ctx.get_response_map();
 
 	// Check that it is a valid response file
 	if (!fs::exists(ctx.response_dir() / resp)) {
@@ -124,12 +124,12 @@ export bool ensure_response_file_exists(context const& ctx, std::string_view res
 
 
 export bool check_response_files(context const& ctx, std::string_view args) {
-	if (ctx.selected_cl.name.empty()) {
+	if (!ctx.is_compiler_selected()) {
 		std::println("<gbs> Error: select a compiler");
 		std::exit(1);
 	}
 
-	if (!ctx.response_map.contains(ctx.selected_cl.name)) {
+	if (!ctx.has_response_map()) {
 		std::println("<gbs> Error: selected compiler does not have any default response files");
 		std::exit(1);
 	}

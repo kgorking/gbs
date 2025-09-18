@@ -38,7 +38,7 @@ target_sources(gbs PUBLIC FILE_SET CXX_MODULES FILES
 	"src/cmd_cl.cppm"
 	"src/cmd_ide.cppm"
 	"src/monad.cppm"
- "src/cmd_version.cppm")
+ "src/cmd_version.cppm" "src/cmd_config.cppm")
 
 if(MSVC)
 	target_compile_definitions(gbs PRIVATE _MSVC_STL_HARDENING=1 _MSVC_STL_DESTRUCTOR_TOMBSTONES=1)

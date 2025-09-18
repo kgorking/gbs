@@ -11,14 +11,16 @@ import cmd_clean;
 import cmd_run;
 import cmd_cl;
 import cmd_ide;
+import cmd_config;
 
 int main(int argc, char const* argv[]) {
 	context ctx;
 
 	if (argc == 1) {
-		fill_compiler_collection(ctx);
+		ctx.fill_compiler_collection();
 		ctx.select_first_compiler();
-		return !cmd_build(ctx, "release");
+		cmd_config(ctx, "release");
+		return !cmd_build(ctx, "");
 	}
 
 	static std::unordered_map<std::string_view, bool(*)(context&, std::string_view)> const commands = {
@@ -26,6 +28,7 @@ int main(int argc, char const* argv[]) {
 		{"enum_cl", cmd_enum_cl},
 		{"get_cl", cmd_get_cl},
 		{"cl", cmd_cl},
+		{"config", cmd_config},
 		{"clean", cmd_clean},
 		{"build", cmd_build},
 		{"run", cmd_run},

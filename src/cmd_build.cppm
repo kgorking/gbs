@@ -5,20 +5,16 @@ import context;
 import response;
 import get_source_groups;
 import monad;
+import cmd_config;
 
 namespace fs = std::filesystem;
 using namespace std::string_view_literals;
 
-// Converts arguments into response files
-std::string convert_arg_to_response(std::string_view arg, fs::path response_dir) {
-	return std::format(" @{}/{}", response_dir.string(), arg);
-}
-
 // Gets all the source files and adds the STL module
-depth_ordered_sources_map get_all_source_files(std::string_view path, context const& ctx) {
+depth_ordered_sources_map get_all_source_files(std::string_view const path, context const& ctx) {
 	auto result = get_grouped_source_files(path);
-	if (ctx.selected_cl.std_module) {
-		result[0].emplace_back(*ctx.selected_cl.std_module, std::set<std::string>{});
+	if (ctx.get_selected_compiler().std_module) {
+		result[0].emplace_back(*ctx.get_selected_compiler().std_module, std::set<std::string>{});
 	}
 	return result;
 }
@@ -37,23 +33,29 @@ auto write_object_file_and_check_date(source_info si, context const& ctx, std::s
 		return {};
 }
 
-std::string make_build_command(std::tuple<fs::path, std::set<std::string>, std::string> const& in, context const& ctx, std::string_view cmd_prefix, std::string_view resp_args) {
+std::string make_build_command(std::tuple<fs::path, std::set<std::string>, std::string> const& in, context const& ctx) {
 	auto const& [path, imports, obj] = in;
 
-	return 
-		std::string{ cmd_prefix } +
+	return ctx.build_command_prefix() +
 		ctx.build_command(path.string(), obj) +
-		resp_args.data() +
+		ctx.get_response_args().data() +
 		ctx.build_references(imports);
 }
 
 // The build command
-export bool cmd_build(context& ctx, std::string_view args) {
+export bool cmd_build(context& ctx, std::string_view /*const args*/) {
+	auto const& selected_cl = ctx.get_selected_compiler();
+
 	// Bail if no compiler is selected
-	if (ctx.selected_cl.name.empty()) {
+	if (selected_cl.name.empty()) {
 		std::println(std::cerr, "<gbs> No compiler selected/found.");
 		return false;
 	}
+
+	// Set the default build configuration if not specified
+	if (ctx.get_config().empty())
+		if (!cmd_config(ctx, "debug,warnings"))
+			return false;
 
 	// Ensure the current working directory is valid
 	if (!fs::exists("src/")) {
@@ -62,32 +64,12 @@ export bool cmd_build(context& ctx, std::string_view args) {
 	}
 
 	// Print the compiler version
-	std::println(std::cerr, "<gbs> Building with '{} {}.{}.{}'", ctx.selected_cl.name, ctx.selected_cl.major, ctx.selected_cl.minor, ctx.selected_cl.patch);
+	std::println(std::cerr, "<gbs> Building with '{} {}.{}.{}'", selected_cl.name, selected_cl.major, selected_cl.minor, selected_cl.patch);
 
-	// Set the default build config if none is specified
-	if (args.empty())
-		args = "release,warnings";
-
-	// Ensure the needed response files are present
-	init_response_files(ctx);
-	check_response_files(ctx, args);
-
-	// Get the build output directory
-	// and create the build dirs if needed
-	ctx.config = args.substr(0, args.find(','));
 	auto const output_dir = ctx.output_dir();
-	fs::create_directories(output_dir);
-
-	// Arguments to the compiler.
-	std::string const resp_args = as_monad(args)
-			.join()
-			.split(',')
-			.prefix("_shared"sv)
-			.map(convert_arg_to_response, ctx.response_dir())
-			.to<std::string>();
 
 #ifdef _MSC_VER
-	if (ctx.selected_cl.name == "msvc" || ctx.selected_cl.name == "clang") {
+	if (selected_cl.name == "msvc" || selected_cl.name == "clang") {
 		extern bool init_msvc(context const&);
 		if (!init_msvc(ctx))
 			return false;
@@ -105,7 +87,7 @@ export bool cmd_build(context& ctx, std::string_view args) {
 		.join_par()
 		.guard([](std::exception const& e) { std::println(std::cerr, "<gbs> Error: {}", e.what()); })
 		.map(write_object_file_and_check_date, ctx, std::ref(mut), std::ref(objects))
-		.map(make_build_command, ctx, ctx.build_command_prefix(), resp_args)
+		.map(make_build_command, ctx)
 		.until(+[](std::string_view cmd) noexcept {
 			return (0 == std::system(cmd.data()));
 		});

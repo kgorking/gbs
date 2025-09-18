@@ -6,11 +6,11 @@ import context;
 export bool cmd_enum_cl(context& ctx, std::string_view /*args*/) {
 	std::println("<gbs> Enumerating compilers:");
 
-	fill_compiler_collection(ctx);
+	ctx.fill_compiler_collection();
 
-	for (auto& kv : ctx.all_compilers) {
-		std::println("<gbs>   {}: ", kv.first);
-		for (auto const& c : kv.second) {
+	for (auto const& [name, compilers] : ctx.get_compiler_collection()) {
+		std::println("<gbs>   {}: ", name);
+		for (auto const& c : compilers) {
 			std::println("<gbs>     {}.{} - {}", c.major, c.minor, c.dir.generic_string());
 		}
 	}

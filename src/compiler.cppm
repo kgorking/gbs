@@ -15,7 +15,7 @@ export struct compiler {
 	std::string_view link_command;
 	std::string_view reference;
 	std::filesystem::path dir;
-	std::filesystem::path compiler;
+	std::filesystem::path executable;
 	std::filesystem::path linker;
 	std::optional<std::filesystem::path> std_module;
 };
@@ -53,7 +53,7 @@ void enumerate_compilers_msvc(std::filesystem::path msvc_path, auto&& callback) 
 			comp.name_and_version = "msvc_" + dir.path().filename().string();
 			comp.arch = arch;
 			comp.dir = dir;
-			comp.compiler = comp.dir / "bin" / "HostX64" / arch / "cl.exe";
+			comp.executable = comp.dir / "bin" / "HostX64" / arch / "cl.exe";
 			comp.linker   = comp.dir / "bin" / "HostX64" / arch / "link.exe";
 			comp.std_module = comp.dir / "modules" / "std.ixx";
 
@@ -63,10 +63,10 @@ void enumerate_compilers_msvc(std::filesystem::path msvc_path, auto&& callback) 
 			comp.link_command = "call {0:?} /NOLOGO /OUT:{1}/{2}.exe @{1}/LIBPATH @{1}/OBJLIST";
 			comp.reference = " /reference {0}={1}.ifc ";
 
-			if (!std::filesystem::exists(comp.compiler))
+			if (!std::filesystem::exists(comp.executable))
 				continue;
 
-			std::string const cmd = std::format(R"("{}" 1>nul 2>version)", comp.compiler.generic_string());
+			std::string const cmd = std::format(R"("{}" 1>nul 2>version)", comp.executable.generic_string());
 			if (0 == std::system(cmd.c_str())) {
 				std::string version;
 				std::getline(std::ifstream("version"), version);
@@ -143,8 +143,8 @@ export void enumerate_compilers(auto&& callback) {
 					comp.name = "clang";
 					comp.arch = "x64";
 					comp.dir = dir;
-					comp.compiler = dir.path() / "bin" / "clang";
-					comp.linker = comp.compiler;
+					comp.executable = dir.path() / "bin" / "clang";
+					comp.linker = comp.executable;
 
 					comp.build_source = " {0:?} -o {1:?} ";
 					comp.build_module = " --language=c++-module {0:?} -o {1:?} -fmodule-output ";
@@ -168,16 +168,16 @@ export void enumerate_compilers(auto&& callback) {
 					comp.name_and_version = gcc_version;
 					gcc_version.remove_prefix(4);
 
-					comp.compiler = dir.path();
+					comp.executable = dir.path();
 					if (std::filesystem::exists(dir.path() / "mingw64"))
-						comp.compiler /= "mingw64";
+						comp.executable /= "mingw64";
 
 					extract_compiler_version(gcc_version, comp.major, comp.minor, comp.patch);
 					comp.name = "gcc";
 					comp.arch = "x64";
 					comp.dir = dir;
-					comp.compiler = comp.compiler / "bin" / "gcc";
-					comp.linker = comp.compiler;
+					comp.executable = comp.executable / "bin" / "gcc";
+					comp.linker = comp.executable;
 					if (comp.major >= 15)
 						comp.std_module = "bits/std.cc"; //
 

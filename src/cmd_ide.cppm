@@ -63,7 +63,7 @@ void create_vs_tasks() {
                 "-FilePath",
                 "'${env.GBS_BIN}'",
                 "-ArgumentList",
-                "'cl=msvc build=release,warnings'"
+                "'cl=msvc config=release,warnings build'"
             ]
         },
         {
@@ -81,7 +81,7 @@ void create_vs_tasks() {
                 "-FilePath",
                 "'${env.GBS_BIN}'",
                 "-ArgumentList",
-                "'clean cl=msvc build=release,warnings'"
+                "'clean cl=msvc config=release,warnings build'"
             ]
         },
         {
@@ -117,7 +117,7 @@ void create_vs_tasks() {
                 "-FilePath",
                 "'${env.GBS_BIN}'",
                 "-ArgumentList",
-                "'cl=msvc build=debug,warnings'"
+                "'cl=msvc build'"
             ]
         },
         {
@@ -135,7 +135,7 @@ void create_vs_tasks() {
                 "-FilePath",
                 "'${env.GBS_BIN}'",
                 "-ArgumentList",
-                "'cl=clang build=debug,warnings'"
+                "'cl=clang build'"
             ]
         },
         {
@@ -153,7 +153,7 @@ void create_vs_tasks() {
                 "-FilePath",
                 "'${env.GBS_BIN}'",
                 "-ArgumentList",
-                "'cl=gcc build=debug,warnings'"
+                "'cl=gcc build'"
             ]
         },
         {
@@ -207,7 +207,7 @@ void create_vs_tasks() {
                 "-FilePath",
                 "'${env.GBS_BIN}'",
                 "-ArgumentList",
-                "'cl=msvc build=analyze,debug,warnings'"
+                "'cl=msvc config=analyze,debug,warnings build'"
             ]
         },
         {
@@ -225,7 +225,7 @@ void create_vs_tasks() {
                 "-FilePath",
                 "'${env.GBS_BIN}'",
                 "-ArgumentList",
-                "'cl=clang build=analyze,debug,warnings'"
+                "'cl=clang config=analyze,debug,warnings build'"
             ]
         }
     ]

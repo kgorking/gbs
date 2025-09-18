@@ -27,8 +27,7 @@ std::string clang_get_download_url(std::string_view const version) {
 export bool cmd_get_cl(context& ctx, std::string_view args) {
 	std::println("<gbs> get_cl : Searching for '{}'", args);
 
-	if (std::optional<compiler> const opt_cl = get_compiler(ctx, args); opt_cl) {
-		ctx.selected_cl = *opt_cl;
+	if (ctx.set_compiler(args)) {
 		return true;
 	}
 
@@ -83,7 +82,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 	std::string(*get_download_url)(std::string_view);
 
 	if (cl.name == "clang") {
-		cl.compiler = "bin/clang";
+		cl.executable = "bin/clang";
 
 		version_prefix = "refs/tags/llvmorg-";
 
@@ -116,7 +115,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 		// https://github.com/xpack-dev-tools/gcc-xpack/releases/download/v14.2.0-2/xpack-gcc-14.2.0-2-win32-x64.zip
 		// https://github.com/brechtsanders/winlibs_mingw/releases/tag/15.2.0posix-13.0.0-msvcrt-r1
 		// download/15.2.0posix-13.0.0-msvcrt-r1/winlibs-x86_64-posix-seh-gcc-15.2.0-mingw-w64msvcrt-13.0.0-r1.zip
-		cl.compiler = "mingw64/bin/gcc";
+		cl.executable = "mingw64/bin/gcc";
 		version_prefix = "refs/tags/";
 
 		git_search_cmd = std::format("git ls-remote --exit-code --refs --tags --sort=\"-version:refname\" https://github.com/brechtsanders/winlibs_mingw *{}*posix*msvcrt* > {}",
@@ -221,7 +220,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 
 	// Check if already downloaded
 	cl.dir = dest_dir;
-	cl.compiler = cl.dir / cl.compiler; // update exe path
+	cl.executable = cl.dir / cl.executable; // update exe path
 
 	if (std::filesystem::exists(cl.dir)) {
 		// TODO check bin
@@ -240,9 +239,9 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 		return false;
 	}
 
-	// Add it to the list of supported compilers
-	ctx.all_compilers[cl.name].emplace_back(cl);
-	ctx.selected_cl = cl;
+	// Refill compiler collection
+	ctx.fill_compiler_collection();
+	ctx.set_compiler(args);
 
 	std::println("<gbs> Download successful");
 	return true;
