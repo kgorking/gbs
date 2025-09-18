@@ -23,36 +23,6 @@
       ]
     },
     {
-      "name": "test run [clang]",
-      "type": "default",
-      "project": "CMakeLists.txt",
-      "currentDir": "./test",
-      "projectTarget": "gbs.exe",
-      "args": [
-        "clean cl=clang build run"
-      ]
-    },
-    {
-      "name": "test run [msvc]",
-      "type": "default",
-      "project": "CMakeLists.txt",
-      "currentDir": "./test",
-      "projectTarget": "gbs.exe",
-      "args": [
-        "cl=msvc build run"
-      ]
-    },
-    {
-      "name": "test run [gcc]",
-      "type": "default",
-      "project": "CMakeLists.txt",
-      "currentDir": "./test",
-      "projectTarget": "gbs.exe",
-      "args": [
-        "clean cl=gcc build run"
-      ]
-    },
-    {
       "name": "[clang] self",
       "type": "default",
       "project": "CMakeLists.txt",
