@@ -17,12 +17,15 @@ Uses a fixed directory structure to automatically find source files and compile 
   - `gbs.out` - build output (created automatically)
   - `*` - other directories, not starting with `.`, are compiled to their own executables (not implemented yet)
 
-# Note
-Yes, I am aware of the irony of using CMake to make a build system.
+# Supported compilers
+- [x] msvc 19.38+
+- [ ] clang 19+ (crashes when using modules)
+- [ ] gcc 15+   (needs mods to stdlib, crashes when using modules)
 
 # Upcoming versions (not in a specific order)
 - Make `import std;` work for gcc
 - Wait for clang to stop crashing
+- Wait for gcc to stop crashing
 - Compile and link libraries in 'lib'
 - Compile unit tests in 'unittest'
 - Fetch dependencies in 'deps'
@@ -42,8 +45,8 @@ Yes, I am aware of the irony of using CMake to make a build system.
 	- [x] Compile GBS with itself
 - [x] Automated support for `import std;`
 	- [x] msvc
-	- [x] clang
-	- [ ] gcc
+	- [x] clang 19+
+	- [x] gcc 15+
 - [x] Enumerate installed compilers
 - [x] Choose compiler from command `gbs cl=msvc:19.44 build cl=clang:17 build`
 - [x] Use response files for compilation variance
@@ -70,3 +73,7 @@ Yes, I am aware of the irony of using CMake to make a build system.
 	- [x] Visual Studio
 	- [x] Visual Studio Code
 - [ ] WSL support ?
+
+
+# Note
+Yes, I am aware of the irony of using CMake to make a build system.
