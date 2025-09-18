@@ -18,6 +18,8 @@ Uses a fixed directory structure to automatically find source files and compile 
   - `*` - other directories, not starting with `.`, are compiled to their own executables (not implemented yet)
 
 # Supported compilers
+That can be used to produced an executeable.
+
 - [x] msvc 19.38+
 - [ ] clang 19+ (crashes when using modules)
 - [ ] gcc 15+   (needs mods to stdlib, crashes when using modules)
