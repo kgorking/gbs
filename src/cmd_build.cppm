@@ -107,7 +107,6 @@ export bool cmd_build(context& ctx, std::string_view args) {
 		.map(write_object_file_and_check_date, ctx, std::ref(mut), std::ref(objects))
 		.map(make_build_command, ctx, ctx.build_command_prefix(), resp_args)
 		.until(+[](std::string_view cmd) noexcept {
-			std::println("{}", cmd);
 			return (0 == std::system(cmd.data()));
 		});
 
@@ -121,7 +120,6 @@ export bool cmd_build(context& ctx, std::string_view args) {
 		std::string const link = ctx.link_command(executable);
 		return 0 == std::system(link.c_str());
 	}
-	else {
-		return false;
-	}
+
+	return false;
 }
