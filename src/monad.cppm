@@ -96,13 +96,11 @@ concept must_return_void = std::is_same_v<void, std::invoke_result_t<UserFn, Arg
 
 
 export template<typename T, typename Fn>
-requires (std::invocable<Fn, decltype([]<typename V>(V const&) { }) > )
 class monad {
 	Fn fn;
 
 	// Allow access to private constructor of other monads
 	template<typename, typename InFn>
-		requires (std::invocable<InFn, decltype([]<typename V>(V const&) { })>)
 	friend class monad;
 
 	// Allow access to 'as_monad' function
