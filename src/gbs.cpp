@@ -13,7 +13,7 @@ import cmd_cl;
 import cmd_ide;
 import cmd_config;
 
-int main(int argc, char const* argv[]) {
+int main(const int argc, char const* argv[]) {
 	context ctx;
 
 	if (argc == 1) {
@@ -35,17 +35,16 @@ int main(int argc, char const* argv[]) {
 		{"ide", cmd_ide},
 	};
 
-	auto const args = std::span<char const*>(argv, argc);
-	for (std::string_view arg : args | std::views::drop(1)) {
-		std::string_view const left = arg.substr(0, arg.find('='));
-		if (!commands.contains(left)) {
-			std::println("<gbs> Unknown command '{}', aborting\n", left);
+	for (auto const args = std::span(argv, argc); std::string_view arg : args | std::views::drop(1)) {
+		std::string_view const cmd = arg.substr(0, arg.find('='));
+		if (!commands.contains(cmd)) {
+			std::println("<gbs> Unknown command '{}', aborting\n", cmd);
 			return 1;
 		}
 
-		arg.remove_prefix(left.size());
+		arg.remove_prefix(cmd.size());
 		arg.remove_prefix(!arg.empty() && arg.front() == '=');
-		if (!commands.at(left)(ctx, arg)) {
+		if (!commands.at(cmd)(ctx, arg)) {
 			std::println("<gbs> aborting due to command failure.");
 			return 1;
 		}
