@@ -1,34 +1,38 @@
-module;
-#ifdef _MSC_VER
-#include <windows.h>
-#endif
 export module env;
 import std;
 
-export std::string get_env_value(std::string_view var) {
-#ifdef _MSC_VER
-	std::array<char, _MAX_PATH> path;
-	path.fill(0);
-	std::size_t s = 0;
-	getenv_s(&s, path.data(), path.size(), var.data());
-	//path[s] = 0;
-	return path.data();
-#else
-	char* val = std::getenv(var.data());
-	return val ? val : "";
-#endif
-}
+export class environment {
+	std::unordered_map<std::string_view, std::string_view> vars;
 
-export std::filesystem::path get_home_dir() {
-	std::filesystem::path homedir = get_env_value("HOME"); // linux
-	if (homedir.empty())
-		homedir = get_env_value("USERPROFILE"); // windows
-	return homedir;
-}
+public:
+	environment(char const** envp) {
+		if(envp == nullptr)
+			throw std::runtime_error("Environment pointer is null");
 
-export bool is_file_up_to_date(std::filesystem::path const& in, std::filesystem::path const& out) {
-	if (!std::filesystem::exists(out))
-		return false;
+		[[gsl::suppress("bounds.1")]] // warning C26481: Don't use pointer arithmetic. Use span instead (bounds.1).
+		for(char const* const* var = envp; var != nullptr && *var != nullptr; ++var) {
+			std::string_view const ev{ *var };
+			vars[ev.substr(0, ev.find('='))] = ev.substr(ev.find('=') + 1);
+		}
 
-	return (std::filesystem::last_write_time(out) > std::filesystem::last_write_time(in));
-}
+		if (!vars.contains("HOME")) {
+			if (vars.contains("USERPROFILE"))
+				vars["HOME"] = vars["USERPROFILE"];
+			else
+				throw std::runtime_error("Could not locate user home directory in environment variables");
+		}
+	}
+
+	// Get an environment variable
+	std::optional<std::string_view> get(std::string_view var) const {
+		if (vars.contains(var))
+			return vars.at(var);
+		else
+			return {};
+	}
+
+	// Get the home directory of the user
+	std::filesystem::path get_home_dir() const {
+		return vars.at("HOME");
+	}
+};

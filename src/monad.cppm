@@ -78,10 +78,21 @@ constexpr bool has_value(T const& v) noexcept {
 }
 template<typename T>
 constexpr decltype(auto) unwrap(T&& v) noexcept {
-	if constexpr (optional_like<T>)
+	if constexpr (optional_like<T>) {
+		//[[assume(v.has_value())]];
 		return std::forward<T>(v).value();
+	}
 	else
 		return std::forward<T>(v);
+}
+template<typename T, typename Fn>
+constexpr decltype(auto) unwrap_then(T&& v, Fn&& fn) noexcept {
+	if constexpr (optional_like<T>) {
+		if (v.has_value())
+			std::forward<Fn>(fn)(std::forward<T>(v).value());
+	}
+	else
+		std::forward<Fn>(fn)(std::forward<T>(v));
 }
 template<typename T>
 constexpr decltype(auto) unwrap_or(T&& v, auto const val) noexcept {
@@ -111,10 +122,7 @@ class monad {
 	constexpr auto identity() const {
 		auto f = [=, fn = fn](auto dst) {
 			bool const retval = fn([=](auto const& v) {
-				if (has_value(v)) {
-					dst(unwrap(v));
-				}
-				return true;
+				unwrap_then(v, dst);
 				});
 
 			return retval;
@@ -212,8 +220,7 @@ public:
 	constexpr auto concat(Ts const&... ts) const {
 		auto make_fn = [](auto const& v) {
 			return [&v](auto dst) {
-				if (has_value(v))
-					dst(unwrap(v));
+				unwrap_then(v, dst);
 				};
 			};
 
@@ -230,8 +237,7 @@ public:
 	constexpr auto prefix(Ts const&... ts) const {
 		auto make_fn = [](auto const& v) {
 			return [&v](auto dst) {
-				if (has_value(v))
-					dst(unwrap(v));
+				unwrap_then(v, dst);
 				};
 			};
 
@@ -256,7 +262,7 @@ public:
 
 	// ...
 	template<typename OtherT, typename OtherFn>
-	constexpr auto cartesion_product(monad<OtherT, OtherFn> const& m) const {
+	constexpr auto cartesian_product(monad<OtherT, OtherFn> const& m) const {
 		auto f = [fn = fn, &m](auto dst) {
 			m.fn([=](auto const& v_outer) {
 				fn([=](auto const& v_inner) {
@@ -487,8 +493,7 @@ public:
 				int const n = N;
 				if constexpr (optional_like<T>) {
 					for (int i = 0; i < n; ++i) {
-						if (has_value(v))
-							dst(unwrap(v));
+						unwrap_then(v, dst);
 					}
 				}
 				else {
@@ -594,9 +599,7 @@ public:
 	constexpr auto unbox() const requires optional_like<T> {
 		auto f = [=, fn = fn](auto dst) {
 			return fn([=](auto const& v) {
-				if (has_value(v)) {
-					dst(unwrap(v));
-				}
+				unwrap_then(v, dst);
 				});
 			};
 		using F = decltype(f);
@@ -610,9 +613,7 @@ public:
 		auto f = [=, fn = fn, eh = std::forward<ExceptionHandler>(exception_handler)](auto dst) {
 			fn([=](auto const& v) {
 				try {
-					if (has_value(v)) {
-						dst(unwrap(v));
-					}
+					unwrap_then(v, dst);
 				}
 				catch (Exception const& e) {
 					std::invoke(eh, e);
@@ -850,8 +851,7 @@ public:
 export template<typename T>
 constexpr auto as_monad(T const& val) noexcept {
 	auto f = [&val](auto dst) {
-		if (has_value(val))
-			dst(unwrap(val));
+		unwrap_then(val, dst);
 		};
 
 	using Fn = decltype(f);

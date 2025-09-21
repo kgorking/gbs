@@ -1,3 +1,4 @@
+module;
 export module get_source_groups;
 import std;
 import dep_scan;

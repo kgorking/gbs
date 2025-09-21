@@ -25,7 +25,7 @@ add_executable (gbs "src/gbs.cpp" "src/msvc.cpp")
 target_sources(gbs PUBLIC FILE_SET CXX_MODULES FILES
 	"src/source_enum.cppm"
 	"src/cmd_get_cl.cppm"
-	"src/response.cppm"
+	
 	"src/context.cppm"
 	"src/compiler.cppm"
 	"src/env.cppm"
@@ -38,8 +38,35 @@ target_sources(gbs PUBLIC FILE_SET CXX_MODULES FILES
 	"src/cmd_cl.cppm"
 	"src/cmd_ide.cppm"
 	"src/monad.cppm"
- "src/cmd_version.cppm" "src/cmd_config.cppm")
+	"src/cmd_version.cppm"
+	"src/cmd_config.cppm")
 
 if(MSVC)
 	target_compile_definitions(gbs PRIVATE _MSVC_STL_HARDENING=1 _MSVC_STL_DESTRUCTOR_TOMBSTONES=1)
+	target_compile_options(gbs PRIVATE /permissive- /Zc:preprocessor /GL /fastfail
+		/W4         # Baseline reasonable warnings
+		/WX         # Warnings are errors
+		/w14242     # 'identifier': conversion from 'type1' to 'type2', possible loss of data
+		/w14254     # 'operator': conversion from 'type1:field_bits' to 'type2:field_bits', possible loss of data
+		/w14263     # 'function': member function does not override any base class virtual member function
+		/w14265     # 'classname': class has virtual functions, but destructor is not virtual instances of this class may not be destructed correctly 
+		/w14287     # 'operator': unsigned/negative constant mismatch 
+		/we4289     # nonstandard extension used: 'variable': loop control variable declared in the for-loop is used outside the for-loop scope 
+		/w14296     # 'operator': expression is always 'boolean_value' 
+		/w14311     # 'variable': pointer truncation from 'type1' to 'type2' 
+		/w14545     # expression before comma evaluates to a function which is missing an argument list 
+		/w14546     # function call before comma missing argument list 
+		/w14547     # 'operator': operator before comma has no effect; expected operator with side effect 
+		/w14549     # 'operator': operator before comma has no effect; did you intend 'operator'? 
+		/w14555     # expression has no effect; expected expression with side effect 
+		/w14619     # pragma warning: there is no warning number 'number' 
+		/w14640     # Enable warning on thread unsafe static member initialization 
+		/w14826     # Conversion from 'type1' to 'type2' is sign-extended. This may cause unexpected runtime behavior. 
+		/w14905     # wide string literal cast to 'LPSTR' 
+		/w14906     # string literal cast to 'LPWSTR' 
+		/w14928     # illegal copy-initialization; more than one user-defined conversion has been implicitly applied 
+	)
+	if(NOT VS_CONFIGURATION_TYPE STREQUAL "Debug")
+		target_link_options(gbs PRIVATE /LTCG /OPT:REF /OPT:ICF)
+	endif()
 endif()

@@ -2,7 +2,7 @@ export module compiler;
 import std;
 import env;
 
-constexpr std::string_view archs[] = { /*"arm64",*/ "x64" };
+constexpr std::array<std::string_view, 1> archs = { /*"arm64",*/ "x64" };
 
 export struct compiler {
 	int major = 0, minor = 0, patch = 0;
@@ -84,7 +84,7 @@ void enumerate_compilers_msvc(std::filesystem::path msvc_path, auto&& callback) 
 	}
 }
 
-export void enumerate_compilers(auto&& callback) {
+export void enumerate_compilers(environment const& env, auto&& callback) {
 	std::string line, cmd, version;
 
 #ifdef _MSC_VER
@@ -104,8 +104,8 @@ export void enumerate_compilers(auto&& callback) {
 	}
 
 	// Look for user installations of Microsoft Build Tools
-	if (auto const prg_86 = get_env_value("ProgramFiles(x86)"); !prg_86.empty()) {
-		auto const build_tools_dir = std::filesystem::path(prg_86) / "Microsoft Visual Studio" / "2022" / "BuildTools";
+	if (auto const prg_86 = env.get("ProgramFiles(x86)"); prg_86) {
+		auto const build_tools_dir = std::filesystem::path(*prg_86) / "Microsoft Visual Studio" / "2022" / "BuildTools";
 		if (std::filesystem::exists(build_tools_dir)) {
 			// Find msvc compilers
 			auto const msvc_path = build_tools_dir / "VC" / "Tools" / "MSVC";
@@ -117,11 +117,7 @@ export void enumerate_compilers(auto&& callback) {
 #endif
 
 	// Find the users folder
-	auto home_dir = get_home_dir();
-	if (home_dir.empty()) {
-		std::println("<gbs> get_cl : unable to get home directory");
-		return;
-	}
+	auto const home_dir = env.get_home_dir();
 
 	// Find compilers in ~/.gbs/*
 	auto const download_dir = home_dir / ".gbs";

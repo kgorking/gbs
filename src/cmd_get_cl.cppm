@@ -53,11 +53,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 	}
 
 	// Find the users folder
-	auto homedir = get_home_dir();
-	if (homedir.empty()) {
-		std::println("<gbs> Unable to get home directory");
-		return false;
-	}
+	auto const homedir = ctx.get_home_dir();
 
 	compiler cl;
 	cl.name = args.substr(0, args.contains(':') ? args.find_first_of(':') : args.size());
@@ -79,7 +75,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 		version = args;
 	}
 
-	std::string(*get_download_url)(std::string_view);
+	std::string(*get_download_url)(std::string_view) = nullptr;
 
 #ifdef _WIN64
 	cl.arch = "x64";
@@ -153,6 +149,12 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 	}
 	else {
 		std::println("<gbs>    Unsupported compiler {}", cl.name);
+		return false;
+	}
+
+	// Make sure the download function is set
+	if (nullptr == get_download_url) {
+		std::println("<gbs>    Internal error, no download function for {}", cl.name);
 		return false;
 	}
 

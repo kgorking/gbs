@@ -13,8 +13,8 @@ import cmd_cl;
 import cmd_ide;
 import cmd_config;
 
-int main(const int argc, char const* argv[]) {
-	context ctx;
+int main(const int argc, char const* argv[], char const** envp) {
+	auto ctx = context{ envp };
 
 	if (argc == 1) {
 		ctx.fill_compiler_collection();

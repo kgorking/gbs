@@ -2,13 +2,19 @@ export module cmd_build;
 import std;
 import env;
 import context;
-import response;
 import get_source_groups;
 import monad;
 import cmd_config;
 
 namespace fs = std::filesystem;
 using namespace std::string_view_literals;
+
+bool is_file_up_to_date(std::filesystem::path const& in, std::filesystem::path const& out) {
+	if (!std::filesystem::exists(out))
+		return false;
+
+	return (std::filesystem::last_write_time(out) > std::filesystem::last_write_time(in));
+}
 
 // Gets all the source files and adds the STL module
 depth_ordered_sources_map get_all_source_files(std::string_view const path, context const& ctx) {

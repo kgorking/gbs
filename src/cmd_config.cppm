@@ -1,7 +1,6 @@
 export module cmd_config;
 import std;
 import context;
-import response;
 import monad;
 
 // Converts arguments into response files
@@ -15,8 +14,7 @@ export bool cmd_config(context& ctx, std::string_view args) {
 		args = "release,warnings";
 
 	// Ensure the needed response files are present
-	init_response_files(ctx);
-	check_response_files(ctx, args);
+	ctx.check_response_files(args);
 
 	// Set the build configuration
 	// and create the build dirs if needed
