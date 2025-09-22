@@ -13,7 +13,8 @@ export struct compiler {
 	std::string_view build_module;
 	std::string_view build_command_prefix;
 	std::string_view link_command;
-	std::string_view lib_command;
+	std::string_view slib_command;
+	std::string_view dlib_command;
 	std::string_view reference;
 	std::filesystem::path dir;
 	std::filesystem::path executable;
@@ -64,7 +65,8 @@ void enumerate_compilers_msvc(std::filesystem::path msvc_path, auto&& callback) 
 			comp.build_module = " {0:?} ";
 			comp.build_command_prefix = "call {0:?} @{1}/INCLUDE /c /interface /TP /ifcOutput {1}/ /Fo:{1}/ ";
 			comp.link_command = "call {0:?} /NOLOGO /OUT:{1}/{2}.exe @{1}/LIBPATH @{1}/OBJLIST";
-			comp.lib_command = "call {0:?} /NOLOGO /OUT:{1}/{2}.lib @{1}/LIBPATH @{1}/OBJLIST";
+			comp.slib_command = "call {0:?} /NOLOGO /OUT:{1}/{2}.lib @{1}/LIBPATH @{1}/OBJLIST";
+			comp.dlib_command = "call {0:?} /NOLOGO /DLL /OUT:{1}/{2}.dll @{1}/LIBPATH @{1}/OBJLIST >nul";
 			comp.reference = " /reference {0}={1}.ifc ";
 
 			if (!std::filesystem::exists(comp.executable))

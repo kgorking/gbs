@@ -12,6 +12,8 @@ export bool cmd_cl(context& ctx, std::string_view args) {
 	}
 
 	if (ctx.set_compiler(args)) {
+		auto const& selected_cl = ctx.get_selected_compiler();
+		std::println(std::cerr, "<gbs> Using compiler '{} {}.{}.{}'", selected_cl.name, selected_cl.major, selected_cl.minor, selected_cl.patch);
 		return true;
 	}
 	else {
