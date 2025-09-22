@@ -1,6 +1,4 @@
-//import std;
-//#include <print>
-#include <cstdio>
+import std;
 
 short extra() {
 	std::puts("  This is an extra function");

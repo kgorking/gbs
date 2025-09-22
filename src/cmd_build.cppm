@@ -7,17 +7,16 @@ import monad;
 import cmd_config;
 
 namespace fs = std::filesystem;
-using namespace std::string_view_literals;
 
-bool is_file_up_to_date(std::filesystem::path const& in, std::filesystem::path const& out) {
-	if (!std::filesystem::exists(out))
+bool is_file_up_to_date(fs::path const& in, fs::path const& out) {
+	if (!fs::exists(out))
 		return false;
 
-	return (std::filesystem::last_write_time(out) > std::filesystem::last_write_time(in));
+	return (fs::last_write_time(out) > fs::last_write_time(in));
 }
 
 // Gets all the source files and adds the STL module
-depth_ordered_sources_map get_all_source_files(std::string_view const path, context const& ctx) {
+depth_ordered_sources_map get_all_source_files(fs::path const& path, context const& ctx) {
 	auto result = get_grouped_source_files(path);
 	if (ctx.get_selected_compiler().std_module) {
 		result[0].emplace_back(*ctx.get_selected_compiler().std_module, std::set<std::string>{});
@@ -50,31 +49,30 @@ std::string make_build_command(std::tuple<fs::path, std::set<std::string>, std::
 
 // The build command
 export bool cmd_build(context& ctx, std::string_view /*const args*/) {
-	auto const& selected_cl = ctx.get_selected_compiler();
-
-	// Bail if no compiler is selected
-	if (selected_cl.name.empty()) {
-		std::println(std::cerr, "<gbs> No compiler selected/found.");
-		return false;
-	}
-
-	// Set the default build configuration if not specified
-	if (ctx.get_config().empty())
-		if (!cmd_config(ctx, "debug,warnings"))
-			return false;
-
 	// Ensure the current working directory is valid
 	if (!fs::exists("src/")) {
 		std::println("<gbs> Error: no 'src' directory found at '{}'", fs::current_path().generic_string());
 		return false;
 	}
 
-	// Print the compiler version
-	std::println(std::cerr, "<gbs> Building with '{} {}.{}.{}'", selected_cl.name, selected_cl.major, selected_cl.minor, selected_cl.patch);
+	// Bail if no compiler is selected
+	auto const& selected_cl = ctx.get_selected_compiler();
+	if (selected_cl.name.empty()) {
+		std::println(std::cerr, "<gbs> No compiler selected/found.");
+		return false;
+	}
 
-	auto const output_dir = ctx.output_dir();
+	// Print the compiler version
+	std::println(std::cerr, "<gbs> Using compiler '{} {}.{}.{}'", selected_cl.name, selected_cl.major, selected_cl.minor, selected_cl.patch);
+
+	// Set the default build configuration if not specified
+	if (ctx.get_config().empty())
+		if (!cmd_config(ctx, "debug,warnings"))
+			return false;
+
 
 #ifdef _MSC_VER
+	// Initialize msvc environment
 	if (selected_cl.name == "msvc" || selected_cl.name == "clang") {
 		extern bool init_msvc(context const&);
 		if (!init_msvc(ctx))
@@ -82,31 +80,65 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 	}
 #endif
 
-	// Create file containing the list of objects to link
-	std::ofstream objects(output_dir / "OBJLIST");
-	std::shared_mutex mut;
+	// Set up the library input files
+	std::ofstream libs(ctx.output_dir() / "LIBLIST");
 
-	// Get the source files and compile them.
-	bool const succeeded = as_monad(get_all_source_files("src", ctx))
-		.join()
-		.values()
-		.join_par()
-		.guard([](std::exception const& e) { std::println(std::cerr, "<gbs> Error: {}", e.what()); })
-		.map(write_object_file_and_check_date, ctx, std::ref(mut), std::ref(objects))
-		.map(make_build_command, ctx)
-		.until(+[](std::string_view cmd) noexcept {
-			return (0 == std::system(cmd.data()));
-		});
+	// Gets all the directories to compile
+	constexpr auto dir_search_options = fs::directory_options::follow_directory_symlink | fs::directory_options::skip_permission_denied;
 
-	if (!succeeded)
-		return false;
+	return as_monad({ "lib", "unittest" })
+		.filter([](auto const& p) { return fs::exists(p); })
+		.as<fs::directory_iterator>(dir_search_options)
+			.join()
+			.filter(&fs::directory_entry::is_directory)
+			.filter([](fs::path const& p) { return fs::exists(p / "src"); })
+			.map([](fs::path const& p) { return fs::absolute(p); })
+			.concat(fs::current_path())
+			.until([&](fs::path const& p) {
+				std::println("<gbs> compiling '{}/src'", p.generic_string());
 
-	// Close the objects file
-	objects.close();
 
-	// Link sources
-	std::println("<gbs> Linking...");
-	std::string const executable = fs::current_path().stem().string();
-	std::string const link = ctx.link_command(executable);
-	return 0 == std::system(link.c_str());
+				// Create file containing the list of objects to link
+				auto const output_dir = ctx.output_dir();
+				//if (!fs::exists(output_dir))
+				//	fs::create_directories(output_dir);
+				std::ofstream objects(output_dir / "OBJLIST");
+				std::shared_mutex mut;
+
+				// Get the source files and compile them.
+				bool const succeeded = as_monad(get_all_source_files(p / "src", ctx))
+					.join()
+					.values()
+					.join_par()
+					.guard([](std::exception const& e) { std::println(std::cerr, "<gbs> Exception: {}", e.what()); })
+					.map(write_object_file_and_check_date, ctx, std::ref(mut), std::ref(objects))
+					.map(make_build_command, ctx)
+					.until([](std::string_view const cmd) noexcept { return (0 == std::system(cmd.data())); });
+
+				if (!succeeded)
+					return false;
+
+				// Close the objects file
+				objects.close();
+
+				// Link/lib sources
+				if (p.stem() == "s") {
+					std::string const name = p.extension().string().substr(1);
+					std::string const cmd = ctx.library_command(name, output_dir.generic_string());
+
+					libs << (output_dir / (name + ".lib")) << ' ';
+
+					std::println("<gbs> Creating library '{}'...", name);
+					return 0 == std::system(cmd.c_str());
+				}
+				else {
+					libs.close();
+
+					std::string const name = p.stem().string();
+					std::string const cmd = ctx.link_command(name, output_dir.generic_string()) + std::format(" @{}/LIBLIST", output_dir.generic_string());
+
+					std::println("<gbs> Linking executable '{}'...", name);
+					return 0 == std::system(cmd.c_str());
+				}
+			});
 }
