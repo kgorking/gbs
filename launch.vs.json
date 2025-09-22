@@ -9,7 +9,7 @@
       "currentDir": "./sample_project/",
       "projectTarget": "gbs.exe",
       "args": [
-        "cl=msvc clean build run"
+        "version cl=msvc config clean build run"
       ]
     },
     {

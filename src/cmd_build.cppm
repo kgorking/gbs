@@ -62,14 +62,14 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		return false;
 	}
 
-	// Print the compiler version
-	std::println(std::cerr, "<gbs> Using compiler '{} {}.{}.{}'", selected_cl.name, selected_cl.major, selected_cl.minor, selected_cl.patch);
-
 	// Set the default build configuration if not specified
 	if (ctx.get_config().empty())
 		if (!cmd_config(ctx, "debug,warnings"))
 			return false;
 
+
+	// Make sure the output and response directories exist
+	fs::create_directories(ctx.output_dir());
 
 #ifdef _MSC_VER
 	// Initialize msvc environment
@@ -97,11 +97,8 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 			.until([&](fs::path const& p) {
 				std::println("<gbs> compiling '{}/src'", p.generic_string());
 
-
 				// Create file containing the list of objects to link
 				auto const output_dir = ctx.output_dir();
-				//if (!fs::exists(output_dir))
-				//	fs::create_directories(output_dir);
 				std::ofstream objects(output_dir / "OBJLIST");
 				std::shared_mutex mut;
 
@@ -115,20 +112,30 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 					.map(make_build_command, ctx)
 					.until([](std::string_view const cmd) noexcept { return (0 == std::system(cmd.data())); });
 
-				if (!succeeded)
-					return false;
-
 				// Close the objects file
 				objects.close();
+
+				// Bail if compilation failed
+				if (!succeeded)
+					return false;
 
 				// Link/lib sources
 				if (p.stem() == "s") {
 					std::string const name = p.extension().string().substr(1);
-					std::string const cmd = ctx.library_command(name, output_dir.generic_string());
+					std::string const cmd = ctx.static_library_command(name, output_dir.generic_string());
 
 					libs << (output_dir / (name + ".lib")) << ' ';
 
-					std::println("<gbs> Creating library '{}'...", name);
+					std::println("<gbs> Creating static library '{}'...", name);
+					return 0 == std::system(cmd.c_str());
+				}
+				else if (p.stem() == "d") {
+					std::string const name = p.extension().string().substr(1);
+					std::string const cmd = ctx.dynamic_library_command(name, output_dir.generic_string());
+
+					libs << (output_dir / (name + ".lib")) << ' ';
+
+					std::println("<gbs> Creating dynamic library '{}'...", name);
 					return 0 == std::system(cmd.c_str());
 				}
 				else {

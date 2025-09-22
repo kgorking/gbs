@@ -67,7 +67,7 @@ Uses a fixed directory structure to automatically find source files and compile 
   - `src` - source files for main executeable
   - `lib` - libraries (partially implemented)
 	- named subdirectory per library.
-	  - name + `.d` for dynamic library (not implemented yet)
+	  - name + `.d` for dynamic library
 	  - name + `.s` for static library
   - `unittest` - unit tests (not implemented yet)
 	- One `.cpp` file per test.
