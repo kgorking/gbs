@@ -1,5 +1,21 @@
-# Gorking Build System v0.14
+# Gorking Build System v0.15
 Creating my own build system for fun.
+
+# Features
+Uses a fixed directory structure to automatically find source files and compile them.
+
+- top-level directory
+  - `src` - source files for main executeable
+  - `lib` - libraries (partially implemented)
+	- named subdirectory per library.
+	  - name + `.d` for dynamic library
+	  - name + `.s` for static library
+  - `unittest` - unit tests (not implemented yet)
+	- One `.cpp` file per test.
+  - `deps` - dependencies (not implemented yet)
+	- TODO somehow fetch from eg. github and build them
+  - `gbs.out` - build output (created automatically)
+  - `*` - other directories, not starting with `.`, are compiled to their own executables (not implemented yet)
 
 # Usage
 `gbs` **_[commands...]_**
@@ -59,22 +75,6 @@ The following commands are supported:
 - **ide**=_[ide]_
 	- Generates **tasks.vs.json** for the specified IDE. Supported IDEs are `vscode` and `vs`.
 	- Example: `gbs ide=vs` will allow a folder to be opened in Visual Studio and allow the user to right-click the top-most folder and have several build options available, without needing a project or solution.
-
-# Features
-Uses a fixed directory structure to automatically find source files and compile them.
-
-- top-level directory
-  - `src` - source files for main executeable
-  - `lib` - libraries (partially implemented)
-	- named subdirectory per library.
-	  - name + `.d` for dynamic library
-	  - name + `.s` for static library
-  - `unittest` - unit tests (not implemented yet)
-	- One `.cpp` file per test.
-  - `deps` - dependencies (not implemented yet)
-	- TODO somehow fetch from eg. github and build them
-  - `gbs.out` - build output (created automatically)
-  - `*` - other directories, not starting with `.`, are compiled to their own executables (not implemented yet)
 
 # Supported compilers
 The following compilers can produce a working executeable:
