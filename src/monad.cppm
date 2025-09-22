@@ -115,8 +115,8 @@ class monad {
 	friend class monad;
 
 	// Allow access to 'as_monad' function
-	template<typename Mt>
-	friend constexpr auto as_monad(Mt const&) noexcept;
+	template<typename Mt> friend constexpr auto as_monad(Mt const&) noexcept;
+	template<typename T>  friend constexpr auto as_monad(std::initializer_list<T> const) noexcept;
 
 	// This function does nothing. Good for reference.
 	constexpr auto identity() const {
@@ -513,18 +513,18 @@ public:
 	}
 
 	// Convert the contained type to another type, if possible.
-	template<typename Cast>
-		requires std::constructible_from<Cast, unwrapped_t<T>>
-	|| std::constructible_from<Cast, std::from_range_t, unwrapped_t<T>>
-		constexpr auto as() const {
-		auto f = [=, fn = fn](auto dst) {
+	template<typename Cast, typename... Args>
+		requires std::constructible_from<Cast, unwrapped_t<T>, Args...>
+	|| std::constructible_from<Cast, std::from_range_t, unwrapped_t<T>, Args...>
+		constexpr auto as(Args&& ...args) const {
+		auto f = [=, fn = fn, ...args = std::forward<Args>(args)](auto dst) {
 			return fn([=](auto const& v) {
 				if (has_value(v)) {
 					if constexpr (std::constructible_from<Cast, unwrapped_t<T>>) {
-						dst(Cast{ unwrap(v) });
+						dst(Cast{ unwrap(v), args... });
 					}
 					else {
-						dst(Cast{ std::from_range, unwrap(v) });
+						dst(Cast{ std::from_range, unwrap(v), args... });
 					}
 				}
 				});
@@ -852,6 +852,17 @@ export template<typename T>
 constexpr auto as_monad(T const& val) noexcept {
 	auto f = [&val](auto dst) {
 		unwrap_then(val, dst);
+		};
+
+	using Fn = decltype(f);
+	return ::monad<T, Fn>{ std::move(f) };
+}
+
+export template<typename T>
+constexpr auto as_monad(std::initializer_list<T> const vals) noexcept {
+	auto f = [vals](auto dst) {
+		for (auto const& val : vals)
+			unwrap_then(val, dst);
 		};
 
 	using Fn = decltype(f);

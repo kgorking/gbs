@@ -239,10 +239,17 @@ public:
 	}
 
 	// Create link command for the currently selected compiler
-	std::string link_command(std::string_view exe_name) const {
+	std::string link_command(std::string_view exe_name, std::string_view const out_dir) const {
 		auto const linker = selected_cl.linker.string();
-		auto const out = output_dir().string();
-		return std::vformat(selected_cl.link_command, std::make_format_args(linker, out, exe_name));
+		//auto const out = output_dir().string();
+		return std::vformat(selected_cl.link_command, std::make_format_args(linker, out_dir, exe_name));
+	}
+
+	// Create library command for the currently selected compiler
+	std::string library_command(std::string_view const out_name, std::string_view const out_dir) const {
+		auto const exe = selected_cl.lib.string();
+		//auto const out = output_dir().string();
+		return std::vformat(selected_cl.lib_command, std::make_format_args(exe, out_dir, out_name));
 	}
 
 	// Create a reference to a module

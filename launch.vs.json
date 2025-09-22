@@ -3,6 +3,16 @@
   "defaults": {},
   "configurations": [
     {
+      "name": "Test with sample project",
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": "./sample_project/",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "cl=msvc clean build run"
+      ]
+    },
+    {
       "name": "version",
       "type": "default",
       "project": "CMakeLists.txt",
