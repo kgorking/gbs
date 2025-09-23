@@ -43,6 +43,16 @@
       ]
     },
     {
+      "name": "[msvc] self",
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": ".",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "clean cl=msvc config=debug,warnings build run=version"
+      ]
+    },
+    {
       "name": "[clang] self",
       "type": "default",
       "project": "CMakeLists.txt",
@@ -80,16 +90,6 @@
       "projectTarget": "gbs.exe",
       "args": [
         "get_cl=gcc"
-      ]
-    },
-    {
-      "name": "[msvc] self",
-      "type": "default",
-      "project": "CMakeLists.txt",
-      "currentDir": ".",
-      "projectTarget": "gbs.exe",
-      "args": [
-        "clean cl=msvc config=debug,warnings build"
       ]
     },
     {
