@@ -2,7 +2,7 @@ export module compiler;
 import std;
 import env;
 
-constexpr std::string_view archs[] = { /*"arm64",*/ "x64" };
+constexpr std::array<std::string_view, 1> archs = { /*"arm64",*/ "x64" };
 
 export struct compiler {
 	int major = 0, minor = 0, patch = 0;
@@ -13,10 +13,14 @@ export struct compiler {
 	std::string_view build_module;
 	std::string_view build_command_prefix;
 	std::string_view link_command;
+	std::string_view slib_command;
+	std::string_view dlib_command;
 	std::string_view reference;
 	std::filesystem::path dir;
 	std::filesystem::path executable;
 	std::filesystem::path linker;
+	std::filesystem::path slib;
+	std::filesystem::path dlib;
 	std::optional<std::filesystem::path> std_module;
 };
 
@@ -54,13 +58,17 @@ void enumerate_compilers_msvc(std::filesystem::path msvc_path, auto&& callback) 
 			comp.arch = arch;
 			comp.dir = dir;
 			comp.executable = comp.dir / "bin" / "HostX64" / arch / "cl.exe";
-			comp.linker   = comp.dir / "bin" / "HostX64" / arch / "link.exe";
+			comp.linker = comp.dir / "bin" / "HostX64" / arch / "link.exe";
+			comp.slib = comp.dir / "bin" / "HostX64" / arch / "lib.exe";
+			comp.dlib = comp.linker;
 			comp.std_module = comp.dir / "modules" / "std.ixx";
 
 			comp.build_source = " {0:?} ";
 			comp.build_module = " {0:?} ";
 			comp.build_command_prefix = "call {0:?} @{1}/INCLUDE /c /interface /TP /ifcOutput {1}/ /Fo:{1}/ ";
 			comp.link_command = "call {0:?} /NOLOGO /OUT:{1}/{2}.exe @{1}/LIBPATH @{1}/OBJLIST";
+			comp.slib_command = "call {0:?} /NOLOGO /OUT:{1}/{2}.lib @{1}/LIBPATH @{1}/OBJLIST";
+			comp.dlib_command = "call {0:?} /NOLOGO /DLL /OUT:{1}/{2}.dll @{1}/LIBPATH @{1}/OBJLIST >nul";
 			comp.reference = " /reference {0}={1}.ifc ";
 
 			if (!std::filesystem::exists(comp.executable))
@@ -84,7 +92,7 @@ void enumerate_compilers_msvc(std::filesystem::path msvc_path, auto&& callback) 
 	}
 }
 
-export void enumerate_compilers(auto&& callback) {
+export void enumerate_compilers(environment const& env, auto&& callback) {
 	std::string line, cmd, version;
 
 #ifdef _MSC_VER
@@ -104,8 +112,8 @@ export void enumerate_compilers(auto&& callback) {
 	}
 
 	// Look for user installations of Microsoft Build Tools
-	if (auto const prg_86 = get_env_value("ProgramFiles(x86)"); !prg_86.empty()) {
-		auto const build_tools_dir = std::filesystem::path(prg_86) / "Microsoft Visual Studio" / "2022" / "BuildTools";
+	if (auto const prg_86 = env.get("ProgramFiles(x86)"); prg_86) {
+		auto const build_tools_dir = std::filesystem::path(*prg_86) / "Microsoft Visual Studio" / "2022" / "BuildTools";
 		if (std::filesystem::exists(build_tools_dir)) {
 			// Find msvc compilers
 			auto const msvc_path = build_tools_dir / "VC" / "Tools" / "MSVC";
@@ -117,11 +125,7 @@ export void enumerate_compilers(auto&& callback) {
 #endif
 
 	// Find the users folder
-	auto home_dir = get_home_dir();
-	if (home_dir.empty()) {
-		std::println("<gbs> get_cl : unable to get home directory");
-		return;
-	}
+	auto const home_dir = env.get_home_dir();
 
 	// Find compilers in ~/.gbs/*
 	auto const download_dir = home_dir / ".gbs";
@@ -145,11 +149,15 @@ export void enumerate_compilers(auto&& callback) {
 					comp.dir = dir;
 					comp.executable = dir.path() / "bin" / "clang";
 					comp.linker = comp.executable;
+					comp.slib = dir.path() / "bin" / "llvm-ar";
+					comp.dlib = comp.executable;
 
 					comp.build_source = " {0:?} -o {1:?} ";
 					comp.build_module = " --language=c++-module {0:?} -o {1:?} -fmodule-output ";
 					comp.build_command_prefix = "call \"{0}\" -c ";
-					comp.link_command = "call \"{0}\"  @{1}/OBJLIST -o {1}/{2}.exe";
+					comp.link_command = "call {0:?} @{1}/OBJLIST -o {1}/{2}.exe";
+					comp.slib_command = "call {0:?} rcs {1}/{2}.lib @{1}/OBJLIST";
+					comp.dlib_command = "call {0:?} -shared -o {1}/{2}.dll @{1}/OBJLIST";
 					comp.reference = " -fmodule-file={}={}.pcm ";
 					callback(std::move(comp));
 				}
@@ -168,23 +176,45 @@ export void enumerate_compilers(auto&& callback) {
 					comp.name_and_version = gcc_version;
 					gcc_version.remove_prefix(4);
 
-					comp.executable = dir.path();
-					if (std::filesystem::exists(dir.path() / "mingw64"))
-						comp.executable /= "mingw64";
+					auto const actual_path = dir.path();
 
 					extract_compiler_version(gcc_version, comp.major, comp.minor, comp.patch);
 					comp.name = "gcc";
 					comp.arch = "x64";
 					comp.dir = dir;
-					comp.executable = comp.executable / "bin" / "gcc";
+					comp.executable = actual_path / "bin" / "g++";
 					comp.linker = comp.executable;
-					if (comp.major >= 15)
-						comp.std_module = "bits/std.cc"; //
+					comp.slib = actual_path / "bin" / "ar";
+					comp.dlib = actual_path / "bin" / "ld";
+
+					if (comp.major >= 15) {
+						comp.std_module = actual_path / "include" / "c++" / comp.name_and_version.substr(4) / "bits" / "std.cc";
+						if (!std::filesystem::exists(*comp.std_module)) {
+							std::println(std::cerr, "<gbs> Error: Could not find 'std.cc' at location {}", comp.std_module->generic_string());
+							std::println(std::cerr, "<gbs>        `import std;` will not be available.");
+							comp.std_module.reset();
+						}
+					}
 
 					comp.build_source = " {0:?} -o {1:?} ";
 					comp.build_module = " -xc++ {0:?} -o {1:?} ";
-					comp.build_command_prefix = "call \"{0}\" -c -fsearch-include-path ";
-					comp.link_command = "call \"{0}\"  @{1}/OBJLIST -o {1}/{2}.exe";
+					comp.build_command_prefix = "call {0:?} -c -fPIC "
+						// Fixes/hacks for pthread in gcc
+						"-DWINPTHREAD_CLOCK_DECL=WINPTHREADS_ALWAYS_INLINE "
+						"-DWINPTHREAD_COND_DECL=WINPTHREADS_ALWAYS_INLINE "
+						"-DWINPTHREAD_MUTEX_DECL=WINPTHREADS_ALWAYS_INLINE "
+						"-DWINPTHREAD_NANOSLEEP_DECL=WINPTHREADS_ALWAYS_INLINE "
+						"-DWINPTHREAD_RWLOCK_DECL=WINPTHREADS_ALWAYS_INLINE "
+						"-DWINPTHREAD_SEM_DECL=WINPTHREADS_ALWAYS_INLINE "
+						"-DWINPTHREAD_THREAD_DECL=WINPTHREADS_ALWAYS_INLINE "
+					;
+#ifdef _MSC_VER
+					comp.link_command = "call {0:?} -o {1}/{2}.exe -static -Wl,--allow-multiple-definition @{1}/OBJLIST -lstdc++exp";
+#else
+					comp.link_command = "call \"{0}\" -o {1}/{2}.exe @{1}/OBJLIST";
+#endif
+					comp.slib_command = "call {0:?} rcs {1}/{2}.lib @{1}/OBJLIST";
+					comp.dlib_command = "call {0:?} -shared --out-implib \"{1}/{2}.lib\" -o {1}/{2}.dll @{1}/OBJLIST";
 					comp.reference = "";
 					callback(std::move(comp));
 				}

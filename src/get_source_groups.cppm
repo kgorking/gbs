@@ -1,3 +1,4 @@
+module;
 export module get_source_groups;
 import std;
 import dep_scan;
@@ -67,7 +68,7 @@ export depth_ordered_sources_map get_grouped_source_files(fs::path dir) {
 		.to<std::unordered_map>(&source_dependency::export_name, &source_dependency::path);
 
 	// Merge all dependencies for each file and
-	// return a ordered map of files grouped by their dependency depth
+	// return an ordered map of files grouped by their dependency depth
 	return as_monad(file_imports)
 		.join()
 		.map(recursive_merge, module_name_to_file_map, file_imports)
