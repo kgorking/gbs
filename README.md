@@ -81,11 +81,10 @@ The following compilers can produce a working executeable:
 
 - [x] msvc 19.38+
 - [ ] clang 19+ (crashes when using modules)
-- [ ] gcc 15+   (needs mods to stdlib, crashes when using modules)
+- [x] gcc 15+   (needs mods to stdlib)
   - Add `#undef _GLIBCXX_USE_NANOSLEEP` to `this_thread_sleep.h`
 
 # Upcoming versions (not in a specific order)
-- Compile and link libraries in 'lib'
 - Compile unit tests in 'unittest'
 - Fetch dependencies in 'deps'
 - Build dependencies in 'deps'
@@ -113,14 +112,14 @@ The following compilers can produce a working executeable:
 	- [x] Compile by selecting one-or-more response files, eg. `gbs build=release,analyze,avx2,hardened_stdlib`
 	- [ ] Allow matrix builds, eg. `gbs build=[debug,release] run` results in 2 builds and 2 runs
 - [x] Multiple operations, eg. `gbs build=debug unittest build=release unittest`
-- [ ] Compiling/linking of static libraries
+- [x] Compiling/linking of static libraries
 	- [x] msvc
 	- [x] clang
 	- [x] gcc
-- [ ] Compiling/linking of dynamic libraries
+- [x] Compiling/linking of dynamic libraries
 	- [x] msvc
 	- [x] clang
-	- [ ] gcc
+	- [x] gcc
 - [ ] Compiling/running unit tests
 - [ ] Fetch dependencies from external sites like GitHub.
 	- [ ] Use installed package managers

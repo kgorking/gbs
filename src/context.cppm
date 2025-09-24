@@ -231,7 +231,7 @@ public:
 
 	// Create build args for a single file
 	std::string build_command(std::string_view file, std::string_view obj_file) const {
-		std::string_view const build_cmd = file.ends_with(".cppm")
+		std::string_view const build_cmd = (file.ends_with(".cppm") || file.ends_with(".ixx"))
 			? selected_cl.build_module
 			: selected_cl.build_source;
 
