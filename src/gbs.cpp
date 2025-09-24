@@ -35,7 +35,7 @@ int main(const int argc, char const* argv[], char const** envp) {
 		{"ide", cmd_ide},
 	};
 
-	for (auto const args = std::span(argv, argc); std::string_view arg : args | std::views::drop(1)) {
+	for (auto const args = std::span(argv, static_cast<std::size_t>(argc)); std::string_view arg : args | std::views::drop(1)) {
 		std::string_view const cmd = arg.substr(0, arg.find('='));
 		if (!commands.contains(cmd)) {
 			std::println("<gbs> Unknown command '{}', aborting\n", cmd);

@@ -116,7 +116,7 @@ class monad {
 
 	// Allow access to 'as_monad' function
 	template<typename Mt> friend constexpr auto as_monad(Mt const&) noexcept;
-	template<typename T>  friend constexpr auto as_monad(std::initializer_list<T> const) noexcept;
+	template<typename InitT>  friend constexpr auto as_monad(std::initializer_list<InitT> const) noexcept;
 
 	// This function does nothing. Good for reference.
 	constexpr auto identity() const {

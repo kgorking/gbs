@@ -29,7 +29,7 @@ auto write_object_file_and_check_date(source_info si, context const& ctx, std::s
 
 	{
 		std::scoped_lock sl(mut);
-		objects << obj << ' ';
+		objects << '"' << obj.generic_string() << '"' << ' ';
 	}
 
 	if (!is_file_up_to_date(si.first, obj))
@@ -124,7 +124,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 					std::string const name = p.extension().string().substr(1);
 					std::string const cmd = ctx.static_library_command(name, output_dir.generic_string());
 
-					libs << (output_dir / (name + ".lib")) << ' ';
+					libs << (output_dir / (name + ".lib")).generic_string() << ' ';
 
 					std::println("<gbs> Creating static library '{}'...", name);
 					return 0 == std::system(cmd.c_str());
@@ -133,7 +133,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 					std::string const name = p.extension().string().substr(1);
 					std::string const cmd = ctx.dynamic_library_command(name, output_dir.generic_string());
 
-					libs << (output_dir / (name + ".lib")) << ' ';
+					libs << (output_dir / (name + ".lib")).generic_string() << ' ';
 
 					std::println("<gbs> Creating dynamic library '{}'...", name);
 					return 0 == std::system(cmd.c_str());

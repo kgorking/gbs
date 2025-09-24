@@ -8,7 +8,7 @@ export bool cmd_enum_cl(context& ctx, std::string_view /*args*/) {
 
 	ctx.fill_compiler_collection();
 
-	[[gsl::suppress("gsl.view")]]
+	//[[gsl::suppress("gsl.view")]]
 	for (auto const& [name, compilers] : ctx.get_compiler_collection()) {
 		std::println("<gbs>   {}: ", name);
 		for (auto const& c : compilers) {

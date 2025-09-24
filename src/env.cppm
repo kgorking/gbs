@@ -9,7 +9,7 @@ public:
 		if(envp == nullptr)
 			throw std::runtime_error("Environment pointer is null");
 
-		[[gsl::suppress("bounds.1")]] // warning C26481: Don't use pointer arithmetic. Use span instead (bounds.1).
+		//[[gsl::suppress("bounds.1")]] // warning C26481: Don't use pointer arithmetic. Use span instead (bounds.1).
 		for(char const* const* var = envp; var != nullptr && *var != nullptr; ++var) {
 			std::string_view const ev{ *var };
 			vars[ev.substr(0, ev.find('='))] = ev.substr(ev.find('=') + 1);
