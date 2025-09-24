@@ -88,7 +88,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 
 	// TODO
 	// Find all source files. Recursively detect all subfolders that need compilation. A 'lib' subfolder might have its own 'lib' or 'unittest' subfolders.
-	std::vector<depth_ordered_sources_map> all_sources;
+	depth_ordered_sources_map all_sources; // .merge
 	// Each subfolder goes in a list according to its name.
 	std::vector<fs::path> static_libraries;
 	std::vector<fs::path> dynamic_libraries;
