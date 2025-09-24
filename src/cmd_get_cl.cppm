@@ -26,29 +26,29 @@ std::string clang_get_download_url(std::string_view const version) {
 }
 
 export bool cmd_get_cl(context& ctx, std::string_view args) {
-	std::println("<gbs> get_cl : Searching for '{}'", args);
+	std::println("<gbs> '{}' - Searching remotely for newest version...", args);
 
 	if (ctx.set_compiler(args)) {
 		return true;
 	}
 
 	if (args.empty()) {
-		std::println("<gbs> get_cl error : usage 'get_cl=compilername:version', eg. 'get_cl=clang:19.1'");
+		std::println("<gbs> Error : usage 'get_cl=compilername:version', eg. 'get_cl=clang:19.1'");
 		return false;
 	}
 
 	if (1 == std::system("git --version >nul")) {
-		std::println("<gbs> get_cl : 'git' is required for this command to work");
+		std::println("<gbs> Error : 'git' is required for this command to work");
 		return false;
 	}
 
 	if (1 == std::system("tar --version >nul")) {
-		std::println("<gbs> get_cl : 'tar' is required for this command to work");
+		std::println("<gbs> Error : 'tar' is required for this command to work");
 		return false;
 	}
 
 	if (1 == std::system("curl --version >nul")) {
-		std::println("<gbs> get_cl : 'curl' is required for this command to work");
+		std::println("<gbs> Error : 'curl' is required for this command to work");
 		return false;
 	}
 
@@ -179,23 +179,23 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 			version = version.substr(version_prefix.size());
 
 			// Build url
-			//url = std::vformat(gh_download_url, std::make_format_args(version));
 			url = get_download_url(version);
 
 			// Check for file
-			std::print("<gbs>    Checking for {} {} ...", cl.name, version);
-			found_valid = !(22 == std::system(std::format("curl -fsI {} >nul", url).c_str()));
-			std::puts(found_valid ? "Found" : "Not found");
+			found_valid = (22 != std::system(std::format("curl -fsI {} >nul", url).c_str()));
+			if (found_valid) {
+				extract_compiler_version(version, cl.major, cl.minor, cl.patch);
+				std::println("<gbs>    Found {} {}.{}.{}", cl.name, cl.major, cl.minor, cl.patch);
+			}
 		} while (!found_valid);
 
 		if (!found_valid) {
 			std::println("<gbs>    No suitable download found for {}:{}", cl.name, args);
 			return false;
-		}
+		} 
 	}
 	std::remove("version_list.txt");
 
-	extract_compiler_version(version, cl.major, cl.minor, cl.patch);
 
 	std::string_view const filename = std::string_view{ url }.substr(1 + url.find_last_of('/'));
 	auto const gbs_user_path = std::filesystem::path(homedir) / ".gbs";
@@ -211,7 +211,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 	if (std::filesystem::exists(cl.dir)) {
 		// TODO check bin
 
-		std::println("<gbs>    Found {} {} in {}", cl.name, version, cl.dir.generic_string());
+		std::println("<gbs>    Skipping download, found in {}", cl.dir.generic_string());
 		return true;
 	}
 
