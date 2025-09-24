@@ -81,9 +81,8 @@ The following commands are supported:
 The following compilers can produce a working executeable:
 
 - [x] msvc 19.38+
-- [ ] clang 19+ (crashes when using modules)
-- [x] gcc 15+   (needs mods to stdlib)
-  - Add `#undef _GLIBCXX_USE_NANOSLEEP` to `this_thread_sleep.h`
+- [ ] clang 21+ (crashes on 'gbs' compile when using modules)
+- [x] gcc 15+
 
 # Upcoming versions (not in a specific order)
 - Compile unit tests in 'unittest'
@@ -93,6 +92,14 @@ The following compilers can produce a working executeable:
 
 ## Todo
 - [ ] Good documentation for all commands
+- [ ] Compiling/running unit tests
+- [ ] Fetch dependencies from external sites like GitHub.
+	- [ ] Use installed package managers
+	- [ ] Support for compiling externally fetched dependencies
+- [ ] Add a `get_cl=compiler:?` option to list versions available for download
+- [ ] Allow matrix builds, eg. `gbs build=[debug,release] run` results in 2 builds and 2 runs
+- [ ] Support for running custom build steps before/after compilation
+- [ ] WSL support ?
 - [x] Create a simple build system
 - [x] Automatic compilation without build scripts
 	- [x] Find source files automatically
@@ -111,7 +118,6 @@ The following compilers can produce a working executeable:
 - [x] Use response files for compilation variance
     - [x] Create variants for debug/release/analyze/sanitize/library/etc.
 	- [x] Compile by selecting one-or-more response files, eg. `gbs build=release,analyze,avx2,hardened_stdlib`
-	- [ ] Allow matrix builds, eg. `gbs build=[debug,release] run` results in 2 builds and 2 runs
 - [x] Multiple operations, eg. `gbs build=debug unittest build=release unittest`
 - [x] Compiling/linking of static libraries
 	- [x] msvc
@@ -121,10 +127,6 @@ The following compilers can produce a working executeable:
 	- [x] msvc
 	- [x] clang
 	- [x] gcc
-- [ ] Compiling/running unit tests
-- [ ] Fetch dependencies from external sites like GitHub.
-	- [ ] Use installed package managers
-	- [ ] Support for compiling externally fetched dependencies
 - [x] Support multiple compilers
 	- [x] msvc
 	- [x] clang
@@ -133,12 +135,9 @@ The following compilers can produce a working executeable:
 	- [x] msvc
 	- [x] clang
 	- [x] gcc
-	- [ ] Add a `compiler:?` option to list available versions of a compiler
-- [ ] Support for running custom build steps before/after compilation
 - [x] Integrate with Visual Studio [Code]
 	- [x] Visual Studio
 	- [x] Visual Studio Code
-- [ ] WSL support ?
 
 
 # Note
