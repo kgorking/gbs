@@ -246,13 +246,13 @@ public:
 
 	// Create library command for the currently selected compiler
 	std::string static_library_command(std::string_view const out_name, std::string_view const out_dir) const {
-		auto const lib = selected_cl.lib.string();
+		auto const lib = selected_cl.slib.string();
 		return std::vformat(selected_cl.slib_command, std::make_format_args(lib, out_dir, out_name));
 	}
 
 	// Create library command for the currently selected compiler
 	std::string dynamic_library_command(std::string_view const out_name, std::string_view const out_dir) const {
-		auto const lib = selected_cl.linker.string();
+		auto const lib = selected_cl.dlib.string();
 		return std::vformat(selected_cl.dlib_command, std::make_format_args(lib, out_dir, out_name));
 	}
 

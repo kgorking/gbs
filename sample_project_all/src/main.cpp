@@ -1,10 +1,8 @@
 import std;
 import mod9;
-import test.will_it_work;
-//import test.will_it_work_dynamic;
-__declspec(dllexport) bool does_it_work_dynamic();
 
-bool does_it_work_dynamic();
+bool does_it_work();
+__declspec(dllexport) bool does_it_work_dynamic();
 
 short extra();
 
