@@ -114,8 +114,10 @@ The following compilers can produce a working executeable:
 	- [x] Compile by selecting one-or-more response files, eg. `gbs build=release,analyze,avx2,hardened_stdlib`
 	- [ ] Allow matrix builds, eg. `gbs build=[debug,release] run` results in 2 builds and 2 runs
 - [x] Multiple operations, eg. `gbs build=debug unittest build=release unittest`
-- [x] Compiling/linking of static- and dynamic libraries
-	- [ ] Parallel compilation of all libraries
+- [ ] Compiling/linking of static- and dynamic libraries
+	- [x] msvc
+	- [ ] clang
+	- [ ] gcc
 - [ ] Compiling/running unit tests
 - [ ] Fetch dependencies from external sites like GitHub.
 	- [ ] Use installed package managers

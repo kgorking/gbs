@@ -3,13 +3,33 @@
   "defaults": {},
   "configurations": [
     {
-      "name": "Test with sample project",
+      "name": "Test all with sample project",
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": "./sample_project/",
+      "currentDir": "./sample_project_all/",
       "projectTarget": "gbs.exe",
       "args": [
-        "version cl=msvc config clean build run"
+        "version cl=clang config clean build run"
+      ]
+    },
+    {
+      "name": "Test slib with sample project",
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": "./sample_project_slib",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "version cl=clang config clean build run"
+      ]
+    },
+    {
+      "name": "Test slib with sample project",
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": "./sample_project_dlib/",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "version cl=clang config clean build run"
       ]
     },
     {

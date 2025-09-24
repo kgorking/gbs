@@ -147,11 +147,14 @@ export void enumerate_compilers(environment const& env, auto&& callback) {
 					comp.dir = dir;
 					comp.executable = dir.path() / "bin" / "clang";
 					comp.linker = comp.executable;
+					comp.lib = dir.path() / "bin" / "llvm-ar";
 
 					comp.build_source = " {0:?} -o {1:?} ";
 					comp.build_module = " --language=c++-module {0:?} -o {1:?} -fmodule-output ";
 					comp.build_command_prefix = "call \"{0}\" -c ";
-					comp.link_command = "call \"{0}\"  @{1}/OBJLIST -o {1}/{2}.exe";
+					comp.link_command = "call {0:?} @{1}/OBJLIST -o {1}/{2}.exe";
+					comp.slib_command = "call {0:?} rcs {1}/{2}.lib @{1}/OBJLIST";
+					comp.dlib_command = "call {0:?} {1}/{2} @{1}/OBJLIST";
 					comp.reference = " -fmodule-file={}={}.pcm ";
 					callback(std::move(comp));
 				}
