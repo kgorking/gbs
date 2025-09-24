@@ -153,23 +153,13 @@
       ]
     },
     {
-      "name": "download latest [clang]",
+      "name": "Download latest gcc + clang",
       "type": "default",
       "project": "CMakeLists.txt",
       "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
-        "get_cl=clang"
-      ]
-    },
-    {
-      "name": "download latest [gcc]",
-      "type": "default",
-      "project": "CMakeLists.txt",
-      "currentDir": ".",
-      "projectTarget": "gbs.exe",
-      "args": [
-        "get_cl=gcc"
+        "get_cl=clang get_cl=gcc"
       ]
     },
     {
