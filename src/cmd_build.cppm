@@ -106,7 +106,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 				bool const succeeded = as_monad(get_all_source_files(p / "src", ctx))
 					.join()
 					.values()
-					.join_par()
+					.join()
 					.guard([](std::exception const& e) { std::println(std::cerr, "<gbs> Exception: {}", e.what()); })
 					.map(write_object_file_and_check_date, ctx, std::ref(mut), std::ref(objects))
 					.map(make_build_command, ctx)
