@@ -220,7 +220,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 
 	// Download
 	std::println("<gbs>    {}", url);
-	if (0 != std::system(std::format("curl -fSL {} | tar -xf - -C {}", url, dest_dir.generic_string()).c_str())) {
+	if (0 != std::system(std::format("curl -fSL {} | tar --strip-components=1 -xf - -C {}", url, dest_dir.generic_string()).c_str())) {
 		std::println("<gbs> Error downloading and unpacking {} {}", cl.name, version);
 		return false;
 	}

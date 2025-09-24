@@ -176,9 +176,7 @@ export void enumerate_compilers(environment const& env, auto&& callback) {
 					comp.name_and_version = gcc_version;
 					gcc_version.remove_prefix(4);
 
-					auto actual_path = dir.path();
-					if (std::filesystem::exists(dir.path() / "mingw64"))
-						actual_path /= "mingw64";
+					auto const actual_path = dir.path();
 
 					extract_compiler_version(gcc_version, comp.major, comp.minor, comp.patch);
 					comp.name = "gcc";
