@@ -86,6 +86,18 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 	// Gets all the directories to compile
 	constexpr auto dir_search_options = fs::directory_options::follow_directory_symlink | fs::directory_options::skip_permission_denied;
 
+	// TODO
+	// Find all source files. Recursively detect all subfolders that need compilation. A 'lib' subfolder might have its own 'lib' or 'unittest' subfolders.
+	std::vector<depth_ordered_sources_map> all_sources;
+	// Each subfolder goes in a list according to its name.
+	std::vector<fs::path> static_libraries;
+	std::vector<fs::path> dynamic_libraries;
+	std::vector<fs::path> executables;
+	// All source files are compiled in parallel.
+	// All static library projects a linked in parallel.
+	// All dynamic library projects are linked in parallel.
+	// Finally, all executables are linked in parallel.
+
 	return as_monad({ "lib", "unittest" })
 		.filter([](auto const& p) { return fs::exists(p); })
 		.as<fs::directory_iterator>(dir_search_options)
