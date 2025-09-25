@@ -82,6 +82,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 
 	// Set up the library input files
 	std::ofstream libs(ctx.output_dir() / "LIBLIST");
+	std::shared_mutex mut_libs;
 
 	// Gets all the directories to compile
 	constexpr auto dir_search_options = fs::directory_options::follow_directory_symlink | fs::directory_options::skip_permission_denied;
@@ -98,7 +99,9 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 	// All dynamic library projects are linked in parallel.
 	// Finally, all executables are linked in parallel.
 
-	return as_monad({ "lib", "unittest" })
+	auto const output_dir = ctx.output_dir();
+
+	bool ok = as_monad({ "lib", "unittest" })
 		.filter([](auto const& p) { return fs::exists(p); })
 		.as<fs::directory_iterator>(dir_search_options)
 			.join()
@@ -106,12 +109,12 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 			.filter([](fs::path const& p) { return fs::exists(p / "src"); })
 			.map([](fs::path const& p) { return fs::absolute(p); })
 			.concat(fs::current_path())
+			//.async()
 			.until([&](fs::path const& p) {
 				std::println("<gbs> compiling '{}/src'", p.generic_string());
 
 				// Create file containing the list of objects to link
-				auto const output_dir = ctx.output_dir();
-				std::ofstream objects(output_dir / "OBJLIST");
+				std::ofstream objects(output_dir / (p.filename().string() + "_OBJLIST"));
 				std::shared_mutex mut;
 
 				// Get the source files and compile them.
@@ -133,31 +136,61 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 
 				// Link/lib sources
 				if (p.stem() == "s") {
-					std::string const name = p.extension().string().substr(1);
-					std::string const cmd = ctx.static_library_command(name, output_dir.generic_string());
-
-					libs << (output_dir / (name + ".lib")).generic_string() << ' ';
-
-					std::println("<gbs> Creating static library '{}'...", name);
-					return 0 == std::system(cmd.c_str());
+					static_libraries.push_back(p);
 				}
 				else if (p.stem() == "d") {
-					std::string const name = p.extension().string().substr(1);
-					std::string const cmd = ctx.dynamic_library_command(name, output_dir.generic_string());
-
-					libs << (output_dir / (name + ".lib")).generic_string() << ' ';
-
-					std::println("<gbs> Creating dynamic library '{}'...", name);
-					return 0 == std::system(cmd.c_str());
+					dynamic_libraries.push_back(p);
 				}
 				else {
-					libs.close();
-
-					std::string const name = p.stem().string();
-					std::string const cmd = ctx.link_command(name, output_dir.generic_string()) + std::format(" @{}/LIBLIST", output_dir.generic_string());
-
-					std::println("<gbs> Linking executable '{}'...", name);
-					return 0 == std::system(cmd.c_str());
+					executables.push_back(p);
 				}
+
+				return true;
 			});
+
+	if (!ok)
+		return false;
+
+	std::for_each(std::execution::par_unseq, static_libraries.begin(), static_libraries.end(), [&](fs::path const& p) {
+		if (!ok) return;
+
+		std::string const name = p.extension().string().substr(1);
+		std::string const cmd = ctx.static_library_command(name, output_dir.generic_string());
+
+		{
+			std::scoped_lock sl(mut_libs);
+			libs << (output_dir / (name + ".lib")).generic_string() << ' ';
+		}
+
+		std::println("<gbs> Creating static library '{}'...", name);
+		ok = (0 == std::system(cmd.c_str()));
+		});
+
+	std::for_each(std::execution::par_unseq, dynamic_libraries.begin(), dynamic_libraries.end(), [&](fs::path const& p) {
+		if (!ok) return;
+
+		std::string const name = p.extension().string().substr(1);
+		std::string const cmd = ctx.dynamic_library_command(name, output_dir.generic_string());
+
+		{
+			std::scoped_lock sl(mut_libs);
+			libs << (output_dir / (name + ".lib")).generic_string() << ' ';
+		}
+
+		std::println("<gbs> Creating dynamic library '{}'...", name);
+		ok = (0 == std::system(cmd.c_str()));
+		});
+
+	libs.close();
+	std::for_each(std::execution::par_unseq, executables.begin(), executables.end(), [&](fs::path const& p) {
+		if (!ok) return;
+
+		std::string const name = p.stem().string();
+		std::string const cmd = ctx.link_command(name, output_dir.generic_string()) + std::format(" @{}/LIBLIST", output_dir.generic_string());
+
+		std::println("<gbs> Linking executable '{}'...", name);
+		ok = (0 == std::system(cmd.c_str()));
+		});
+
+	return true;
 }

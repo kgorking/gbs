@@ -37,8 +37,8 @@ source_info recursive_merge(source_info const& pair, std::unordered_map<std::str
 	for (auto const& dep : deps) {
 		if (module_name_to_file_map.contains(dep)) {
 			auto const& dep_path = module_name_to_file_map.at(dep);
-			auto merged_deps = recursive_merge({ dep_path, file_imports.at(dep_path) }, module_name_to_file_map, file_imports);
-			all_merged_deps.insert_range(merged_deps.second);
+			auto [fst, snd] = recursive_merge({ dep_path, file_imports.at(dep_path) }, module_name_to_file_map, file_imports);
+			all_merged_deps.insert_range(std::move(snd));
 		}
 	}
 
@@ -47,13 +47,13 @@ source_info recursive_merge(source_info const& pair, std::unordered_map<std::str
 
 // Group files according to how deep their dependency chain is
 void group_by_dependency_depth(depth_ordered_sources_map& sources, source_info const& si) {
-	auto& [path, imports] = si;
+	auto const& [path, imports] = si;
 	std::size_t const dep_size = imports.size();
 	sources[dep_size].emplace_back(path, imports);
 }
 
 // Find the source files and dependencies
-export depth_ordered_sources_map get_grouped_source_files(fs::path dir) {
+export depth_ordered_sources_map get_grouped_source_files(fs::path const& dir) {
 	file_to_imports_map file_imports;
 
 	// Maps an export module name to its filename
