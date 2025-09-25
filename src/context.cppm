@@ -230,12 +230,13 @@ public:
 	}
 
 	// Create build args for a single file
-	std::string build_command(std::string_view file, std::string_view obj_file) const {
+	std::string build_command(std::string_view file, std::filesystem::path const& obj_file) const {
 		std::string_view const build_cmd = (file.ends_with(".cppm") || file.ends_with(".ixx"))
 			? selected_cl.build_module
 			: selected_cl.build_source;
 
-		return std::vformat(build_cmd, std::make_format_args(file, obj_file));
+		auto const str = obj_file.generic_string();
+		return std::vformat(build_cmd, std::make_format_args(file, str));
 	}
 
 	// Create link command for the currently selected compiler

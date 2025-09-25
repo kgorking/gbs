@@ -68,7 +68,6 @@ template<typename T>				struct unwrapped<std::optional<T>> { using type = T; };
 template<typename T, typename E>	struct unwrapped<std::expected<T, E>> { using type = T; };
 template<typename T>				using  unwrapped_t = typename unwrapped<T>::type;
 
-
 template<typename T>
 constexpr bool has_value(T const& v) noexcept {
 	if constexpr (optional_like<T>)
@@ -102,8 +101,24 @@ constexpr decltype(auto) unwrap_or(T&& v, auto const val) noexcept {
 		return std::forward<T>(v);
 }
 
+template<typename Fn, typename T, typename ...Args>
+decltype(auto) call(Fn&& fn, T const& v, Args&& ...args) {
+	if constexpr (requires {std::tuple_size<unwrapped_t<T>>::value == 0; })
+		return std::apply(fn, std::tuple_cat(unwrap(v), std::make_tuple( std::forward<Args>(args)... )));
+	else
+		return std::invoke(fn, unwrap(v), std::forward<Args>(args)...);
+}
+
+template<typename Fn, typename T, typename ...Args>
+concept callable = requires(Fn && fn, T const& v, Args&& ...args) {
+	{ call(std::forward<Fn>(fn), unwrap(v), std::forward<Args>(args)...) };
+};
+
+template<typename Fn, typename T, typename ...Args>
+using callable_result_t = std::remove_cvref_t<decltype(call(std::declval<Fn>(), std::declval<unwrapped_t<T>>(), std::declval<Args>()...))>;
+
 template<typename UserFn, typename ...Args>
-concept must_return_void = std::is_same_v<void, std::invoke_result_t<UserFn, Args...>>;
+concept must_return_void = std::is_same_v<void, callable_result_t<UserFn, Args...>>;
 
 
 export template<typename T, typename Fn>
@@ -143,12 +158,14 @@ public:
 
 	// Apply a filter predicate to the monad.
 	// The predicate must be callable with the unwrapped type of T.
-	constexpr auto filter(std::predicate<unwrapped_t<T>> auto pred) const {
+	template<typename Pred>
+		requires callable<Pred, unwrapped_t<T>>&& std::is_same_v<bool, callable_result_t<Pred, unwrapped_t<T>>>
+	constexpr auto filter(Pred pred) const {
 		auto f = [=, fn = fn](auto dst) {
 			return fn([=](const auto& v) {
 				if (has_value(v)) {
 					const auto& uv = unwrap(v);
-					if (std::invoke(pred, uv))
+					if (call(pred, uv))
 						dst(uv);
 				}
 				});
@@ -165,7 +182,7 @@ public:
 			return fn([&](const auto& v) {
 				if (has_value(v)) {
 					unwrapped_t<T> const& uv = unwrap(v);
-					if (std::invoke(predicate, uv))
+					if (call(predicate, uv))
 						dst(uv);
 				}
 				});
@@ -177,16 +194,17 @@ public:
 	// Map the current type T to another type using the provided mapping function.
 	// Additional arguments can be passed to the mapping function.
 	template<typename MapFn, typename ...Args>
-		requires std::invocable<MapFn, unwrapped_t<T>, Args...>
+		requires callable<MapFn, unwrapped_t<T>, Args...>
 	constexpr auto map(MapFn const& mf, Args&& ...args) const {
 		auto f = [=, fn = fn, ...args = std::forward<Args>(args)](auto dst) {
 			return fn([=](auto const& v) {
-				if (has_value(v))
-					dst(std::invoke(mf, unwrap(v), args...));
+				if (has_value(v)) {
+					dst(call(mf, unwrap(v), args...));
+				}
 				});
 			};
 		using F = decltype(f);
-		return monad<std::invoke_result_t<MapFn, unwrapped_t<T>, Args...>, F> {std::move(f)};
+		return monad<callable_result_t<MapFn, unwrapped_t<T>, Args...>, F> {std::move(f)};
 	}
 
 	// Extract the N'th element from a tuple-like type.
@@ -582,11 +600,11 @@ public:
 	template<typename UserFn, typename ...Args>
 		requires must_return_void<UserFn, unwrapped_t<T>, Args...>
 	constexpr auto and_then(UserFn&& user_fn, Args&& ...args) const {
-		auto f = [user_fn = std::forward<UserFn>(user_fn), &...args = std::forward<Args>(args), fn = fn](auto dst) {
+		auto f = [user_fn = std::forward<UserFn>(user_fn), ...args = std::forward<Args>(args), fn = fn](auto dst) {
 			return fn([&](auto const& v) {
 				if (has_value(v)) {
 					unwrapped_t<T> const& ub = unwrap(v);
-					std::invoke(user_fn, ub, std::forward<Args>(args)...);
+					call(user_fn, ub, args...);
 					dst(ub);
 				}
 				});
@@ -834,9 +852,9 @@ public:
 
 	// Sends the final projected values to a new container of the provided template type and returns the container.
 	template<template<class...> typename C, typename ...Projs>
-		requires (sizeof...(Projs) > 0 && requires { C<std::remove_cvref_t<std::invoke_result_t<Projs, T>>...>{}; })
+		requires (sizeof...(Projs) > 0 && requires { C<std::remove_cvref_t<std::invoke_result_t<Projs, unwrapped_t<T>>>...>{}; })
 	constexpr auto to(Projs ...projs) const {
-		C<std::remove_cvref_t<std::invoke_result_t<Projs, T>>...> c;
+		C<std::remove_cvref_t<std::invoke_result_t<Projs, unwrapped_t<T>>>...> c;
 
 		fn([&](auto const& v) {
 			if (has_value(v))
