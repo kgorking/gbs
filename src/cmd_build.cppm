@@ -165,7 +165,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 	// Create the object list file
 	std::ofstream objlist(ctx.output_dir() / "OBJLIST");
 	for (fs::path const& obj : objects)
-		objlist << obj << ' ';
+		objlist << obj.generic_string() << ' ';
 	objlist.close();
 
 	bool ok = true;
@@ -177,12 +177,12 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 
 		// Create the object list file for the .lib file
 		fs::path objlist_name = name + "_OBJLIST";
-		std::ofstream objlist(ctx.output_dir() / objlist_name);
+		std::ofstream dll_objlist(ctx.output_dir() / objlist_name);
 		for (fs::path const& src : vec) {
 			fs::path const obj = (ctx.output_dir() / src.filename()).replace_extension("obj");
-			objlist << obj << ' ';
+			dll_objlist << obj.generic_string() << ' ';
 		}
-		objlist.close();
+		dll_objlist.close();
 
 		std::string const cmd = ctx.dynamic_library_command(name, output_dir.generic_string()) + std::format(" @{}/{}", output_dir.generic_string(), objlist_name.generic_string());
 
@@ -198,7 +198,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 	// Create the library list file
 	std::ofstream liblist(ctx.output_dir() / "LIBLIST");
 	for (fs::path const& lib : libs)
-		liblist << lib << ' ';
+		liblist << lib.generic_string() << ' ';
 	liblist.close();
 
 	if (!ok)

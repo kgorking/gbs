@@ -117,8 +117,8 @@ concept callable = requires(Fn && fn, T const& v, Args&& ...args) {
 template<typename Fn, typename T, typename ...Args>
 using callable_result_t = std::remove_cvref_t<decltype(call(std::declval<Fn>(), std::declval<unwrapped_t<T>>(), std::declval<Args>()...))>;
 
-template<typename UserFn, typename ...Args>
-concept must_return_void = std::is_same_v<void, callable_result_t<UserFn, Args...>>;
+template<typename UserFn, typename T, typename ...Args>
+concept must_return_void = std::is_same_v<void, callable_result_t<UserFn, T, Args...>>;
 
 
 export template<typename T, typename Fn>

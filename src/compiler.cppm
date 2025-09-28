@@ -158,12 +158,12 @@ export void enumerate_compilers(environment const& env, auto&& callback) {
 
 					comp.build_source = " {0:?} -o {1:?} ";
 					comp.build_module = " --language=c++-module {0:?} -o {1:?} -fmodule-output ";
-					comp.build_command_prefix = "call {0:?} -c ";
+					comp.build_command_prefix = "call {0:?} @{1}/SRC_INCLUDES -c ";
 					comp.link_command = "call {0:?} -o {1}/{2}.exe @{1}/OBJLIST";
 					comp.slib_command = "call {0:?} rcs {1}/{2}.lib @{1}/OBJLIST";
 					comp.dlib_command = "call {0:?} -shared -o {1}/{2}.dll @{1}/OBJLIST";
 					comp.define = "-D";
-					comp.include = "-I{0}";
+					comp.include = "-I\"{0}/\"";
 					comp.reference = " -fmodule-file={}={}.pcm ";
 					callback(std::move(comp));
 				}
@@ -204,7 +204,7 @@ export void enumerate_compilers(environment const& env, auto&& callback) {
 
 					comp.build_source = " {0:?} -o {1:?} ";
 					comp.build_module = " -xc++ {0:?} -o {1:?} ";
-					comp.build_command_prefix = "call {0:?} -c -fPIC "
+					comp.build_command_prefix = "call {0:?} @{1}/SRC_INCLUDES -c -fPIC "
 						// Fixes/hacks for pthread in gcc
 						"-DWINPTHREAD_CLOCK_DECL=WINPTHREADS_ALWAYS_INLINE "
 						"-DWINPTHREAD_COND_DECL=WINPTHREADS_ALWAYS_INLINE "
