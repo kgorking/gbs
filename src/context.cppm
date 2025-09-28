@@ -2,7 +2,7 @@ export module context;
 import std;
 import env;
 import compiler;
-
+import monad;
 
 export class context {
 	using compiler_collection = std::unordered_map<std::string_view, std::vector<compiler>>;
@@ -10,6 +10,7 @@ export class context {
 
 	// Configuration of compile ('debug,analyze', etc...)
 	std::string_view config;
+	std::string config_dir;
 
 	// Folder to store gbs related files
 	const std::filesystem::path gbs_internal{ ".gbs" };
@@ -162,6 +163,9 @@ public:
 			config = old;
 			std::println(std::cerr, "<gbs> Error: could not create output build directory: '{}'", error_code.message());
 		}
+		else {
+			config_dir = as_monad(config).replace(',', '_').to<std::string>();
+		}
 	}
 
 	std::string_view get_config() const noexcept {
@@ -178,7 +182,7 @@ public:
 
 	// Determine output dir, eg. 'gbs.out/msvc/debug
 	auto output_dir() const -> std::filesystem::path {
-		return gbs_out / selected_cl.name_and_version / config;
+		return gbs_out / selected_cl.name_and_version / config_dir;
 	}
 
 	// Determine response directory

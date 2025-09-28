@@ -404,13 +404,16 @@ public:
 					if (uv.empty())
 						return;
 
-					int const begin = std::max(0ll, drop);
+					std::int64_t const begin = std::max(0ll, drop);
 					std::int64_t const count = std::min(std::ranges::ssize(uv) - begin, take);
-					int const end = begin + count - 1;
-					for (int i = begin; i < end; ++i) {
-						dst(uv[i]);
+
+					auto it = uv.begin() + begin;
+					auto const end = it + count - 1;
+					for(; it != end; ++it) {
+						dst(*it);
 						dst(pattern);
 					}
+
 					dst(uv.back());
 				}
 				});
@@ -426,6 +429,33 @@ public:
 	template<std::size_t S>
 	constexpr auto join_with(const char(&pattern)[S], std::int64_t drop = 0, std::int64_t take = std::numeric_limits<std::int64_t>::max()) const {
 		return join_with(std::string_view{ pattern }, drop, take);
+	}
+
+	// Joins a contained range-like type into a sequence of its elements, while replacing a single element.
+	template<typename P>
+		requires range_like<unwrapped_t<T>>&& std::is_same_v<P, unwrapped_t<std::ranges::range_value_t<unwrapped_t<T>>>>
+	constexpr auto replace(P const pattern, P const replace) const {
+		auto f = [=, fn = fn](auto dst) {
+			return fn([=](auto const& v) {
+				if (has_value(v)) {
+					auto const& uv = unwrap(v);
+					if (uv.empty())
+						return;
+
+					std::for_each(std::ranges::begin(uv), std::ranges::end(uv), [dst, pattern, replace](auto const& item) {
+						if (item == pattern)
+							dst(replace);
+						else
+							dst(item);
+						});
+				}
+				});
+			};
+
+		using F = decltype(f);
+		using VT = std::ranges::range_value_t<unwrapped_t<T>>;
+		using JoinWith = monad<VT, F>;
+		return JoinWith{ std::move(f) };
 	}
 
 	// Drop the first 'n' elements from a contained range-like type.

@@ -217,7 +217,7 @@ export void enumerate_compilers(environment const& env, auto&& callback) {
 					comp.link_command = "call \"{0}\" -o {1}/{2}.exe @{1}/OBJLIST -static";
 #endif
 					comp.slib_command = "call {0:?} rcs {1}/{2}.lib @{1}/OBJLIST";
-					comp.dlib_command = "call {0:?} -static -shared -o {1}/{2}.dll @{1}/OBJLIST -lstdc++exp";
+					comp.dlib_command = "call {0:?} -static -shared -Wl,--out-implib={1}/{2}.lib -o {1}/{2}.dll @{1}/OBJLIST -lstdc++exp";
 					comp.define = "-D";
 					comp.reference = "";
 					callback(std::move(comp));

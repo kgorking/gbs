@@ -102,6 +102,10 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 	std::vector<fs::path> executables;
 	std::unordered_map<fs::path, std::string> dlib_defines;
 
+	if (ctx.get_selected_compiler().std_module) {
+		all_sources[0][*ctx.get_selected_compiler().std_module] = std::set<std::string>{};
+	}
+
 	auto const output_dir = ctx.output_dir();
 
 	std::println("<gbs> Building...");
@@ -114,7 +118,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		.concat(fs::path("."))
 		.then([&](fs::path const& p) {
 			// Get the source files and store them.
-			auto const source_files = get_all_source_files(p.lexically_normal() / "src", ctx);
+			auto const source_files = get_grouped_source_files(p.lexically_normal() / "src");
 			for (auto [index, sources] : source_files)
 				all_sources[index].merge(sources);
 
@@ -173,7 +177,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 			libs.insert(output_dir / (name + ".lib"));
 		}
 
-		//std::println("<gbs> Creating dynamic library '{}'...", name);
+		std::println("<gbs> Creating dynamic library '{}'...", name);
 		ok = (0 == std::system(cmd.c_str()));
 		});
 
@@ -192,7 +196,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		std::string const name = p == "." ? fs::current_path().stem().string() : p.stem().string();
 		std::string const cmd = ctx.link_command(name, output_dir.generic_string()) + std::format(" @{}/LIBLIST", output_dir.generic_string());
 
-		//std::println("<gbs> Linking executable '{}'...", name);
+		std::println("<gbs> Linking executable '{}'...", name);
 		ok = (0 == std::system(cmd.c_str()));
 		});
 
