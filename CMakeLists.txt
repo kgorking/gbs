@@ -43,7 +43,7 @@ target_sources(gbs PUBLIC FILE_SET CXX_MODULES FILES
 
 if(MSVC)
 	target_compile_definitions(gbs PRIVATE _MSVC_STL_HARDENING=1 _MSVC_STL_DESTRUCTOR_TOMBSTONES=1)
-	target_compile_options(gbs PRIVATE /permissive- /Zc:preprocessor /GL /fastfail /JMC
+	target_compile_options(gbs PRIVATE /permissive- /Zc:preprocessor /GL /fastfail
 		/W4         # Baseline reasonable warnings
 		/WX         # Warnings are errors
 		/w14242     # 'identifier': conversion from 'type1' to 'type2', possible loss of data
