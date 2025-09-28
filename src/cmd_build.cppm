@@ -31,6 +31,10 @@ depth_ordered_sources_map get_all_source_files(fs::path const& path, context con
 	return result;
 }
 
+bool should_not_exclude(fs::path const& path, std::set<std::string> const& /*imports*/) {
+	return !path.filename().stem().string().starts_with("x.");
+}
+
 auto get_object_filepath(fs::path const& path, std::set<std::string> const& imports, context const& ctx) {
 	fs::path const obj = (ctx.output_dir() / path.filename()).replace_extension("obj");
 	return std::tuple{ path, imports, obj };
@@ -110,7 +114,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 	auto const output_dir = ctx.output_dir();
 
 	std::println("<gbs> Building...");
-	as_monad({ "lib", "unittest" })
+	as_monad({ "lib", "unittest/lib" })
 		.filter([](auto const& p) { return fs::exists(p); })
 		.as<fs::directory_iterator>(dir_search_options)
 		.join()
@@ -118,8 +122,9 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		.filter([](fs::path const& p) { return fs::exists(p / "src"); })
 		.concat(fs::path("."))
 		.then([&](fs::path const& p) {
-			std::println("<gbs> Processing directory '{}'...", p.generic_string());
 			includes.insert(p / "src");
+			if (fs::exists(p / "inc")) includes.insert(p / "inc");
+			if (fs::exists(p / "include")) includes.insert(p / "include");
 
 			// Get the source files and store them.
 			auto const source_files = get_grouped_source_files(p.lexically_normal() / "src");
@@ -128,10 +133,10 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 				all_sources[index].merge(sources);
 			}
 
-			if (p.stem() == "s") {
+			if (p.has_extension() && p.stem() == "s") {
 				// do nothing, static libs are a scam
 			}
-			else if (p.stem() == "d") {
+			else if (p.has_extension() && p.stem() == "d") {
 				std::vector<fs::path>& vec = dynamic_libraries[p];
 				for (const auto& source_group : source_files | std::views::values)
 					for (const auto& source_file : source_group | std::views::keys)
@@ -155,6 +160,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 			.join()
 			.values()
 			.join_par()
+			.filter(should_not_exclude)
 			.map(get_object_filepath, ctx)
 			.and_then(store_object_filepath, std::ref(mut_objs), std::ref(objects))
 			.filter(is_file_out_of_date)
@@ -208,7 +214,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		if (!ok) return;
 
 		std::string const name = p == "." ? fs::current_path().stem().string() : p.stem().string();
-		std::string const cmd = ctx.link_command(name, output_dir.generic_string()) + std::format(" @{}/LIBLIST", output_dir.generic_string());
+		std::string const cmd = ctx.link_command(name, output_dir.generic_string());
 
 		std::println("<gbs> Linking executable '{}'...", name);
 		ok = (0 == std::system(cmd.c_str()));

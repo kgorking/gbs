@@ -1,4 +1,4 @@
-# Gorking Build System v0.16
+# Gorking Build System v0.17
 Creating my own build system for fun.
 
 # Features
@@ -9,9 +9,9 @@ Uses a fixed directory structure to automatically find source files and compile 
   - `lib` - libraries, named subdirectory per library.
 	- `lib/s.libname/` for static library named _libname_
 	- `lib/d.libname/` for dynamic library named _libname_
-  - `unittest` - unit tests (not implemented yet)
-	- One `.cpp` file per test?
-  - `deps` - dependencies (not implemented yet)
+  - `unittest` - unit tests
+	- Each `.cpp` file is an executable, linked with all libraries in `lib/`
+  - `deps?` - dependencies (not implemented yet)
 	- fetch from eg. github and build them
   - `*` (not implemented yet)
 	- other directories, not starting with `.`, are compiled to their own executables

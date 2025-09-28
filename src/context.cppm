@@ -60,7 +60,7 @@ public:
 				"/w14906 "     // string literal cast to 'LPWSTR' 
 				"/w14928 "     // illegal copy-initialization; more than one user-defined conversion has been implicitly applied 
 			},
-			{"_shared", "/nologo /EHsc /std:c++23preview /fastfail /D_MSVC_STL_HARDENING=1 /D_MSVC_STL_DESTRUCTOR_TOMBSTONES=1"},
+			{"_shared", "/nologo /EHsc /std:c++23preview /fastfail /sdl /D_MSVC_STL_HARDENING=1 /D_MSVC_STL_DESTRUCTOR_TOMBSTONES=1"},
 			{"debug",   "/Od /MDd"},
 			{"release", "/DNDEBUG /O2 /MD"},
 			{"analyze", "/external:W4 /external:anglebrackets /analyze:external- /analyze:WX- /analyze:plugin EspXEngine.dll"}

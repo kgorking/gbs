@@ -628,7 +628,7 @@ public:
 
 	// Call the provided function with the unwrapped value, if a value is present. Does not change the type of the monad.
 	template<typename UserFn, typename ...Args>
-		requires must_return_void<UserFn, unwrapped_t<T>, Args...>
+		//requires must_return_void<UserFn, unwrapped_t<T>, Args...>
 	constexpr auto and_then(UserFn&& user_fn, Args&& ...args) const {
 		auto f = [user_fn = std::forward<UserFn>(user_fn), ...args = std::forward<Args>(args), fn = fn](auto dst) {
 			return fn([&](auto const& v) {
