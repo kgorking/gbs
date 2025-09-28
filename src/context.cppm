@@ -2,7 +2,7 @@ export module context;
 import std;
 import env;
 import compiler;
-
+import monad;
 
 export class context {
 	using compiler_collection = std::unordered_map<std::string_view, std::vector<compiler>>;
@@ -10,6 +10,7 @@ export class context {
 
 	// Configuration of compile ('debug,analyze', etc...)
 	std::string_view config;
+	std::string config_dir;
 
 	// Folder to store gbs related files
 	const std::filesystem::path gbs_internal{ ".gbs" };
@@ -162,6 +163,9 @@ public:
 			config = old;
 			std::println(std::cerr, "<gbs> Error: could not create output build directory: '{}'", error_code.message());
 		}
+		else {
+			config_dir = as_monad(config).replace(',', '_').to<std::string>();
+		}
 	}
 
 	std::string_view get_config() const noexcept {
@@ -178,7 +182,7 @@ public:
 
 	// Determine output dir, eg. 'gbs.out/msvc/debug
 	auto output_dir() const -> std::filesystem::path {
-		return gbs_out / selected_cl.name_and_version / config;
+		return gbs_out / selected_cl.name_and_version / config_dir;
 	}
 
 	// Determine response directory
@@ -222,6 +226,10 @@ public:
 		return selected_cl.name;
 	}
 
+	std::string make_include_path(std::string_view const path) const {
+		return std::vformat(selected_cl.include, std::make_format_args(path));
+	}
+
 	// Create build command for the currently selected compiler
 	std::string build_command_prefix() const {
 		auto const compiler = selected_cl.executable.string();
@@ -230,12 +238,13 @@ public:
 	}
 
 	// Create build args for a single file
-	std::string build_command(std::string_view file, std::string_view obj_file) const {
+	std::string build_command(std::string_view file, std::filesystem::path const& obj_file) const {
 		std::string_view const build_cmd = (file.ends_with(".cppm") || file.ends_with(".ixx"))
 			? selected_cl.build_module
 			: selected_cl.build_source;
 
-		return std::vformat(build_cmd, std::make_format_args(file, obj_file));
+		auto const str = obj_file.generic_string();
+		return std::vformat(build_cmd, std::make_format_args(file, str));
 	}
 
 	// Create link command for the currently selected compiler
@@ -272,6 +281,10 @@ public:
 			}
 		}
 		return refs;
+	}
+
+	std::string build_define(std::string_view const def) const {
+		return std::format(" {}{}", selected_cl.define, def);
 	}
 
 	void fill_compiler_collection() {

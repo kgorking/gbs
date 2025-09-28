@@ -1,8 +1,9 @@
 import std;
 import mod9;
+#include "../lib/d.lib2/inc/lib2.h"
 
 bool does_it_work();
-__declspec(dllexport) bool does_it_work_dynamic();
+//__declspec(dllexport) bool does_it_work_dynamic();
 
 short extra();
 

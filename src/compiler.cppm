@@ -15,6 +15,8 @@ export struct compiler {
 	std::string_view link_command;
 	std::string_view slib_command;
 	std::string_view dlib_command;
+	std::string_view define;
+	std::string_view include;
 	std::string_view reference;
 	std::filesystem::path dir;
 	std::filesystem::path executable;
@@ -65,10 +67,12 @@ void enumerate_compilers_msvc(std::filesystem::path msvc_path, auto&& callback) 
 
 			comp.build_source = " {0:?} ";
 			comp.build_module = " {0:?} ";
-			comp.build_command_prefix = "call {0:?} @{1}/INCLUDE /c /interface /TP /ifcOutput {1}/ /Fo:{1}/ ";
+			comp.build_command_prefix = "call {0:?} @{1}/INCLUDE @{1}/SRC_INCLUDES /c /interface /TP /ifcOutput {1}/ /Fo:{1}/ ";
 			comp.link_command = "call {0:?} /NOLOGO /OUT:{1}/{2}.exe @{1}/LIBPATH @{1}/OBJLIST";
 			comp.slib_command = "call {0:?} /NOLOGO /OUT:{1}/{2}.lib @{1}/LIBPATH @{1}/OBJLIST";
-			comp.dlib_command = "call {0:?} /NOLOGO /DLL /OUT:{1}/{2}.dll @{1}/LIBPATH @{1}/OBJLIST >nul";
+			comp.dlib_command = "call {0:?} /NOLOGO /DLL /OUT:{1}/{2}.dll @{1}/LIBPATH @{1}/OBJLIST";
+			comp.define = "/D";
+			comp.include = "/I{0}";
 			comp.reference = " /reference {0}={1}.ifc ";
 
 			if (!std::filesystem::exists(comp.executable))
@@ -154,10 +158,12 @@ export void enumerate_compilers(environment const& env, auto&& callback) {
 
 					comp.build_source = " {0:?} -o {1:?} ";
 					comp.build_module = " --language=c++-module {0:?} -o {1:?} -fmodule-output ";
-					comp.build_command_prefix = "call \"{0}\" -c ";
-					comp.link_command = "call {0:?} @{1}/OBJLIST -o {1}/{2}.exe";
+					comp.build_command_prefix = "call {0:?} @{1}/SRC_INCLUDES -c ";
+					comp.link_command = "call {0:?} -o {1}/{2}.exe @{1}/OBJLIST";
 					comp.slib_command = "call {0:?} rcs {1}/{2}.lib @{1}/OBJLIST";
 					comp.dlib_command = "call {0:?} -shared -o {1}/{2}.dll @{1}/OBJLIST";
+					comp.define = "-D";
+					comp.include = "-I\"{0}/\"";
 					comp.reference = " -fmodule-file={}={}.pcm ";
 					callback(std::move(comp));
 				}
@@ -185,7 +191,7 @@ export void enumerate_compilers(environment const& env, auto&& callback) {
 					comp.executable = actual_path / "bin" / "g++";
 					comp.linker = comp.executable;
 					comp.slib = actual_path / "bin" / "ar";
-					comp.dlib = actual_path / "bin" / "ld";
+					comp.dlib = actual_path / "bin" / "g++";
 
 					if (comp.major >= 15) {
 						comp.std_module = actual_path / "include" / "c++" / comp.name_and_version.substr(4) / "bits" / "std.cc";
@@ -198,7 +204,7 @@ export void enumerate_compilers(environment const& env, auto&& callback) {
 
 					comp.build_source = " {0:?} -o {1:?} ";
 					comp.build_module = " -xc++ {0:?} -o {1:?} ";
-					comp.build_command_prefix = "call {0:?} -c -fPIC "
+					comp.build_command_prefix = "call {0:?} @{1}/SRC_INCLUDES -c -fPIC "
 						// Fixes/hacks for pthread in gcc
 						"-DWINPTHREAD_CLOCK_DECL=WINPTHREADS_ALWAYS_INLINE "
 						"-DWINPTHREAD_COND_DECL=WINPTHREADS_ALWAYS_INLINE "
@@ -209,12 +215,14 @@ export void enumerate_compilers(environment const& env, auto&& callback) {
 						"-DWINPTHREAD_THREAD_DECL=WINPTHREADS_ALWAYS_INLINE "
 					;
 #ifdef _MSC_VER
-					comp.link_command = "call {0:?} -o {1}/{2}.exe -static -Wl,--allow-multiple-definition @{1}/OBJLIST -lstdc++exp";
+					comp.link_command = "call {0:?} -o {1}/{2}.exe @{1}/OBJLIST -static -lstdc++exp -Wl,--allow-multiple-definition ";
 #else
-					comp.link_command = "call \"{0}\" -o {1}/{2}.exe @{1}/OBJLIST";
+					comp.link_command = "call \"{0}\" -o {1}/{2}.exe @{1}/OBJLIST -static";
 #endif
 					comp.slib_command = "call {0:?} rcs {1}/{2}.lib @{1}/OBJLIST";
-					comp.dlib_command = "call {0:?} -shared --out-implib \"{1}/{2}.lib\" -o {1}/{2}.dll @{1}/OBJLIST";
+					comp.dlib_command = "call {0:?} -static -shared -Wl,--out-implib={1}/{2}.lib -o {1}/{2}.dll @{1}/OBJLIST -lstdc++exp";
+					comp.define = "-D";
+					comp.include = "-I{0}";
 					comp.reference = "";
 					callback(std::move(comp));
 				}
