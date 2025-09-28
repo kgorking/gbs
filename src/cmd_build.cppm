@@ -99,6 +99,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 	// Find all source files. Recursively detect all subfolders that need compilation. A 'lib' subfolder might have its own 'lib' or 'unittest' subfolders.
 	depth_ordered_sources_map all_sources;
 	std::unordered_map<fs::path, std::vector<fs::path>> dynamic_libraries;
+	std::unordered_set<fs::path> includes;
 	std::vector<fs::path> executables;
 	std::unordered_map<fs::path, std::string> dlib_defines;
 
@@ -117,10 +118,15 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		.filter([](fs::path const& p) { return fs::exists(p / "src"); })
 		.concat(fs::path("."))
 		.then([&](fs::path const& p) {
+			std::println("<gbs> Processing directory '{}'...", p.generic_string());
+			includes.insert(p / "src");
+
 			// Get the source files and store them.
 			auto const source_files = get_grouped_source_files(p.lexically_normal() / "src");
-			for (auto [index, sources] : source_files)
+			for (auto [index, sources] : source_files) {
+				as_monad(sources).join().keys().map(&fs::path::parent_path).to_dest(includes);
 				all_sources[index].merge(sources);
+			}
 
 			if (p.stem() == "s") {
 				// do nothing, static libs are a scam
@@ -137,10 +143,18 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 			}
 		});
 
+	// Create a response file for all include paths
+	{
+		std::ofstream includes_rsp(ctx.output_dir() / "SRC_INCLUDES");
+		for (fs::path const& include : includes)
+			includes_rsp << ctx.make_include_path(include.generic_string()) << ' ';
+		includes_rsp.close();
+	}
+
 	if (!as_monad(all_sources)
 			.join()
 			.values()
-			.join/*_par*/()
+			.join_par()
 			.map(get_object_filepath, ctx)
 			.and_then(store_object_filepath, std::ref(mut_objs), std::ref(objects))
 			.filter(is_file_out_of_date)
@@ -155,7 +169,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 	objlist.close();
 
 	bool ok = true;
-	std::for_each(std::execution::seq/*par_unseq*/, dynamic_libraries.begin(), dynamic_libraries.end(), [&](std::pair<fs::path const, std::vector<fs::path>> const& pair) {
+	std::for_each(std::execution::par_unseq, dynamic_libraries.begin(), dynamic_libraries.end(), [&](std::pair<fs::path const, std::vector<fs::path>> const& pair) {
 		if (!ok) return;
 
 		auto const& [p, vec] = pair;
@@ -190,7 +204,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 	if (!ok)
 		return false;
 
-	std::for_each(std::execution::seq/*par_unseq*/, executables.begin(), executables.end(), [&](fs::path const& p) {
+	std::for_each(std::execution::par_unseq, executables.begin(), executables.end(), [&](fs::path const& p) {
 		if (!ok) return;
 
 		std::string const name = p == "." ? fs::current_path().stem().string() : p.stem().string();

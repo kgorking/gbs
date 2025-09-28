@@ -226,6 +226,10 @@ public:
 		return selected_cl.name;
 	}
 
+	std::string make_include_path(std::string_view const path) const {
+		return std::vformat(selected_cl.include, std::make_format_args(path));
+	}
+
 	// Create build command for the currently selected compiler
 	std::string build_command_prefix() const {
 		auto const compiler = selected_cl.executable.string();
