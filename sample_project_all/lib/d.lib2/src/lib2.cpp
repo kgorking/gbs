@@ -1,5 +1,5 @@
+#include "../inc/lib2.h"
 
-//__declspec(dllexport)
-bool does_it_work_dynamic() {
+LIB2_API bool does_it_work_dynamic() {
 	return true;
 }

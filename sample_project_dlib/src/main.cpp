@@ -1,6 +1,5 @@
 import std;
-
-__declspec(dllexport) bool does_it_work_dynamic();
+#include "../lib/d.lib2/inc/lib2.h"
 
 int main() {
 	std::puts("GBS dlib test");

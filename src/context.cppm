@@ -275,6 +275,10 @@ public:
 		return refs;
 	}
 
+	std::string build_define(std::string_view const def) const {
+		return std::format(" {}{}", selected_cl.define, def);
+	}
+
 	void fill_compiler_collection() {
 		all_compilers.clear();
 		enumerate_compilers(env, [&](compiler&& c) {

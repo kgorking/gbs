@@ -15,6 +15,7 @@ export struct compiler {
 	std::string_view link_command;
 	std::string_view slib_command;
 	std::string_view dlib_command;
+	std::string_view define;
 	std::string_view reference;
 	std::filesystem::path dir;
 	std::filesystem::path executable;
@@ -69,6 +70,7 @@ void enumerate_compilers_msvc(std::filesystem::path msvc_path, auto&& callback) 
 			comp.link_command = "call {0:?} /NOLOGO /OUT:{1}/{2}.exe @{1}/LIBPATH @{1}/OBJLIST";
 			comp.slib_command = "call {0:?} /NOLOGO /OUT:{1}/{2}.lib @{1}/LIBPATH @{1}/OBJLIST";
 			comp.dlib_command = "call {0:?} /NOLOGO /DLL /OUT:{1}/{2}.dll @{1}/LIBPATH @{1}/OBJLIST";
+			comp.define = "/D";
 			comp.reference = " /reference {0}={1}.ifc ";
 
 			if (!std::filesystem::exists(comp.executable))
@@ -158,6 +160,7 @@ export void enumerate_compilers(environment const& env, auto&& callback) {
 					comp.link_command = "call {0:?} -o {1}/{2}.exe @{1}/OBJLIST";
 					comp.slib_command = "call {0:?} rcs {1}/{2}.lib @{1}/OBJLIST";
 					comp.dlib_command = "call {0:?} -shared -o {1}/{2}.dll @{1}/OBJLIST";
+					comp.define = "-D";
 					comp.reference = " -fmodule-file={}={}.pcm ";
 					callback(std::move(comp));
 				}
@@ -215,6 +218,7 @@ export void enumerate_compilers(environment const& env, auto&& callback) {
 #endif
 					comp.slib_command = "call {0:?} rcs {1}/{2}.lib @{1}/OBJLIST";
 					comp.dlib_command = "call {0:?} -static -shared -o {1}/{2}.dll @{1}/OBJLIST -lstdc++exp";
+					comp.define = "-D";
 					comp.reference = "";
 					callback(std::move(comp));
 				}
