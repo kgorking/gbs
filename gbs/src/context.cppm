@@ -59,6 +59,7 @@ public:
 				"/w14905 "     // wide string literal cast to 'LPSTR' 
 				"/w14906 "     // string literal cast to 'LPWSTR' 
 				"/w14928 "     // illegal copy-initialization; more than one user-defined conversion has been implicitly applied 
+				"/w14189 "     // 'identifier': local variable is initialized but not referenced
 			},
 			{"_shared", "/nologo /EHsc /std:c++23preview /fastfail /sdl /D_MSVC_STL_HARDENING=1 /D_MSVC_STL_DESTRUCTOR_TOMBSTONES=1"},
 			{"debug",   "/Od /MDd"},

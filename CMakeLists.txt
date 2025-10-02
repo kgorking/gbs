@@ -21,25 +21,24 @@ set(CMAKE_CXX_MODULE_STD ON)
 
 
 project ("gbs" LANGUAGES CXX)
-add_executable (gbs "src/gbs.cpp" "src/msvc.cpp")
+add_executable (gbs "gbs/src/gbs.cpp" "gbs/src/msvc.cpp")
 target_sources(gbs PUBLIC FILE_SET CXX_MODULES FILES
-	"src/source_enum.cppm"
-	"src/cmd_get_cl.cppm"
-	
-	"src/context.cppm"
-	"src/compiler.cppm"
-	"src/env.cppm"
-	"src/dep_scan.cppm"
-	"src/get_source_groups.cppm"
-	"src/cmd_build.cppm"
-	"src/cmd_enum_cl.cppm"
-	"src/cmd_clean.cppm"
-	"src/cmd_run.cppm"
-	"src/cmd_cl.cppm"
-	"src/cmd_ide.cppm"
-	"src/monad.cppm"
-	"src/cmd_version.cppm"
-	"src/cmd_config.cppm")
+	"gbs/src/source_enum.cppm"
+	"gbs/src/cmd_get_cl.cppm"
+	"gbs/src/context.cppm"
+	"gbs/src/compiler.cppm"
+	"gbs/src/env.cppm"
+	"gbs/src/dep_scan.cppm"
+	"gbs/src/get_source_groups.cppm"
+	"gbs/src/cmd_build.cppm"
+	"gbs/src/cmd_enum_cl.cppm"
+	"gbs/src/cmd_clean.cppm"
+	"gbs/src/cmd_run.cppm"
+	"gbs/src/cmd_cl.cppm"
+	"gbs/src/cmd_ide.cppm"
+	"gbs/src/monad.cppm"
+	"gbs/src/cmd_version.cppm"
+	"gbs/src/cmd_config.cppm")
 
 if(MSVC)
 	target_compile_definitions(gbs PRIVATE _MSVC_STL_HARDENING=1 _MSVC_STL_DESTRUCTOR_TOMBSTONES=1)

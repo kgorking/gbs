@@ -23,7 +23,6 @@ struct alignas(std::hardware_destructive_interference_size) thread_data {
 	std::size_t id = 0;
 	std::binary_semaphore sema{ 0 };
 	std::future<void> future;
-	char _pad[std::hardware_destructive_interference_size - sizeof(std::size_t) - sizeof(bool) - sizeof(std::binary_semaphore) - sizeof(std::future<void>)]{};
 };
 
 template<typename Container, typename T>

@@ -5,58 +5,58 @@ Creating my own build system for fun.
 Uses a fixed directory structure to automatically find source files and compile them.
 
 - top-level directory
-  - `src` - source files for main executeable
-  - `lib` - libraries, named subdirectory per library.
-	- `lib/s.libname/` for static library named _libname_
-	- `lib/d.libname/` for dynamic library named _libname_
+  - `lib` - libraries shared across all sub-projects, named subdirectory per library.
+	- `lib/s.libname1/` for static library named _libname1_
+	- `lib/d.libname2/` for dynamic library named _libname2_
+  - `project` - source files for a *project* executeable
+	- `lib` - libraries specific to this project, named subdirectory per library.
+	- `src` - source files for this *project*
   - `unittest` - unit tests
-	- Each `.cpp` file is an executable, linked with all libraries in `lib/`
-  - `deps?` - dependencies (not implemented yet)
-	- fetch from eg. github and build them
-  - `*` (not implemented yet)
+	- `lib` - libraries specific to unit tests, named subdirectory per library.
+	- `src` - Each `test_*.cpp` file is a unittest executable, rest are standard source files.
+  - `[project, ...]` - Other projects to compile (not implemented yet)
 	- other directories, not starting with `.`, are compiled to their own executables
 
 # Usage
-`gbs` **_[commands...]_**
+`gbs` **_[commands, ...]_**
 
 The following commands are supported:
-- **version**
+### version
 	- Shows the current version of the build system
 
-- **build**_=[directories]_
+### build
 	- Builds the current directory.
 	- If no `config` is specified, `debug,warnings` is used by default.
-	- _[directories]_ is not implemented yet.
 
-- **clean**=_[configuration]_
+### clean=_[configuration]_
 	- Cleans the build output folder (`gbs.out`).
 	- TODO: only clean specified configuration.
  
-- **config**=_[configuration]_
+### config=_[configuration]_
 	- Sets the configurations to use for compilation. Currently `debug`, `release`, `analyze` have built-in support, and will be created if not found.
 	- A configuration name corresponds to a response file in the folder `.gbs/`.
 		- Response files are simple text files containing command line arguments for the selected compiler.
 		- They can be created manually or you can use the auto generated ones. You are free to change them as you see fit.
 	- Example: `gbs config=release,analyze build` will perform a release build with additional analysis enabled.
 
-- **run**_=[parameters]_
+### run_=[parameters]_
 	- Runs the last built executable with the optionally specified parameters. If no parameters are specified, the executable is run without parameters.
 	- If no executable is found, an error is returned.
 	- Example: `gbs build run=version` run in gbs' directory will build gbs and run the built executable as `gbs version`.
 
-- **get_cl**=_compiler_:_version_
+### get_cl=_compiler_:_version_
 	- Downloads the compiler with at least the specified version. Supports clang and gcc.
 	- This also sets the compiler for subsequent commands, as if `cl=` was used.
 	- Example: `gbs get_cl=gcc` will try and download the latest version of gcc.
 	- Example: `gbs get_cl=clang:18` will try and download the latest version 18 of clang _(ie. 18.1.8)_.
 	- Example: `gbs get_cl=clang:17.2.2` will try and download version 17.2.2 of clang.
 
-- **cl**=_compiler_:_version_
+### cl=_compiler_:_version_
 	- Selects the compiler to use for subsequent commands.
 		- If the compiler is not found, an error is returned.
 	- Example: `gbs cl=msvc:19 build cl=clang:17.3.1 build`
 
-- _TODO_ **new**=_project_name_
+### _TODO_ new=_project_name_
 	- Creates a new project with the specified name in the current directory.
 	- The project will have the following structure:
 		- `src` - source files for main executeable
@@ -65,15 +65,15 @@ The following commands are supported:
 		- `deps` - dependencies
 	- _Not implemented yet_
 
-- _TODO_ **unittest**_=[directories]_
+### _TODO_ unittest_=[directories]_
 	- Builds and runs unit tests in the specified directories. If no directories are specified, the current directory is used.
 	- Unit tests are expected to be in the `unittest` subdirectory of the specified directory.
 	- _Not implemented yet_
 
-- **enum_cl**
+### enum_cl
 	- Enumerates installed compilers
 
-- **ide**=_[ide]_
+### ide=_[ide]_
 	- Generates **tasks.vs.json** for the specified IDE. Supported IDEs are `vscode` and `vs`.
 	- Example: `gbs ide=vs` will allow a folder to be opened in Visual Studio and allow the user to right-click the top-most folder and have several build options available, without needing a project or solution.
 

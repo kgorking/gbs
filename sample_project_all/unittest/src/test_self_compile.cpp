@@ -1,6 +1,7 @@
-#include <catch2/catch_all.hpp>
-#include <lib2.hpp>
+//#include <catch2/catch_all.hpp>
+//#include <lib2.hpp>
+import std;
 
-int main() {
-	return does_it_work_dynamic();
+int main(int, char **argv) {
+	std::puts(argv[0]);
 }
