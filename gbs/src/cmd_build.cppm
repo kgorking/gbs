@@ -96,6 +96,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 
 	if (ctx.get_selected_compiler().std_module) {
 		all_sources[0][*ctx.get_selected_compiler().std_module] = std::set<std::string>{};
+		objects.insert((ctx.output_dir() / ctx.get_selected_compiler().std_module->filename()).replace_extension("obj"));
 	}
 
 	std::println("<gbs> Building...");
@@ -254,7 +255,8 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		exe_objlist.close();
 
 		std::println("<gbs> Linking executable '{}'...", name);
-		std::string const cmd = ctx.link_command(name, ctx.output_dir().generic_string()) + std::format(" @{}/{}", ctx.output_dir().generic_string(), objlist_name.generic_string());
+		std::string const obj_resp = std::format(" @{0}/{1}", ctx.output_dir().generic_string(), objlist_name.generic_string());
+		std::string const cmd = ctx.link_command(name, ctx.output_dir().generic_string()) + obj_resp;
 		ok = (0 == std::system(cmd.c_str()));
 		});
 
