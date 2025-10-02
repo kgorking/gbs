@@ -83,10 +83,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 	std::shared_mutex mut_libs;
 	std::shared_mutex mut_objs;
 
-	// Gets all the directories to compile
-	constexpr auto dir_search_options = fs::directory_options::follow_directory_symlink | fs::directory_options::skip_permission_denied;
-
-	// Find all source files. Recursively detect all subfolders that need compilation. A 'lib' subfolder might have its own 'lib' or 'unittest' subfolders.
+	// Containers for all source files, includes, defines and targets
 	depth_ordered_sources_map all_sources;
 	std::unordered_set<fs::path> includes;
 	std::unordered_map<fs::path, std::string> dlib_defines;
@@ -94,15 +91,18 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 	std::unordered_map<fs::path, std::vector<fs::path>> dynamic_libraries;
 	std::unordered_map<fs::path, std::vector<fs::path>> unittests;
 
+	// If a standard module is specified, add it to the source- and object list
 	if (ctx.get_selected_compiler().std_module) {
 		all_sources[0][*ctx.get_selected_compiler().std_module] = std::set<std::string>{};
 		objects.insert((ctx.output_dir() / ctx.get_selected_compiler().std_module->filename()).replace_extension("obj"));
 	}
 
 	std::println("<gbs> Building...");
+
+	// Find all source files
 	as_monad({ "lib", "." })
 		.filter([](auto const& p) { return fs::exists(p); })
-		.as<fs::directory_iterator>(dir_search_options)
+		.as<fs::directory_iterator>(fs::directory_options::follow_directory_symlink | fs::directory_options::skip_permission_denied)
 		.join()
 		.filter(&fs::directory_entry::is_directory)
 		.map(&fs::directory_entry::path)
@@ -156,18 +156,20 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		includes_rsp.close();
 	}
 
+	// Compile all source files
 	if (!as_monad(all_sources)
 			.join()
 			.values()
 			.join_par()
 			.filter([](fs::path const& path, auto const&) { return should_not_exclude(path); })
 			.map(get_object_filepath, ctx)
-			//.and_then(store_object_filepath, std::ref(mut_objs), std::ref(objects))
 			.filter(is_file_out_of_date)
 			.map(make_build_command, dlib_defines, ctx)
 			.until([](std::string_view const cmd) noexcept { return (0 == std::system(cmd.data())); }))
 		return false; // Bail if compilation failed
 
+
+	// Link dynamic libraries
 	bool ok = true;
 	std::for_each(std::execution::par_unseq, dynamic_libraries.begin(), dynamic_libraries.end(), [&](std::pair<fs::path const, std::vector<fs::path>> const& pair) {
 		if (!ok) return;
@@ -195,15 +197,16 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		ok = (0 == std::system(cmd.c_str()));
 		});
 
+	if (!ok)
+		return false;
+
 	// Create the library list file
 	std::ofstream liblist(ctx.output_dir() / "LIBLIST");
 	for (fs::path const& lib : libs)
 		liblist << lib.generic_string() << ' ';
 	liblist.close();
 
-	if (!ok)
-		return false;
-
+	// Link unittests
 	std::for_each(std::execution::par_unseq, unittests.begin(), unittests.end(), [&](std::pair<fs::path const, std::vector<fs::path>>& pair) {
 		if (!ok) return;
 
@@ -238,6 +241,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 	if (!ok)
 		return false;
 
+	// Link executables
 	std::for_each(std::execution::par_unseq, executables.begin(), executables.end(), [&](std::pair<fs::path const, std::vector<fs::path>> const& pair) {
 		if (!ok) return;
 
