@@ -215,7 +215,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		std::string const name = p == "." ? fs::current_path().stem().string() : p.stem().string();
 
 		// Partion the source files into unittests and support files
-		auto it = std::ranges::partition(vec, [](fs::path const& path) { return !path.filename().string().starts_with("test_"); });
+		auto it = std::ranges::partition(vec, [](fs::path const& path) { return !path.filename().string().starts_with("test."); });
 
 		// Create the object list file for non-test files
 		fs::path objlist_name = name + "_OBJLIST";
