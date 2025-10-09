@@ -3,6 +3,16 @@
   "defaults": {},
   "configurations": [
     {
+      "name": "[msvc] unittest sample project",
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": "./sample_project_all/",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "version cl=msvc config build unittest=\"\""
+      ]
+    },
+    {
       "name": "[msvc] all sample project",
       "type": "default",
       "project": "CMakeLists.txt",

@@ -7,7 +7,6 @@ import helper;
 TEST_CASE("CASE", "[case]") {
 	SECTION("SECTION") {
 		int const some_val = 11;
-		MyFunc();
 		REQUIRE(some_val == 11);
 	}
 }

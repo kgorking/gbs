@@ -3,21 +3,22 @@
 #
 cmake_minimum_required (VERSION 3.30.2)
 
-set(CMAKE_CXX_STANDARD 23)
-
 if (CMAKE_VERSION VERSION_EQUAL "3.31.6")
 	set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "0e5b6991-d74f-4b3d-a41c-cf096e0b2508")
 elseif (CMAKE_VERSION VERSION_EQUAL "3.30.2")
 	set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "0e5b6991-d74f-4b3d-a41c-cf096e0b2508")
 elseif (CMAKE_VERSION VERSION_EQUAL "4.0.2")
 	set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "a9e1cf81-9932-4810-974b-6eccaf14e457")
+elseif (CMAKE_VERSION VERSION_EQUAL "4.1.1")
+	set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "d0edc3af-4c50-42ea-a356-e2862fe7a444")
 else()
-	message(FATAL_ERROR "Unsupported CMake version: '${CMAKE_VERSION}', please use CMake 3.30.2, 3.31.6, or 4.0.2")
+	message(FATAL_ERROR "GBS CMakeLists.txt: Unsupported CMake version: '${CMAKE_VERSION}', please use CMake 3.30.2, 3.31.6, or 4.0.2")
 endif()
 
 
-set(CMAKE_CXX_STANDARD_REQUIRED OFF)
 set(CMAKE_CXX_MODULE_STD ON)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
 project ("gbs" LANGUAGES CXX)
@@ -38,7 +39,8 @@ target_sources(gbs PUBLIC FILE_SET CXX_MODULES FILES
 	"gbs/src/cmd_ide.cppm"
 	"gbs/src/monad.cppm"
 	"gbs/src/cmd_version.cppm"
-	"gbs/src/cmd_config.cppm")
+	"gbs/src/cmd_config.cppm"
+    "gbs/src/cmd_unittest.cppm")
 
 if(MSVC)
 	target_compile_definitions(gbs PRIVATE _MSVC_STL_HARDENING=1 _MSVC_STL_DESTRUCTOR_TOMBSTONES=1)
