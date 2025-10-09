@@ -65,6 +65,8 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 			return false;
 
 
+	std::println("<gbs> Building...");
+
 	// Make sure the output and response directories exist
 	fs::create_directories(ctx.output_dir());
 
@@ -96,8 +98,6 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		all_sources[0][*ctx.get_selected_compiler().std_module] = std::set<std::string>{};
 		objects.insert((ctx.output_dir() / ctx.get_selected_compiler().std_module->filename()).replace_extension("obj"));
 	}
-
-	std::println("<gbs> Building...");
 
 	// Find all source files
 	as_monad({ "lib", "." })

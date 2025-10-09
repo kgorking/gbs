@@ -5,6 +5,8 @@ import context;
 namespace fs = std::filesystem;
 
 export bool cmd_unittest(context& ctx, std::string_view args) {
+	int num_tests_run = 0;
+
 	for (auto const it : fs::directory_iterator(ctx.output_dir())) {
 		if (!it.is_regular_file())
 			continue;
@@ -19,7 +21,13 @@ export bool cmd_unittest(context& ctx, std::string_view args) {
 			std::println(std::cerr, "<gbs> Unittest '{}' failed.", it.path().filename().string());
 			return false;
 		}
+
+		num_tests_run += 1;
 	}
 
+	if (num_tests_run == 0) {
+		std::println("<gbs> No unittests found to run.");
+		return false;
+	}
 	return true;
 }
