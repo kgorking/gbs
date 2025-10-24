@@ -22,7 +22,7 @@ struct alignas(std::hardware_destructive_interference_size) thread_data {
 	T data;
 	std::size_t id = 0;
 	std::binary_semaphore sema{ 0 };
-	std::future<void> future;
+	std::future<void> future{};
 };
 
 template<typename Container, typename T>
@@ -65,7 +65,7 @@ constexpr void add_to_container(Container& c, T const& v) {
 template<typename T>				struct unwrapped { using type = T; };
 template<typename T>				struct unwrapped<std::optional<T>> { using type = T; };
 template<typename T, typename E>	struct unwrapped<std::expected<T, E>> { using type = T; };
-template<typename T>				using  unwrapped_t = typename unwrapped<T>::type;
+template<typename T>				using  unwrapped_t = unwrapped<T>::type;
 
 template<typename T>
 constexpr bool has_value(T const& v) noexcept {
@@ -130,7 +130,7 @@ class monad {
 
 	// Allow access to 'as_monad' function
 	template<typename Mt> friend constexpr auto as_monad(Mt const&) noexcept;
-	template<typename InitT>  friend constexpr auto as_monad(std::initializer_list<InitT> const) noexcept;
+	template<typename InitT>  friend constexpr auto as_monad(std::initializer_list<InitT>) noexcept;
 
 	// This function does nothing. Good for reference.
 	constexpr auto identity() const {
@@ -163,8 +163,7 @@ public:
 		auto f = [=, fn = fn](auto dst) {
 			return fn([=](const auto& v) {
 				if (has_value(v)) {
-					const auto& uv = unwrap(v);
-					if (call(pred, uv))
+					if (const auto& uv = unwrap(v); call(pred, uv))
 						dst(uv);
 				}
 				});
@@ -206,9 +205,9 @@ public:
 		return monad<callable_result_t<MapFn, unwrapped_t<T>, Args...>, F> {std::move(f)};
 	}
 
-	// Extract the N'th element from a tuple-like type.
+	// Extract the Nth element from a tuple-like type.
 	template<std::size_t N>
-		requires (N < std::tuple_size_v<unwrapped_t<T>>)
+		requires (N < std::tuple_size<unwrapped_t<T>>::value)
 	constexpr auto element() const {
 		auto f = [=, fn = fn](auto dst) {
 			return fn([=](auto const& v) {
@@ -223,12 +222,12 @@ public:
 	}
 
 	// If the type is a tuple of at least two elements, return the first element
-	constexpr auto keys() const requires (std::tuple_size_v<unwrapped_t<T>> >= 2) {
+	constexpr auto keys() const requires (std::tuple_size<unwrapped_t<T>>::value >= 2) {
 		return element<0>();
 	}
 
 	// If the type is a tuple of at least two elements, return the second element
-	constexpr auto values() const requires (std::tuple_size_v<unwrapped_t<T>> >= 2) {
+	constexpr auto values() const requires (std::tuple_size<unwrapped_t<T>>::value >= 2) {
 		return element<1>();
 	}
 
@@ -470,7 +469,7 @@ public:
 	// Split the incoming sequence into parts, separated by the provided delimiter.
 	template<typename D>
 	constexpr auto split(D const delimiter) const {
-		static_assert(std::is_same<unwrapped_t<T>, D>::value, "Input type 'T' and delimiter type 'D' are not comparable; maybe call 'join()' before this function?");
+		static_assert(std::is_same_v<unwrapped_t<T>, D>, "Input type 'T' and delimiter type 'D' are not comparable; maybe call 'join()' before this function?");
 
 		constexpr bool use_string_as_container = std::same_as<T, char>;
 		using Container = std::conditional_t<use_string_as_container, std::basic_string<T>, std::vector<T>>;
@@ -611,7 +610,7 @@ public:
 		return monad<typename T::value_type, F>{std::move(f)};
 	}
 
-	// If the type is an std::expected, call the provided error handler if no value is present.
+	// If the type is a std::expected, call the provided error handler if no value is present.
 	constexpr auto unexpected(auto err_handler) const requires expected_like<T> {
 		auto f = [=, fn = fn](auto dst) {
 			return fn([=](auto const& v) {
@@ -679,7 +678,7 @@ public:
 		return monad<T, F>{std::move(f)};
 	}
 
-	// This requires data that takes a while to process, in order to be worthwile.
+	// This requires data that takes a while to process, in order to be worthwhile.
 	auto async(std::size_t num_threads = std::thread::hardware_concurrency()) const {
 		if (num_threads > std::thread::hardware_concurrency())
 			num_threads = std::thread::hardware_concurrency();

@@ -2,10 +2,10 @@ export module env;
 import std;
 
 export class environment {
-	std::unordered_map<std::string_view, std::string_view> vars;
+	std::unordered_map<std::string_view, std::string_view> vars{};
 
 public:
-	environment(char const** envp) {
+	explicit environment(char const** envp) {
 		if(envp == nullptr)
 			throw std::runtime_error("Environment pointer is null");
 
@@ -24,7 +24,7 @@ public:
 	}
 
 	// Get an environment variable
-	std::optional<std::string_view> get(std::string_view var) const {
+	[[nodiscard]] std::optional<std::string_view> get(std::string_view const var) const {
 		if (vars.contains(var))
 			return vars.at(var);
 		else
@@ -32,7 +32,7 @@ public:
 	}
 
 	// Get the home directory of the user
-	std::filesystem::path get_home_dir() const {
+	[[nodiscard]] std::filesystem::path get_home_dir() const {
 		return vars.at("HOME");
 	}
 };

@@ -23,8 +23,8 @@ export using depth_ordered_sources_map = std::map<std::size_t, source_group>;
 
 
 // Maps a filename to _all_ its module dependencies
-void store_in_map(source_dependency const& sd, file_to_imports_map& fi) {
-	fi[sd.path] = sd.import_names;
+void store_in_map(source_dependency const& sd, file_to_imports_map* fi) {
+	(*fi)[sd.path] = sd.import_names;
 }
 
 // Recursively merge a files child dependencies with its own dependencies.
@@ -69,7 +69,7 @@ export depth_ordered_sources_map get_grouped_source_files(fs::path const& dir) {
 		.map(&fs::directory_entry::path)
 		.filter(is_valid_sourcefile)
 		.map(extract_module_dependencies)
-		.and_then(store_in_map, std::ref(file_imports))
+		.and_then(store_in_map, &file_imports)
 		.filter(&source_dependency::is_export)
 		.to<std::unordered_map>(&source_dependency::export_name, &source_dependency::path);
 

@@ -13,7 +13,7 @@ export bool cmd_config(context& ctx, std::string_view args) {
 	if (args.empty())
 		args = "release,warnings";
 
-	// Ensure the needed response files are present
+	// Ensure the necessary response files are present
 	ctx.check_response_files(args);
 
 	// Set the build configuration

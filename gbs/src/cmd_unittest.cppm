@@ -5,9 +5,15 @@ import context;
 namespace fs = std::filesystem;
 
 export bool cmd_unittest(context& ctx, std::string_view args) {
-	int num_tests_run = 0;
+	if (ctx.get_config().empty()) {
+		std::println(std::cerr, "<gbs> No build configuration selected. Please run 'gbs config=<...>' first.");
+		return false;
+	}
 
-	for (auto const it : fs::directory_iterator(ctx.output_dir())) {
+	int num_tests_run = 0;
+	auto test = fs::current_path();
+
+	for (auto const& it : fs::directory_iterator(ctx.output_dir())) {
 		if (!it.is_regular_file())
 			continue;
 

@@ -4,7 +4,7 @@
   "tasks": [
     {
       "taskLabel": "Enumerate compilers",
-      "appliesTo": "*/",
+      "appliesTo": "/*/",
       "type": "launch",
       "contextType": "custom",
       "workingDirectory": "${file}",
@@ -22,7 +22,7 @@
     },
     {
       "taskLabel": "unittests",
-      "appliesTo": "*/",
+      "appliesTo": "/*/",
       "type": "launch",
       "contextType": "custom",
       "workingDirectory": "${file}",
@@ -35,12 +35,12 @@
         "-FilePath",
         "'${env.GBS_BIN}'",
         "-ArgumentList",
-        "'cl=msvc build unittest'"
+        "'unittest'"
       ]
     },
     {
       "taskLabel": "Build",
-      "appliesTo": "*/",
+      "appliesTo": "/*/",
       "type": "launch",
       "contextType": "build",
       "workingDirectory": "${file}",
@@ -58,7 +58,7 @@
     },
     {
       "taskLabel": "Rebuild",
-      "appliesTo": "*/",
+      "appliesTo": "/*/",
       "type": "launch",
       "contextType": "rebuild",
       "workingDirectory": "${file}",
@@ -76,7 +76,7 @@
     },
     {
       "taskLabel": "Clean",
-      "appliesTo": "*/",
+      "appliesTo": "/*/",
       "type": "launch",
       "contextType": "clean",
       "workingDirectory": "${file}",
@@ -94,7 +94,7 @@
     },
     {
       "taskLabel": "build [msvc]",
-      "appliesTo": "*/",
+      "appliesTo": "/*/",
       "type": "launch",
       "contextType": "custom",
       "workingDirectory": "${file}",
@@ -112,7 +112,7 @@
     },
     {
       "taskLabel": "build [clang]",
-      "appliesTo": "*/",
+      "appliesTo": "/*/",
       "type": "launch",
       "contextType": "custom",
       "workingDirectory": "${file}",
@@ -130,7 +130,7 @@
     },
     {
       "taskLabel": "build [gcc]",
-      "appliesTo": "*/",
+      "appliesTo": "/*/",
       "type": "launch",
       "contextType": "custom",
       "workingDirectory": "${file}",
@@ -148,7 +148,7 @@
     },
     {
       "taskLabel": "download [clang]",
-      "appliesTo": "*/",
+      "appliesTo": "/*/",
       "type": "launch",
       "contextType": "custom",
       "workingDirectory": "${file}",
@@ -166,7 +166,7 @@
     },
     {
       "taskLabel": "download [gcc]",
-      "appliesTo": "*/",
+      "appliesTo": "/*/",
       "type": "launch",
       "contextType": "custom",
       "workingDirectory": "${file}",
@@ -184,7 +184,7 @@
     },
     {
       "taskLabel": "analyze [msvc]",
-      "appliesTo": "*/",
+      "appliesTo": "/*/",
       "type": "launch",
       "contextType": "custom",
       "workingDirectory": "${file}",
@@ -202,7 +202,7 @@
     },
     {
       "taskLabel": "analyze [clang]",
-      "appliesTo": "*/",
+      "appliesTo": "/*/",
       "type": "launch",
       "contextType": "custom",
       "workingDirectory": "${file}",

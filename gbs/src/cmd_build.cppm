@@ -83,7 +83,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 	std::set<fs::path> libs;
 	std::set<fs::path> objects;
 	std::shared_mutex mut_libs;
-	std::shared_mutex mut_objs;
+	//std::shared_mutex mut_objs;
 
 	// Containers for all source files, includes, defines and targets
 	depth_ordered_sources_map all_sources;
