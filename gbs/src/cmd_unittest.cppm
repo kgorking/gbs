@@ -6,7 +6,12 @@ namespace fs = std::filesystem;
 
 export bool cmd_unittest(context& ctx, std::string_view args) {
 	if (ctx.get_config().empty()) {
-		std::println(std::cerr, "<gbs> No build configuration selected. Please run 'gbs config=<...>' first.");
+		std::println(std::cerr, "<gbs> No build configuration selected. Please set 'config=<...>' before running unittests.");
+		return false;
+	}
+
+	if (!fs::exists(ctx.output_dir())) {
+		std::println(std::cerr, "<gbs> Build directory is missing. Build the project before running tests.");
 		return false;
 	}
 
