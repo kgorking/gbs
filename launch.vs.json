@@ -9,7 +9,7 @@
       "currentDir": "./sample_project_all/",
       "projectTarget": "gbs.exe",
       "args": [
-        "cl=msvc config=debug build unittest"
+        "cl=msvc config=debug,warnings,analyze build unittest"
       ]
     },
     {
