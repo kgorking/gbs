@@ -49,8 +49,9 @@ jobs:
     - name: Set up Clang
       if: ${{ startsWith(matrix.cpp_compiler, 'clang') }}
       run: |
-          sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-          sudo apt-get install -y libc++-dev ${{ matrix.cpp_compiler }}
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 21
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
