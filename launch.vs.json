@@ -79,7 +79,7 @@
       "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=msvc build run=version"
+        "clean cl=msvc build unittest run=version"
       ]
     },
     {
@@ -89,7 +89,7 @@
       "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=clang build run=version"
+        "clean cl=clang build unittest run=version"
       ]
     },
     {
@@ -99,7 +99,7 @@
       "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=gcc build run=version"
+        "clean cl=gcc build unittest run=version"
       ]
     },
     {

@@ -12,7 +12,7 @@ Uses a fixed directory structure to automatically find source files and compile 
 	- `src` - source files for this *project*
   - `unittest` - unit tests
 	- `src` - Each `test_*.cpp` file is a unittest executable, rest are standard source files.
-  - `[project, ...]` - Other projects to compile (not implemented yet)
+  - `[project2, ...]` - Other projects to compile (not implemented yet)
 	- other directories, not starting with `.`, are compiled to their own executables
 
 # Usage

@@ -32,12 +32,6 @@ static auto get_object_filepath(fs::path const& path, std::set<std::string> cons
 	return std::tuple{ path, imports, obj };
 }
 
-/*static void store_object_filepath([[maybe_unused]] fs::path const& path, [[maybe_unused]] std::set<std::string> const& imports, fs::path const& obj, std::shared_mutex& mut, std::set<fs::path>& objects) {
-	if (path.parent_path().parent_path().stem() == "d")
-		return;
-	std::scoped_lock sl(mut);
-	objects.insert(obj);
-}*/
 
 static std::string make_build_command(fs::path const& path, std::set<std::string> const& imports, fs::path const& obj, std::unordered_map<fs::path, std::string> const& path_defines, context const& ctx) {
 	fs::path const parent_dir = path.parent_path();
@@ -100,44 +94,53 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 	}
 
 	// Find all source files
-	as_monad({ "lib", "." })
-		.filter([](auto const& p) { return fs::exists(p); })
-		.as<fs::directory_iterator>(fs::directory_options::follow_directory_symlink | fs::directory_options::skip_permission_denied)
+	as_monad(fs::directory_iterator(".", fs::directory_options::follow_directory_symlink | fs::directory_options::skip_permission_denied))
 		.join()
 		.filter(&fs::directory_entry::is_directory)
 		.map(&fs::directory_entry::path)
 		.map(&fs::path::lexically_normal)
-		.filter([](fs::path const& p) { return should_not_exclude(p) && fs::exists(p / "src"); })
+		.filter(should_not_exclude)
 		.then([&](fs::path const& p) {
-			// Get the source files
-			auto const source_files = get_grouped_source_files(p / "src");
-			auto const files_view = source_files | std::views::values | std::views::join | std::views::keys;
-
 			if ("lib" == *p.begin()) {
 				if (fs::exists(p / "src")) includes.insert(p / "src");
 				if (fs::exists(p / "inc")) includes.insert(p / "inc");
 				if (fs::exists(p / "include")) includes.insert(p / "include");
 
-				if (p.has_extension() && p.stem() == "s") {
+				if (!p.has_extension()) {
+					std::println("<gbs> warning: unknown library prefix for {}", p.generic_string().c_str());
+					return;
+				}
+
+				auto const source_files = get_grouped_source_files(p / "src");
+				auto const files_view = source_files | std::views::values | std::views::join | std::views::keys;
+				if (p.stem() == "s") {
 					for (fs::path const& path : files_view) {
-						if(should_not_exclude(path))
+						if (should_not_exclude(path))
 							objects.insert((ctx.output_dir() / path.filename()).replace_extension("obj"));
 					}
 				}
-				else if (p.has_extension() && p.stem() == "d") {
+				else if (p.stem() == "d") {
 					dynamic_libraries[p].append_range(files_view);
 					dlib_defines[p / "src"] = to_upper(p.extension().generic_string().substr(1)) + "_EXPORTS";
 				}
 			}
-			else if ("unittest" == *p.begin()) {
-				unittests[p].append_range(files_view);
-			}
-			else {
+			if (fs::exists(p / "src")) {
+				auto const source_files = get_grouped_source_files(p / "src");
+				auto const files_view = source_files | std::views::values | std::views::join | std::views::keys;
 				executables[p].append_range(files_view);
+
+				for (auto [index, sources] : source_files)
+					all_sources[index].merge(sources);
 			}
 
-			for (auto [index, sources] : source_files)
-				all_sources[index].merge(sources);
+			if (fs::exists(p / "unittest")) {
+				auto const source_files = get_grouped_source_files(p / "unittest");
+				auto const files_view = source_files | std::views::values | std::views::join | std::views::keys;
+				unittests[p].append_range(files_view);
+
+				for (auto [index, sources] : source_files)
+					all_sources[index].merge(sources);
+			}
 		});
 
 	// Create the object list file

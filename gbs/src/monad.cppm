@@ -149,7 +149,8 @@ class monad {
 public:
 	// Disable construction and assignment
 	monad() = delete REASON("Use 'as_monad()'");
-	monad(auto const& val) = delete REASON("Use 'as_monad()'");
+
+	explicit monad(auto const& val) = delete REASON("Use 'as_monad()'");
 	monad(monad const&) = delete REASON("No");
 	monad(monad&&) = delete REASON("No");
 	void operator=(monad const&) = delete REASON("No");
