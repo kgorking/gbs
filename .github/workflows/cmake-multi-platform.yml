@@ -41,10 +41,10 @@ jobs:
 
     - name: Set up GCC
       if: ${{ startsWith(matrix.cpp_compiler, 'gcc') }}
-      uses: egor-tensin/setup-gcc@v1
-      with:
-        version: 15
-        platform: x64
+      run: |
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+          sudo apt-get update
+          sudo apt-get install gcc-15 g++-15 -y
 
     - name: Set up Clang
       if: ${{ startsWith(matrix.cpp_compiler, 'clang') }}
