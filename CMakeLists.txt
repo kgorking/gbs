@@ -14,7 +14,7 @@ elseif (CMAKE_VERSION VERSION_EQUAL "4.0.2")
 elseif (CMAKE_VERSION VERSION_GREATER "4.1.0")
 	set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "d0edc3af-4c50-42ea-a356-e2862fe7a444")
 else()
-	message(FATAL_ERROR "Unsupported CMake version: '${CMAKE_VERSION}', please use CMake 3.30.2, 3.31.6, or 4.0.2")
+	message(FATAL_ERROR "Unknown uuid for CMake version: '${CMAKE_VERSION}', check the cmake github for new uuid")
 endif()
 
 
