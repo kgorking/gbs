@@ -393,7 +393,7 @@ public:
 		return true;
 	}
 
-	bool ensure_response_file_exists(std::string_view resp) {
+	bool ensure_response_file_exists(std::string_view resp) const {
 		if (resp.empty()) {
 			std::println("<gbs> Error: bad build-arguments. Trailing comma?");
 			return false;
