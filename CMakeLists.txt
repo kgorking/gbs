@@ -71,4 +71,12 @@ if(MSVC)
 	if(NOT VS_CONFIGURATION_TYPE STREQUAL "Debug")
 		target_link_options(gbs PRIVATE /LTCG /OPT:REF /OPT:ICF)
 	endif()
+else()
+    target_compile_options(gbs PRIVATE
+        -Wall
+        -Wextra
+        -Werror
+        -Wpedantic
+        -stdlib=libc++
+    )
 endif()
