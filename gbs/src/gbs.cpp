@@ -12,6 +12,7 @@ import cmd_run;
 import cmd_cl;
 import cmd_ide;
 import cmd_config;
+import cmd_unittest;
 
 int main(const int argc, char const* argv[], char const** envp) {
 	auto ctx = context{ envp };
@@ -33,6 +34,7 @@ int main(const int argc, char const* argv[], char const** envp) {
 		{"build", cmd_build},
 		{"run", cmd_run},
 		{"ide", cmd_ide},
+		{"unittest", cmd_unittest}
 	};
 
 	for (auto const args = std::span(argv, static_cast<std::size_t>(argc)); std::string_view arg : args | std::views::drop(1)) {

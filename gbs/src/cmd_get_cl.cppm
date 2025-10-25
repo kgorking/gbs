@@ -126,7 +126,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 			return false;
 		}
 
-		std::string_view const vstools_args = "--passive --wait"
+		constexpr std::string_view vstools_args = "--passive --wait"
 			" --add Microsoft.VisualStudio.Workload.VCTools"
 			" --add Microsoft.VisualStudio.Component.VC.ASAN"
 			" --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
