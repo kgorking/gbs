@@ -25,29 +25,26 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         build_type: [Release]
-        c_compiler: [gcc, clang, cl]
-        include:
-          - os: windows-latest
-            c_compiler: cl
-            cpp_compiler: cl
-          - os: ubuntu-latest
-            c_compiler: gcc
-            cpp_compiler: g++
-          - os: ubuntu-latest
-            c_compiler: clang
-            cpp_compiler: clang++
+        cpp_compiler: [g++-15, clang++-21, cl]
         exclude:
           - os: windows-latest
-            c_compiler: gcc
+            cpp_compiler: g++-15
           - os: windows-latest
-            c_compiler: clang
+            cpp_compiler: clang++-21
           - os: ubuntu-latest
-            c_compiler: cl
+            cpp_compiler: cl
 
     steps:
     - uses: actions/checkout@v4
     - uses: ilammy/msvc-dev-cmd@v1
       if: matrix.os == 'windows-latest'
+    - name: Install Clang
+      if: matrix.c_compiler = 'clang'
+      run: sudo apt-get install -y clang-21
+
+    - name: Install GCC
+      if: matrix.c_compiler = 'gcc'
+      run: sudo apt-get install -y gcc-15
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
