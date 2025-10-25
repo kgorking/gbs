@@ -25,7 +25,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         build_type: [Release]
-        cpp_compiler: [g++-15, clang++-21, cl]
+        cpp_compiler: [gcc-15, clang++-20, cl]
         exclude:
           - os: windows-latest
             cpp_compiler: gcc
@@ -40,14 +40,14 @@ jobs:
       if: matrix.os == 'windows-latest'
 
     - name: Set up GCC
-      if: ${{ matrix.cpp_compiler == 'g++-15' }}
+      if: matrix.cpp_compiler == 'gcc-15'
       uses: egor-tensin/setup-gcc@v1
       with:
         version: 15
         platform: x64
 
     - name: Install Clang 21
-      if: ${{ matrix.cpp_compiler == 'clang++-21' }}
+      if: matrix.cpp_compiler == 'clang++-20'
       run: |
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
           sudo apt-get install -y libc++-dev ${{ matrix.cpp_compiler }}
