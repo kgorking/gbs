@@ -72,11 +72,11 @@ if(MSVC)
 		target_link_options(gbs PRIVATE /LTCG /OPT:REF /OPT:ICF)
 	endif()
 else()
+    set(CMAKE_CXX_STANDARD_LIBRARY "libc++")
     target_compile_options(gbs PRIVATE
         -Wall
         -Wextra
         -Werror
         -Wpedantic
-        -stdlib=libc++
     )
 endif()
