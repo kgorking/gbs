@@ -47,9 +47,9 @@ source_info recursive_merge(fs::path const&file, import_set const& deps, std::un
 
 // Group files according to how deep their dependency chain is
 void group_by_dependency_depth(depth_ordered_sources_map& sources, source_info const& si) {
-	auto const& [path, imports] = si;
+	auto [path, imports] = si;
 	std::size_t const dep_size = imports.size();
-	sources[dep_size][path].merge(auto(imports));
+	sources[dep_size][path].merge(imports);
 }
 
 bool is_valid_sourcefile(fs::path const& file) {
