@@ -43,15 +43,12 @@
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/out/build/${presetName}",
       "installDir": "${sourceDir}/out/install/${presetName}",
-      "cmakeExecutable": "/home/kgork/bin/cmake",
-      "toolchainFile": "${sourceDir}/clang-toolchain.cmake",
+      "cmakeExecutable": "/home/kgork/cmake-4.2.0/bin/cmake",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        //"CMAKE_C_COMPILER": "clang-20",
-        "CMAKE_CXX_COMPILER": "clang++-21"
-        //"CMAKE_CXX_FLAGS": "-stdlib=libc++",
-        //"CMAKE_EXE_LINKER_FLAGS": "-stdlib=libc++"
-        //,"CMAKE_SHARED_LINKER_FLAGS": "-stdlib=libc++"
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "clang++-21",
+        "CMAKE_CXX_FLAGS": "-stdlib=libc++",
+        "CMAKE_EXE_LINKER_FLAGS": "-stdlib=libc++"
       },
       "condition": {
         "type": "equals",

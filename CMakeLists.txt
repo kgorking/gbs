@@ -11,7 +11,7 @@ elseif (CMAKE_VERSION VERSION_EQUAL "3.30.2")
 	set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "0e5b6991-d74f-4b3d-a41c-cf096e0b2508")
 elseif (CMAKE_VERSION VERSION_EQUAL "4.0.2")
 	set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "a9e1cf81-9932-4810-974b-6eccaf14e457")
-elseif (CMAKE_VERSION VERSION_EQUAL "4.1.1")
+elseif (CMAKE_VERSION VERSION_GREATER "4.1.0")
 	set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "d0edc3af-4c50-42ea-a356-e2862fe7a444")
 else()
 	message(FATAL_ERROR "Unsupported CMake version: '${CMAKE_VERSION}', please use CMake 3.30.2, 3.31.6, or 4.0.2")
@@ -72,11 +72,11 @@ if(MSVC)
 		target_link_options(gbs PRIVATE /LTCG /OPT:REF /OPT:ICF)
 	endif()
 else()
-    set(CMAKE_CXX_STANDARD_LIBRARY "libc++")
     target_compile_options(gbs PRIVATE
         -Wall
         -Wextra
         -Werror
         -Wpedantic
+        -fmodule-mapper=../../c++/libc++.modules.json
     )
 endif()
