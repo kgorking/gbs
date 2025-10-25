@@ -337,7 +337,7 @@ public:
 			fn([=](auto const& v) {
 				if (has_value(v)) {
 					auto const& uv = unwrap(v);
-					std::int64_t const first = std::max(0ll, drop);
+					std::int64_t const first = std::max(std::int64_t{ 0 }, drop);
 					auto it = std::next(std::ranges::begin(uv), first);
 					auto const end = std::ranges::end(uv);
 
@@ -358,7 +358,11 @@ public:
 			return fn([=](auto const& v) {
 				if (has_value(v)) {
 					auto const& uv = unwrap(v);
-					std::for_each(std::execution::par, std::ranges::begin(uv), std::ranges::end(uv), [dst](auto const& item) {
+					std::for_each(
+#ifndef __clang__
+						std::execution::par, 
+#endif
+						std::ranges::begin(uv), std::ranges::end(uv), [dst](auto const& item) {
 						dst(item);
 						});
 				}
@@ -376,12 +380,16 @@ public:
 			return fn([=](auto const& v) {
 				if (has_value(v)) {
 					auto const& uv = unwrap(v);
-					std::int64_t const begin = std::max(0ll, drop);
+					std::int64_t const begin = std::max(std::int64_t{ 0 }, drop);
 					std::int64_t const count = std::min(std::ranges::ssize(uv) - begin, take);
 					//int const end = begin + count;
 
 					auto it = uv.begin() + begin;
-					std::for_each(std::execution::par, it, it + count, [&](auto const& item) {
+					std::for_each(
+#ifndef __clang__
+						std::execution::par,
+#endif
+						it, it + count, [&](auto const& item) {
 						dst(item);
 						});
 				}
@@ -404,7 +412,7 @@ public:
 					if (uv.empty())
 						return;
 
-					std::int64_t const begin = std::max(0ll, drop);
+					std::int64_t const begin = std::max(std::int64_t{ 0 }, drop);
 					std::int64_t const count = std::min(std::ranges::ssize(uv) - begin, take);
 
 					auto it = uv.begin() + begin;
