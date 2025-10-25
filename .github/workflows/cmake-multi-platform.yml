@@ -40,17 +40,17 @@ jobs:
       if: matrix.os == 'windows-latest'
 
     - name: Install GCC 15
-      if: matrix.cpp_compiler = 'g++-15'
       run: |
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
           sudo apt-get update
           sudo apt-get install gcc-15 g++-15 -y
+      if: matrix.cpp_compiler = 'g++-15'
 
     - name: Install Clang 21
-      if: matrix.cpp_compiler = 'clang++-21'
       run: |
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
           sudo apt-get install -y libc++-dev ${{ matrix.cpp_compiler }}
+      if: matrix.cpp_compiler = 'clang++-21'
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
