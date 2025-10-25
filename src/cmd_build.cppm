@@ -169,7 +169,11 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 	objlist.close();
 
 	bool ok = true;
+#ifdef __clang__
+	std::for_each(/*std::execution::par_unseq,*/ dynamic_libraries.begin(), dynamic_libraries.end(), [&](std::pair<fs::path const, std::vector<fs::path>> const& pair) {
+#else
 	std::for_each(std::execution::par_unseq, dynamic_libraries.begin(), dynamic_libraries.end(), [&](std::pair<fs::path const, std::vector<fs::path>> const& pair) {
+#endif
 		if (!ok) return;
 
 		auto const& [p, vec] = pair;
@@ -204,7 +208,11 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 	if (!ok)
 		return false;
 
+#ifdef __clang__
+	std::for_each(/*std::execution::par_unseq,*/ executables.begin(), executables.end(), [&](fs::path const& p) {
+#else
 	std::for_each(std::execution::par_unseq, executables.begin(), executables.end(), [&](fs::path const& p) {
+#endif
 		if (!ok) return;
 
 		std::string const name = p == "." ? fs::current_path().stem().string() : p.stem().string();
