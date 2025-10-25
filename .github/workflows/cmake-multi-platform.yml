@@ -25,12 +25,12 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         build_type: [Release]
-        cpp_compiler: [gcc-15, clang++-20, cl]
+        cpp_compiler: [gcc-15, clang++-21, cl]
         exclude:
           - os: windows-latest
             cpp_compiler: gcc-15
           - os: windows-latest
-            cpp_compiler: clang++-20
+            cpp_compiler: clang++-21
           - os: ubuntu-latest
             cpp_compiler: cl
 
