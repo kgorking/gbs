@@ -1,22 +1,46 @@
 # Gorking Build System v0.17
-Creating my own build system for fun.
 
-# Features
-Uses a fixed directory structure to automatically find source files and compile them.
+A rule-based build system to automatically find source files and compile them. No need for build scripts.
+Your source files are organized in a specific folder structure, and `gbs` will find them and compile them accordingly.
 
-- top-level directory
-  - `lib` - libraries shared across all sub-projects, named subdirectory per library.
-	- `lib/s.libname1/` for static library named _libname1_
-	- `lib/d.libname2/` for dynamic library named _libname2_
-  - `project` - source files for a *project* executeable
-	- `src` - source files for this *project*
-  - `unittest` - unit tests
-	- `src` - Each `test_*.cpp` file is a unittest executable, rest are standard source files.
-  - `[project2, ...]` - Other projects to compile (not implemented yet)
-	- other directories, not starting with `.`, are compiled to their own executables
+# Rules
+- A root folder holds one-or-more projects.
+- Source files are recursively found in the `src` folder of each project or library.
+- Projects are placed in subfolders.
+  - Name of the project folder is used as the name of the resulting executable.
+  - Names starting with `s.` or `d.` produce static and dynamic libraries, respectively.
+- Libraries are in the `lib` folder.
+  - Libraries are shared across all projects.
+  - Static libraries are in folders starting with `s.`.
+  - Dynamic libraries are in folders starting with `d.`.
+  - Other folders are added to the includes list. They are not searched for source files.
+  - Include paths for libraries are automatically added to projects.
+    - Also inlucdes `inc` and `include` subfolders, if present.
+- Unit tests are in the `unittest` folder.
+  - Each `test.*.cpp` file is compiled into a unittest executable `test.*.exe`.
+  - Other sourcefiles are linked to each unittest executable.
+- Files and folders starting with `x.` are ignored.
+- TODO: Files and folders postfixed with `.win`, `.linux`, `.mac` are only included on the matching platform.
+
+## Folder structure
+- `top-level directory`
+  - `lib`
+	- `s.libname1`
+      - `inc`/`src`
+	- `d.libname2`
+      - `inc`/`src`
+  - `project1`
+	- `src`
+    - `unittest`
+  - `project2`
+	- `src`
+    - `unittest`
+  - etc...
 
 # Usage
 `gbs [command, ...]`
+
+Calling `gbs` without any commands will do a debug build of the current directory and run all unittests.
 
 The following commands are supported:
 
@@ -57,8 +81,8 @@ The following commands are supported:
 The following compilers can be used by `gbs` to build `gbs`:
 
 - [x] msvc 19.38+
-- [ ] clang 21+ (crashes on 'gbs' compile when using modules)
-- [x] gcc 15+
+- [x] clang 21+
+- [ ] gcc 15+ (linking error when using `std::print`)
 
 # Upcoming versions (not in a specific order)
 - Fetch dependencies in 'deps'

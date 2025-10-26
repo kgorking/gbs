@@ -20,8 +20,10 @@ int main(const int argc, char const* argv[], char const** envp) {
 	if (argc == 1) {
 		ctx.fill_compiler_collection();
 		ctx.select_first_compiler();
-		cmd_config(ctx, "release");
-		return !cmd_build(ctx, "");
+		if(cmd_config(ctx, "debug"))
+			if(cmd_build(ctx, ""))
+				cmd_unittest(ctx, "");
+		return 0;
 	}
 
 	static std::unordered_map<std::string_view, bool(*)(context&, std::string_view)> const commands = {

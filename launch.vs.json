@@ -3,6 +3,13 @@
   "defaults": {},
   "configurations": [
     {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "gbs.exe",
+      "currentDir": ".",
+      "name": "gbs.exe"
+    },
+    {
       "name": "Unittest sample project",
       "type": "default",
       "project": "CMakeLists.txt",
