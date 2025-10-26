@@ -44,7 +44,6 @@ export void extract_compiler_version(std::string_view sv, int& major, int& minor
 		return;
 
 	sv.remove_prefix(dot + 1);
-	dot = sv.find('.');
 	patch = std::atoi(sv.data());
 }
 
@@ -178,13 +177,18 @@ export void enumerate_compilers(environment const& env, auto&& callback) {
 				if (path.starts_with("gcc_")) {
 					compiler comp;
 
-					// gcc_13.3.0-2
+					// gcc_xx.y.z-w
 					comp.name_and_version = gcc_version;
 					gcc_version.remove_prefix(4);
-
-					auto const actual_path = dir.path();
-
 					extract_compiler_version(gcc_version, comp.major, comp.minor, comp.patch);
+
+					if (comp.major < 15) {
+						//std::println(std::cerr, "<gbs> warning: Detected GCC version {}. Only GCC 15 and later is supported.", gcc_version);
+						continue;
+					}
+
+					auto const& actual_path = dir.path();
+
 					comp.name = "gcc";
 					comp.arch = "x64";
 					comp.dir = dir;
@@ -215,12 +219,12 @@ export void enumerate_compilers(environment const& env, auto&& callback) {
 						"-DWINPTHREAD_THREAD_DECL=WINPTHREADS_ALWAYS_INLINE "
 					;
 #ifdef _MSC_VER
-					comp.link_command = "call {0:?} -o {1}/{2}.exe @{1}/OBJLIST @{1}/LIBLIST -static -lstdc++exp -Wl,--allow-multiple-definition ";
+					comp.link_command = "call {0:?} -o {1}/{2}.exe @{1}/OBJLIST @{1}/LIBLIST -static -Wl,--allow-multiple-definition -lstdc++exp";
 #else
-					comp.link_command = "call \"{0}\" -o {1}/{2}.exe @{1}/OBJLIST @{1}/LIBLIST -static";
+					comp.link_command = "call {0:?} -o {1}/{2}.exe @{1}/OBJLIST @{1}/LIBLIST -static";
 #endif
+					comp.dlib_command = "call {0:?} -o {1}/{2}.dll @{1}/OBJLIST -static -shared -Wl,--out-implib={1}/{2}.lib -lstdc++exp";
 					comp.slib_command = "call {0:?} rcs {1}/{2}.lib @{1}/OBJLIST";
-					comp.dlib_command = "call {0:?} -static -shared -Wl,--out-implib={1}/{2}.lib -o {1}/{2}.dll @{1}/OBJLIST -lstdc++exp";
 					comp.define = "-D";
 					comp.include = "-I{0}";
 					comp.reference = "";

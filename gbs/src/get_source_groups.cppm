@@ -2,7 +2,6 @@ module;
 export module get_source_groups;
 import std;
 import dep_scan;
-import monad;
 
 namespace fs = std::filesystem;
 
@@ -22,16 +21,16 @@ export using source_group = std::unordered_map<fs::path, import_set>;
 export using depth_ordered_sources_map = std::map<std::size_t, source_group>;
 
 
-// Maps a filename to _all_ its module dependencies
-void store_in_map(source_dependency const& sd, file_to_imports_map* fi) {
-	(*fi)[sd.path] = sd.import_names;
+export bool should_not_exclude(fs::path const& path) {
+	return
+		!path.string().starts_with("x.") &&
+		!path.filename().stem().string().starts_with("x.");
 }
 
 // Recursively merge a files child dependencies with its own dependencies.
 //   Fx. A -> B -> C
 //   Results in A's dependencies being [B, C]
-source_info recursive_merge(fs::path const&file, import_set const& deps, std::unordered_map<std::string, fs::path> const& module_name_to_file_map, file_to_imports_map const& file_imports) {
-	//auto const& [file, deps] = pair;
+static source_info recursive_merge(fs::path const&file, import_set const& deps, std::unordered_map<std::string, fs::path> const& module_name_to_file_map, file_to_imports_map const& file_imports) {
 	import_set all_merged_deps{ deps };
 
 	for (auto const& dep : deps) {
@@ -63,20 +62,28 @@ export depth_ordered_sources_map get_grouped_source_files(fs::path const& dir) {
 
 	// Maps an export module name to its filename
 	// and find all immediate dependencies for each file
-	auto const module_name_to_file_map = as_monad(fs::recursive_directory_iterator(dir))
-		.join()
-		.filter(&fs::directory_entry::is_regular_file)
-		.map(&fs::directory_entry::path)
-		.filter(is_valid_sourcefile)
-		.map(extract_module_dependencies)
-		.and_then(store_in_map, &file_imports)
-		.filter(&source_dependency::is_export)
-		.to<std::unordered_map>(&source_dependency::export_name, &source_dependency::path);
+	std::unordered_map<std::string, fs::path> module_name_to_file_map;
+	for (auto const& dir_it : fs::recursive_directory_iterator(dir)) {
+		if (!dir_it.is_regular_file())
+			continue;
+
+		fs::path const file_path = dir_it.path();
+		if (!is_valid_sourcefile(file_path) || !should_not_exclude(file_path))
+			continue;
+
+		source_dependency const sd = extract_module_dependencies(file_path);
+		file_imports[sd.path] = sd.import_names;
+
+		module_name_to_file_map.insert({ sd.export_name, sd.path });
+	}
 
 	// Merge all dependencies for each file and
 	// return an ordered map of files grouped by their dependency depth
-	return as_monad(file_imports)
-		.join()
-		.map(recursive_merge, module_name_to_file_map, file_imports)
-		.to_dest(group_by_dependency_depth);
+	depth_ordered_sources_map sources;
+	for (auto const& [file, imports] : file_imports) {
+		source_info const merged = recursive_merge(file, imports, module_name_to_file_map, file_imports);
+		group_by_dependency_depth(sources, merged);
+	}
+
+	return sources;
 }

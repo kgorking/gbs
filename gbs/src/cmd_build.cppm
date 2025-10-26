@@ -3,17 +3,9 @@ import std;
 import env;
 import context;
 import get_source_groups;
-import monad;
 import cmd_config;
 
 namespace fs = std::filesystem;
-
-static bool is_file_out_of_date(fs::path const& path, std::set<std::string> const&, fs::path const& obj) {
-	if (!fs::exists(obj))
-		return true;
-
-	return (fs::last_write_time(obj) <= fs::last_write_time(path));
-}
 
 // Why doesn't this garbage stl have this already???
 static std::string to_upper(std::string const& cstr) {
@@ -22,14 +14,16 @@ static std::string to_upper(std::string const& cstr) {
 	return str;
 }
 
-static bool should_not_exclude(fs::path const& path) {
-	return	!path.string().starts_with("x.") &&
-			!path.filename().stem().string().starts_with("x.");
+static bool is_file_out_of_date(fs::path const& path, fs::path const& obj) {
+	if (!fs::exists(obj))
+		return true;
+
+	return (fs::last_write_time(obj) <= fs::last_write_time(path));
 }
 
-static auto get_object_filepath(fs::path const& path, std::set<std::string> const& imports, context const& ctx) {
+static fs::path get_object_filepath(fs::path const& path, context const& ctx) {
 	fs::path const obj = (ctx.output_dir() / path.filename()).replace_extension("obj");
-	return std::tuple{ path, imports, obj };
+	return obj;
 }
 
 
@@ -87,43 +81,51 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 	std::unordered_map<fs::path, std::vector<fs::path>> dynamic_libraries;
 	std::unordered_map<fs::path, std::vector<fs::path>> unittests;
 
-	// If a standard module is specified, add it to the source- and object list
-	if (ctx.get_selected_compiler().std_module) {
-		all_sources[0][*ctx.get_selected_compiler().std_module] = std::set<std::string>{};
-		objects.insert((ctx.output_dir() / ctx.get_selected_compiler().std_module->filename()).replace_extension("obj"));
-	}
-
 	// Find all source files
-	as_monad(fs::directory_iterator(".", fs::directory_options::follow_directory_symlink | fs::directory_options::skip_permission_denied))
-		.join()
-		.filter(&fs::directory_entry::is_directory)
-		.map(&fs::directory_entry::path)
-		.map(&fs::path::lexically_normal)
-		.filter(should_not_exclude)
-		.then([&](fs::path const& p) {
-			if ("lib" == *p.begin()) {
-				if (fs::exists(p / "src")) includes.insert(p / "src");
-				if (fs::exists(p / "inc")) includes.insert(p / "inc");
-				if (fs::exists(p / "include")) includes.insert(p / "include");
+	for (auto dir_it : fs::directory_iterator(".", fs::directory_options::follow_directory_symlink | fs::directory_options::skip_permission_denied)) {
+		if (!dir_it.is_directory())
+			continue;
 
-				if (!p.has_extension()) {
-					std::println("<gbs> warning: unknown library prefix for {}", p.generic_string().c_str());
-					return;
+		fs::path const p = dir_it.path().lexically_normal();
+		if (!should_not_exclude(p))
+			continue;
+
+		if ("src" == p) {
+			std::println(std::cerr, "<gbs> error: 'src' directory has to be inside a project directory, aborting...");
+			std::println(std::cerr, "             '{}'", fs::current_path().generic_string());
+			return false;
+		}
+		if ("lib" == p) {
+			// 'lib' directory: process all libraries shared between all the projects
+			for (auto dir : fs::directory_iterator("lib")) {
+				fs::path const lib = dir.path().lexically_normal();
+				if (fs::exists(lib / "src")) includes.insert(lib / "src");
+				if (fs::exists(lib / "inc")) includes.insert(lib / "inc");
+				if (fs::exists(lib / "include")) includes.insert(lib / "include");
+
+				if (!lib.has_extension()) {
+					std::println("<gbs> warning: unknown library prefix for {}", lib.generic_string().c_str());
+					continue;
 				}
 
-				auto const source_files = get_grouped_source_files(p / "src");
+				auto const source_files = get_grouped_source_files(lib / "src");
 				auto const files_view = source_files | std::views::values | std::views::join | std::views::keys;
-				if (p.stem() == "s") {
+				if (lib.stem() == "s") {
 					for (fs::path const& path : files_view) {
 						if (should_not_exclude(path))
 							objects.insert((ctx.output_dir() / path.filename()).replace_extension("obj"));
 					}
 				}
-				else if (p.stem() == "d") {
-					dynamic_libraries[p].append_range(files_view);
-					dlib_defines[p / "src"] = to_upper(p.extension().generic_string().substr(1)) + "_EXPORTS";
+				else if (lib.stem() == "d") {
+					dynamic_libraries[lib].append_range(files_view);
+					dlib_defines[lib / "src"] = to_upper(lib.extension().generic_string().substr(1)) + "_EXPORTS";
 				}
+
+				for (auto [index, sources] : source_files)
+					all_sources[index].merge(sources);
 			}
+		}
+		else {
 			if (fs::exists(p / "src")) {
 				auto const source_files = get_grouped_source_files(p / "src");
 				auto const files_view = source_files | std::views::values | std::views::join | std::views::keys;
@@ -141,7 +143,20 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 				for (auto [index, sources] : source_files)
 					all_sources[index].merge(sources);
 			}
-		});
+		}
+	}
+
+	// Bail if no source files were found
+	if (all_sources.empty()) {
+		std::println(std::cerr, "<gbs> error: no source files found to build in '{}'", fs::current_path().generic_string());
+		return false;
+	}
+
+	// If a standard module is specified, add it to the source- and object list
+	if (ctx.get_selected_compiler().std_module) {
+		all_sources[0][*ctx.get_selected_compiler().std_module] = std::set<std::string>{};
+		objects.insert((ctx.output_dir() / ctx.get_selected_compiler().std_module->filename()).replace_extension("obj"));
+	}
 
 	// Create the object list file
 	{
@@ -159,21 +174,22 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		includes_rsp.close();
 	}
 
-	// Compile all source files
-	if (!as_monad(all_sources)
-			.join()
-			.values()
-			.join_par()
-			.filter([](fs::path const& path, auto const&) { return should_not_exclude(path); })
-			.map(get_object_filepath, ctx)
-			.filter(is_file_out_of_date)
-			.map(make_build_command, dlib_defines, ctx)
-			.until([](std::string_view const cmd) noexcept { return (0 == std::system(cmd.data())); }))
-		return false; // Bail if compilation failed
+	bool ok = true;
 
+	// Compile all source files
+	for(auto const& [index, sources]: all_sources) {
+		if (!ok) return false;
+		std::for_each(std::execution::par_unseq, sources.begin(), sources.end(), [&](auto const& pair) {
+			auto const& [path, imports] = pair;
+			fs::path const obj = get_object_filepath(path, ctx);
+			if (is_file_out_of_date(path, obj)) {
+				std::string const cmd = make_build_command(path, imports, obj, dlib_defines, ctx);
+				ok = ok && (0 == std::system(cmd.c_str()));
+			}
+			});
+	}
 
 	// Link dynamic libraries
-	bool ok = true;
 	std::for_each(std::execution::par_unseq, dynamic_libraries.begin(), dynamic_libraries.end(), [&](std::pair<fs::path const, std::vector<fs::path>> const& pair) {
 		if (!ok) return;
 
@@ -197,7 +213,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		}
 
 		std::println("<gbs> Creating dynamic library '{}'...", name);
-		ok = (0 == std::system(cmd.c_str()));
+		ok = ok && (0 == std::system(cmd.c_str()));
 		});
 
 	if (!ok)
@@ -209,13 +225,13 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		liblist << lib.generic_string() << ' ';
 	liblist.close();
 
-	// Link unittests
+	// Link all the unittests
 	std::for_each(std::execution::par_unseq, unittests.begin(), unittests.end(), [&](std::pair<fs::path const, std::vector<fs::path>>& pair) {
 		if (!ok) return;
 
 		auto& [p, vec] = pair;
 
-		std::string const name = p == "." ? fs::current_path().stem().string() : p.stem().string();
+		std::string const name = p.stem().string();
 
 		// Partion the source files into unittests and support files
 		auto it = std::ranges::partition(vec, [](fs::path const& path) { return !path.filename().string().starts_with("test."); });
@@ -237,16 +253,17 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 			std::println("<gbs> Linking unittest '{}'...", test_name);
 			std::string const obj_resp = std::format(" @{0}/{1} {0}/{2}.obj", ctx.output_dir().generic_string(), objlist_name.generic_string(), test_name);
 			std::string const cmd = ctx.link_command(test_name, ctx.output_dir().generic_string()) + obj_resp;
-			ok = (0 == std::system(cmd.c_str()));
+			ok = ok && (0 == std::system(cmd.c_str()));
 			});
 		});
 
 	if (!ok)
 		return false;
 
-	// Link executables
+	// Link the projects executable
 	std::for_each(std::execution::par_unseq, executables.begin(), executables.end(), [&](std::pair<fs::path const, std::vector<fs::path>> const& pair) {
-		if (!ok) return;
+		if (!ok)
+			return;
 
 		auto const& [p, vec] = pair;
 
@@ -264,7 +281,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		std::println("<gbs> Linking executable '{}'...", name);
 		std::string const obj_resp = std::format(" @{0}/{1}", ctx.output_dir().generic_string(), objlist_name.generic_string());
 		std::string const cmd = ctx.link_command(name, ctx.output_dir().generic_string()) + obj_resp;
-		ok = (0 == std::system(cmd.c_str()));
+		ok = ok && (0 == std::system(cmd.c_str()));
 		});
 
 	return ok;

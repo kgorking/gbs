@@ -13,40 +13,10 @@
       ]
     },
     {
-      "name": "[msvc] sample project",
-      "type": "default",
-      "project": "CMakeLists.txt",
-      "currentDir": "./sample_project_all/",
-      "projectTarget": "gbs.exe",
-      "args": [
-        "version cl=msvc config clean build run unittest"
-      ]
-    },
-    {
-      "name": "[clang] sample project",
-      "type": "default",
-      "project": "CMakeLists.txt",
-      "currentDir": "./sample_project_all/",
-      "projectTarget": "gbs.exe",
-      "args": [
-        "version cl=clang config clean build run"
-      ]
-    },
-    {
-      "name": "[gcc] sample project",
-      "type": "default",
-      "project": "CMakeLists.txt",
-      "currentDir": "./sample_project_all/",
-      "projectTarget": "gbs.exe",
-      "args": [
-        "version cl=gcc clean build run"
-      ]
-    },
-    {
       "name": "version",
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": "./",
+      "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
         "version"
@@ -56,7 +26,7 @@
       "name": "get_cl",
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": "./",
+      "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
         "get_cl"
@@ -66,7 +36,7 @@
       "name": "Enumerate compilers",
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": "./",
+      "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
         "enum_cl"
@@ -116,7 +86,7 @@
       "name": "[clang] self analyze",
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": "./test",
+      "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
         "clean cl=clang config=debug,analyze,warnings build"
@@ -126,7 +96,7 @@
       "name": "[msvc] self analyze",
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": "./",
+      "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
         "clean cl=msvc config=debug,analyze,warnings build"

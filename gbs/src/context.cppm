@@ -63,7 +63,7 @@ public:
 			{"_shared", "/nologo /EHsc /std:c++23preview /fastfail /sdl /D_MSVC_STL_HARDENING=1 /D_MSVC_STL_DESTRUCTOR_TOMBSTONES=1"},
 			{"debug",   "/Od /MDd"},
 			{"release", "/DNDEBUG /O2 /MD"},
-			{"analyze", "/external:W4 /external:anglebrackets /analyze:external- /analyze:WX- /analyze:plugin EspXEngine.dll"}
+			{"analyze", "/external:W0 /external:Ilib /external:anglebrackets /analyze:external- /analyze:WX- /analyze:plugin EspXEngine.dll"}
 		};
 
 		response_map["clang"] = {
@@ -78,15 +78,15 @@ public:
 				"-Wunused "               // warn on anything being unused
 				"-Woverloaded-virtual "   // warn if you overload (not override) a virtual function
 				"-Wpedantic "             // warn if non-standard C++ is used
-				"-Wconversion "           // warn on type conversions that may lose data
-				"-Wsign-conversion "      // warn on sign conversions
+				//"-Wconversion "           // warn on type conversions that may lose data
+				//"-Wsign-conversion "      // warn on sign conversions
 				"-Wnull-dereference "     // warn if a null dereference is detected
-				"-Wdouble-promotion "     // warn if float is implicit promoted to double
+				//"-Wdouble-promotion "     // warn if float is implicit promoted to double
 				"-Wformat=2 "             // warn on security issues around functions that format output (ie printf)
 				"-Wimplicit-fallthrough " // warn on statements that fallthrough without an explicit annotation
 			},
 			{"_shared",
-				"-std=c++2b "
+				"-std=c++23 "
 	#ifdef _MSC_VER
 			// Needed to use std module
 			"-Wno-include-angled-in-module-purview -Wno-reserved-module-identifier"
@@ -109,10 +109,10 @@ public:
 				"-Wunused "                 // warn on anything being unused
 				"-Woverloaded-virtual "     // warn if you overload (not override) a virtual function
 				"-Wpedantic "               // warn if non-standard C++ is used
-				"-Wconversion "             // warn on type conversions that may lose data
-				"-Wsign-conversion "        // warn on sign conversions
+				//"-Wconversion "             // warn on type conversions that may lose data
+				//"-Wsign-conversion "        // warn on sign conversions
 				"-Wnull-dereference "       // warn if a null dereference is detected
-				"-Wdouble-promotion "       // warn if float is implicit promoted to double
+				//"-Wdouble-promotion "       // warn if float is implicit promoted to double
 				"-Wformat=2 "               // warn on security issues around functions that format output (ie printf)
 				"-Wimplicit-fallthrough "   // warn on statements that fallthrough without an explicit annotation
 				"-Wmisleading-indentation " // warn if indentation implies blocks where blocks do not exist
@@ -122,7 +122,7 @@ public:
 				"-Wuseless-cast "           // warn if you perform a cast to the same type
 				"-Wsuggest-override "       // warn if an overridden member function is not marked 'override' or 'final'
 			},
-			{"_shared", "-std=c++2b -fmodules"},
+			{"_shared", "-std=c++23 -fmodules"},
 			{"debug", "-O0 -g3"},
 			{"release", "-O3"},
 			{"analyze", "--analyze"}
