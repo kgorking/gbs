@@ -56,14 +56,14 @@ jobs:
     - name: Set up GCC
       if: ${{ startsWith(matrix.cpp_compiler, 'gcc') }}
       run: |
-          sudo add-apt-repository ppa:ubuntu-toolchain-r/ppa -y
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/plucky -y
           sudo apt-get update
           sudo apt install gcc-15 g++-15 -y
 
     - name: Set up Clang
       if: ${{ startsWith(matrix.cpp_compiler, 'clang') }}
       run: |
-          wget https://apt.llvm.org/llvm.sh || wger https://146.75.30.49/llvm.sh
+          wget https://apt.llvm.org/llvm.sh || wget https://146.75.30.49/llvm.sh
           chmod +x llvm.sh
           sudo ./llvm.sh 21
           sudo apt install libc++-21-dev libc++abi-21-dev -y
