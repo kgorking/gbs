@@ -56,7 +56,7 @@ jobs:
     - name: Set up GCC
       if: ${{ startsWith(matrix.cpp_compiler, 'gcc') }}
       run: |
-          sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+          sudo add-apt-repository "deb http://archive.ubuntu.com/ubuntu plucky main restricted universe multiverse"
           sudo apt update
           sudo apt install gcc-15 g++-15 libstdc++-15-dev -y
 
