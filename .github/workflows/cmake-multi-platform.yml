@@ -37,9 +37,16 @@ jobs:
             cpp_compiler: cl
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: lukka/get-cmake@latest
       with:
-        submodules: true
+        cmakeVersion: "~4.1.0"
+        ninjaVersion: "^1.11.1"
+
+    - name: Compile with GBS v0.17-alpha
+      if: ${{ matrix.os == 'windows-latest' && matrix.cpp_compiler == 'cl' && matrix.build_type == 'Debug' }}
+      run: |
+        curl -fSLO https://github.com/kgorking/gbs/releases/download/v0.17-alpha/gbs.exe
+        ./gbs.exe cl=msvc config=debug,warnings build unittest
 
     - uses: ilammy/msvc-dev-cmd@v1
       if: matrix.os == 'windows-latest'
@@ -58,12 +65,6 @@ jobs:
           chmod +x llvm.sh
           sudo ./llvm.sh 21
           sudo apt install libc++-21-dev libc++abi-21-dev -y
-
-    - name: Compile with GBS v0.17-alpha
-      if: ${{ matrix.os == 'windows-latest' && matrix.cpp_compiler == 'cl' && matrix.build_type == 'Debug' }}
-      run: |
-        curl -fSLO https://github.com/kgorking/gbs/releases/download/v0.17-alpha/gbs.exe
-        ./gbs.exe cl=msvc config=debug,warnings build unittest
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
