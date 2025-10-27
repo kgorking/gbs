@@ -198,6 +198,7 @@ export void enumerate_compilers(environment const& env, auto&& callback) {
 					comp.dlib = actual_path / "bin" / "g++";
 
 					if (comp.major >= 15) {
+						// /usr/include/c++/15/bits/std.cc
 						comp.std_module = actual_path / "include" / "c++" / comp.name_and_version.substr(4) / "bits" / "std.cc";
 						if (!std::filesystem::exists(*comp.std_module)) {
 							std::println(std::cerr, "<gbs> Error: Could not find 'std.cc' at location {}", comp.std_module->generic_string());

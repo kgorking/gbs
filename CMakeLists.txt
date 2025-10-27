@@ -1,15 +1,9 @@
 ﻿# Gorking Build System
 #
-#
-cmake_minimum_required (VERSION 3.30.2)
 
-if (CMAKE_VERSION VERSION_EQUAL "3.31.6")
-	set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "0e5b6991-d74f-4b3d-a41c-cf096e0b2508")
-elseif (CMAKE_VERSION VERSION_EQUAL "3.30.2")
-	set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "0e5b6991-d74f-4b3d-a41c-cf096e0b2508")
-elseif (CMAKE_VERSION VERSION_EQUAL "4.0.2")
-	set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "a9e1cf81-9932-4810-974b-6eccaf14e457")
-elseif (CMAKE_VERSION VERSION_GREATER "4.1.0")
+cmake_minimum_required (VERSION 4.1.0 FATAL_ERROR)
+
+if (CMAKE_VERSION VERSION_GREATER "4.1.0")
 	set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "d0edc3af-4c50-42ea-a356-e2862fe7a444")
 else()
 	message(FATAL_ERROR "Unknown uuid for CMake version: '${CMAKE_VERSION}', check the cmake github for new uuid")
@@ -76,6 +70,12 @@ else()
         -Wextra
         -Werror
         -Wpedantic
-        -fmodule-mapper=../../c++/libc++.modules.json
     )
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang") # GNU/MSVC
+        target_compile_options(gbs PRIVATE -stdlib=libc++)# -fmodule-mapper=../../c++/libc++.modules.json)
+        target_link_options(gbs PRIVATE -stdlib=libc++)
+    else()
+        target_compile_options(gbs PRIVATE -stdlib=libstdc++ -fmodule-mapper=../../c++/libstdc++.modules.json)
+        target_link_options(gbs PRIVATE -stdlib=libstdc++)
+    endif()
 endif()

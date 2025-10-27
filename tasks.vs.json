@@ -35,7 +35,7 @@
         "-FilePath",
         "'${env.GBS_BIN}'",
         "-ArgumentList",
-        "'unittest'"
+        "'cl=msvc config=release,warnings unittest'"
       ]
     },
     {
@@ -107,7 +107,7 @@
         "-FilePath",
         "'${env.GBS_BIN}'",
         "-ArgumentList",
-        "'cl=msvc build'"
+        "'cl=msvc build unittest'"
       ]
     },
     {
@@ -125,13 +125,13 @@
         "-FilePath",
         "'${env.GBS_BIN}'",
         "-ArgumentList",
-        "'cl=clang build'"
+        "'cl=clang build unittest run=version'"
       ]
     },
     {
       "taskLabel": "build [gcc]",
       "appliesTo": "/*/",
-      "type": "launch",
+      "type": "default",
       "contextType": "custom",
       "workingDirectory": "${file}",
       "command": "pwsh",
@@ -143,7 +143,7 @@
         "-FilePath",
         "'${env.GBS_BIN}'",
         "-ArgumentList",
-        "'cl=gcc build'"
+        "'cl=gcc build unittest'"
       ]
     },
     {
