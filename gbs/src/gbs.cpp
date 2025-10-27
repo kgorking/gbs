@@ -12,6 +12,7 @@ import cmd_run;
 import cmd_cl;
 import cmd_ide;
 import cmd_config;
+import cmd_unittest;
 
 int main(const int argc, char const* argv[], char const** envp) {
 	auto ctx = context{ envp };
@@ -19,8 +20,10 @@ int main(const int argc, char const* argv[], char const** envp) {
 	if (argc == 1) {
 		ctx.fill_compiler_collection();
 		ctx.select_first_compiler();
-		cmd_config(ctx, "release");
-		return !cmd_build(ctx, "");
+		if(cmd_config(ctx, "debug"))
+			if(cmd_build(ctx, ""))
+				cmd_unittest(ctx, "");
+		return 0;
 	}
 
 	static std::unordered_map<std::string_view, bool(*)(context&, std::string_view)> const commands = {
@@ -33,6 +36,7 @@ int main(const int argc, char const* argv[], char const** envp) {
 		{"build", cmd_build},
 		{"run", cmd_run},
 		{"ide", cmd_ide},
+		{"unittest", cmd_unittest}
 	};
 
 	for (auto const args = std::span(argv, static_cast<std::size_t>(argc)); std::string_view arg : args | std::views::drop(1)) {

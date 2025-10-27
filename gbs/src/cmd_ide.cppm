@@ -1,10 +1,38 @@
-{
+export module cmd_ide;
+import context;
+import std;
+
+void create_vs_tasks();
+void create_vscode_tasks();
+
+export bool cmd_ide(context&, std::string_view args) {
+    if (args.empty() || args == "?") {
+        std::println("Usage: gbs ide=[arg]");
+        std::println("arg:");
+        std::println("  vs       Creates 'tasks.vs.json' for Visual Studio");
+        std::println("  vscode   Creates 'tasks.vs.json' for Visual Studio Code");
+        return true;
+	}
+	if (args == "vs") {
+		create_vs_tasks();
+		return true;
+	}
+	else if (args == "vscode") {
+        create_vscode_tasks();
+        return true;
+    }
+
+	return false;
+}
+
+void create_vs_tasks() {
+	std::string_view const tasks = R"({
   "version": "0.2.1",
   "outDir": "\"${workspaceRoot}\\gbs.out\"",
   "tasks": [
     {
       "taskLabel": "Enumerate compilers",
-      "appliesTo": "/*/",
+      "appliesTo": "*/",
       "type": "launch",
       "contextType": "custom",
       "workingDirectory": "${file}",
@@ -21,26 +49,8 @@
       ]
     },
     {
-      "taskLabel": "unittests",
-      "appliesTo": "/*/",
-      "type": "launch",
-      "contextType": "custom",
-      "workingDirectory": "${file}",
-      "command": "pwsh",
-      "args": [
-        "-Command Start-Process",
-        "-Wait",
-        "-UseNewEnvironment",
-        "-NoNewWindow",
-        "-FilePath",
-        "'${env.GBS_BIN}'",
-        "-ArgumentList",
-        "'unittest'"
-      ]
-    },
-    {
       "taskLabel": "Build",
-      "appliesTo": "/*/",
+      "appliesTo": "*/",
       "type": "launch",
       "contextType": "build",
       "workingDirectory": "${file}",
@@ -58,7 +68,7 @@
     },
     {
       "taskLabel": "Rebuild",
-      "appliesTo": "/*/",
+      "appliesTo": "*/",
       "type": "launch",
       "contextType": "rebuild",
       "workingDirectory": "${file}",
@@ -76,7 +86,7 @@
     },
     {
       "taskLabel": "Clean",
-      "appliesTo": "/*/",
+      "appliesTo": "*/",
       "type": "launch",
       "contextType": "clean",
       "workingDirectory": "${file}",
@@ -94,7 +104,7 @@
     },
     {
       "taskLabel": "build [msvc]",
-      "appliesTo": "/*/",
+      "appliesTo": "*/",
       "type": "launch",
       "contextType": "custom",
       "workingDirectory": "${file}",
@@ -112,7 +122,7 @@
     },
     {
       "taskLabel": "build [clang]",
-      "appliesTo": "/*/",
+      "appliesTo": "*/",
       "type": "launch",
       "contextType": "custom",
       "workingDirectory": "${file}",
@@ -130,7 +140,7 @@
     },
     {
       "taskLabel": "build [gcc]",
-      "appliesTo": "/*/",
+      "appliesTo": "*/",
       "type": "launch",
       "contextType": "custom",
       "workingDirectory": "${file}",
@@ -148,7 +158,7 @@
     },
     {
       "taskLabel": "download [clang]",
-      "appliesTo": "/*/",
+      "appliesTo": "*/",
       "type": "launch",
       "contextType": "custom",
       "workingDirectory": "${file}",
@@ -166,7 +176,7 @@
     },
     {
       "taskLabel": "download [gcc]",
-      "appliesTo": "/*/",
+      "appliesTo": "*/",
       "type": "launch",
       "contextType": "custom",
       "workingDirectory": "${file}",
@@ -184,7 +194,7 @@
     },
     {
       "taskLabel": "analyze [msvc]",
-      "appliesTo": "/*/",
+      "appliesTo": "*/",
       "type": "launch",
       "contextType": "custom",
       "workingDirectory": "${file}",
@@ -202,7 +212,7 @@
     },
     {
       "taskLabel": "analyze [clang]",
-      "appliesTo": "/*/",
+      "appliesTo": "*/",
       "type": "launch",
       "contextType": "custom",
       "workingDirectory": "${file}",
@@ -219,4 +229,47 @@
       ]
     }
   ]
+})";
+	std::ofstream tasks_file("tasks.vs.json");
+    tasks_file << tasks;
+}
+
+void create_vscode_tasks() {
+    std::string_view const tasks = R"({
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "${env:GBS_BIN} build=release,warnings",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "rebuild",
+            "type": "shell",
+            "command": "${env:GBS_BIN} clean build=release,warnings"
+        },
+        {
+            "label": "clean",
+            "type": "shell",
+            "command": "${env:GBS_BIN} clean"
+        },
+        {
+            "label": "test",
+            "type": "shell",
+            "command": "${env:GBS_BIN} test",
+            "problemMatcher": [],
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
+        }
+    ]
+})";
+	std::ofstream tasks_file("tasks.vs.json");
+    tasks_file << tasks;
 }

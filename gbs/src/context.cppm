@@ -9,8 +9,8 @@ export class context {
 	using compiler_response_map = std::unordered_map<std::string_view, std::string_view>;
 
 	// Configuration of compile ('debug,analyze', etc...)
-	std::string_view config;
-	std::string config_dir;
+	std::string_view config{};
+	std::string config_dir{};
 
 	// Folder to store gbs related files
 	const std::filesystem::path gbs_internal{ ".gbs" };
@@ -19,22 +19,22 @@ export class context {
 	const std::filesystem::path gbs_out{ "gbs.out" };
 
 	// All available compilers
-	compiler_collection all_compilers;
+	compiler_collection all_compilers{};
 
 	// The currently selected compiler
 	compiler selected_cl;
 
 	// Maps a compiler name to its response files
-	std::unordered_map<std::string_view, compiler_response_map> response_map;
+	std::unordered_map<std::string_view, compiler_response_map> response_map{};
 
 	// The response args to use during build
-	std::string resp_args;
+	std::string resp_args{};
 
 
 	environment env;
 
 public:
-	context(char const** envp) : env(envp) {
+	explicit context(char const** envp) : env(envp) {
 		// Default response files
 		response_map["msvc"] = {
 			{"warnings",
@@ -60,10 +60,10 @@ public:
 				"/w14906 "     // string literal cast to 'LPWSTR' 
 				"/w14928 "     // illegal copy-initialization; more than one user-defined conversion has been implicitly applied 
 			},
-			{"_shared", "/nologo /EHsc /std:c++23preview /fastfail /D_MSVC_STL_HARDENING=1 /D_MSVC_STL_DESTRUCTOR_TOMBSTONES=1"},
+			{"_shared", "/nologo /EHsc /std:c++23preview /fastfail /sdl /D_MSVC_STL_HARDENING=1 /D_MSVC_STL_DESTRUCTOR_TOMBSTONES=1"},
 			{"debug",   "/Od /MDd"},
 			{"release", "/DNDEBUG /O2 /MD"},
-			{"analyze", "/external:W4 /external:anglebrackets /analyze:external- /analyze:WX- /analyze:plugin EspXEngine.dll"}
+			{"analyze", "/external:W0 /external:Ilib /external:anglebrackets /analyze:external- /analyze:WX- /analyze:plugin EspXEngine.dll"}
 		};
 
 		response_map["clang"] = {
@@ -78,15 +78,15 @@ public:
 				"-Wunused "               // warn on anything being unused
 				"-Woverloaded-virtual "   // warn if you overload (not override) a virtual function
 				"-Wpedantic "             // warn if non-standard C++ is used
-				"-Wconversion "           // warn on type conversions that may lose data
-				"-Wsign-conversion "      // warn on sign conversions
+				//"-Wconversion "           // warn on type conversions that may lose data
+				//"-Wsign-conversion "      // warn on sign conversions
 				"-Wnull-dereference "     // warn if a null dereference is detected
-				"-Wdouble-promotion "     // warn if float is implicit promoted to double
+				//"-Wdouble-promotion "     // warn if float is implicit promoted to double
 				"-Wformat=2 "             // warn on security issues around functions that format output (ie printf)
 				"-Wimplicit-fallthrough " // warn on statements that fallthrough without an explicit annotation
 			},
 			{"_shared",
-				"-std=c++2b "
+				"-std=c++23 "
 	#ifdef _MSC_VER
 			// Needed to use std module
 			"-Wno-include-angled-in-module-purview -Wno-reserved-module-identifier"
@@ -109,10 +109,10 @@ public:
 				"-Wunused "                 // warn on anything being unused
 				"-Woverloaded-virtual "     // warn if you overload (not override) a virtual function
 				"-Wpedantic "               // warn if non-standard C++ is used
-				"-Wconversion "             // warn on type conversions that may lose data
-				"-Wsign-conversion "        // warn on sign conversions
+				//"-Wconversion "             // warn on type conversions that may lose data
+				//"-Wsign-conversion "        // warn on sign conversions
 				"-Wnull-dereference "       // warn if a null dereference is detected
-				"-Wdouble-promotion "       // warn if float is implicit promoted to double
+				//"-Wdouble-promotion "       // warn if float is implicit promoted to double
 				"-Wformat=2 "               // warn on security issues around functions that format output (ie printf)
 				"-Wimplicit-fallthrough "   // warn on statements that fallthrough without an explicit annotation
 				"-Wmisleading-indentation " // warn if indentation implies blocks where blocks do not exist
@@ -122,7 +122,7 @@ public:
 				"-Wuseless-cast "           // warn if you perform a cast to the same type
 				"-Wsuggest-override "       // warn if an overridden member function is not marked 'override' or 'final'
 			},
-			{"_shared", "-std=c++2b -fmodules"},
+			{"_shared", "-std=c++23 -fmodules"},
 			{"debug", "-O0 -g3"},
 			{"release", "-O3"},
 			{"analyze", "--analyze"}
@@ -130,12 +130,12 @@ public:
 	}
 
 	// Get an environment variable
-	std::optional<std::string_view> get_env_value(std::string_view var) const {
+	[[nodiscard]] std::optional<std::string_view> get_env_value(const std::string_view var) const {
 		return env.get(var);
 	}
 
 	// Get the home directory of the user
-	std::filesystem::path get_home_dir() const {
+	[[nodiscard]] std::filesystem::path get_home_dir() const {
 		if (auto home = env.get("HOME"); home)
 			return *home;
 		else
@@ -143,12 +143,12 @@ public:
 	}
 
 	// Get the internal gbs path
-	std::filesystem::path const& get_gbs_internal() const noexcept {
+	[[nodiscard]] std::filesystem::path const& get_gbs_internal() const noexcept {
 		return gbs_internal;
 	}
 
 	// Get the output gbs path
-	std::filesystem::path const& get_gbs_out() const noexcept {
+	[[nodiscard]] std::filesystem::path const& get_gbs_out() const noexcept {
 		return gbs_out;
 	}
 
@@ -168,7 +168,7 @@ public:
 		}
 	}
 
-	std::string_view get_config() const noexcept {
+	[[nodiscard]] std::string_view get_config() const noexcept {
 		return config;
 	}
 
@@ -176,27 +176,27 @@ public:
 		resp_args = std::forward<std::string>(resp);
 	}
 
-	std::string_view get_response_args() const noexcept {
+	[[nodiscard]] std::string_view get_response_args() const noexcept {
 		return resp_args;
 	}
 
 	// Determine output dir, eg. 'gbs.out/msvc/debug
-	auto output_dir() const -> std::filesystem::path {
+	[[nodiscard]] auto output_dir() const -> std::filesystem::path {
 		return gbs_out / selected_cl.name_and_version / config_dir;
 	}
 
 	// Determine response directory
-	auto response_dir() const -> std::filesystem::path {
+	[[nodiscard]] auto response_dir() const -> std::filesystem::path {
 		return gbs_internal / selected_cl.name;
 	}
 
 	// Returns true if the compiler has a response map
-	bool has_response_map() const {
+	[[nodiscard]] bool has_response_map() const {
 		return response_map.contains(selected_cl.name);
 	}
 
 	// Returns the response map for the selected compiler
-	compiler_response_map get_response_map() const {
+	[[nodiscard]] compiler_response_map get_response_map() const {
 		if (response_map.contains(selected_cl.name))
 			return response_map.at(selected_cl.name);
 		else
@@ -209,36 +209,36 @@ public:
 			selected_cl = all_compilers.begin()->second.front();
 	}
 
-	bool is_compiler_selected() const noexcept {
+	[[nodiscard]] bool is_compiler_selected() const noexcept {
 		return !selected_cl.name.empty();
 	}
 
-	compiler const& get_selected_compiler() const noexcept {
+	[[nodiscard]] compiler const& get_selected_compiler() const noexcept {
 		return selected_cl;
 	}
 
-	compiler_collection const& get_compiler_collection() const noexcept {
+	[[nodiscard]] compiler_collection const& get_compiler_collection() const noexcept {
 		return all_compilers;
 	}
 
 	// Returns the name of the currently selected compiler
-	std::string_view compiler_name() const noexcept {
+	[[nodiscard]] std::string_view compiler_name() const noexcept {
 		return selected_cl.name;
 	}
 
-	std::string make_include_path(std::string_view const path) const {
+	[[nodiscard]] std::string make_include_path(std::string_view const path) const {
 		return std::vformat(selected_cl.include, std::make_format_args(path));
 	}
 
 	// Create build command for the currently selected compiler
-	std::string build_command_prefix() const {
+	[[nodiscard]] std::string build_command_prefix() const {
 		auto const compiler = selected_cl.executable.string();
 		auto const out = output_dir().string();
 		return std::vformat(selected_cl.build_command_prefix, std::make_format_args(compiler, out));
 	}
 
 	// Create build args for a single file
-	std::string build_command(std::string_view file, std::filesystem::path const& obj_file) const {
+	[[nodiscard]] std::string build_command(std::string_view file, std::filesystem::path const& obj_file) const {
 		std::string_view const build_cmd = (file.ends_with(".cppm") || file.ends_with(".ixx"))
 			? selected_cl.build_module
 			: selected_cl.build_source;
@@ -248,31 +248,31 @@ public:
 	}
 
 	// Create link command for the currently selected compiler
-	std::string link_command(std::string_view exe_name, std::string_view const out_dir) const {
+	[[nodiscard]] std::string link_command(std::string_view exe_name, std::string_view const out_dir) const {
 		auto const linker = selected_cl.linker.string();
 		return std::vformat(selected_cl.link_command, std::make_format_args(linker, out_dir, exe_name));
 	}
 
 	// Create library command for the currently selected compiler
-	std::string static_library_command(std::string_view const out_name, std::string_view const out_dir) const {
+	[[nodiscard]] std::string static_library_command(std::string_view const out_name, std::string_view const out_dir) const {
 		auto const lib = selected_cl.slib.string();
 		return std::vformat(selected_cl.slib_command, std::make_format_args(lib, out_dir, out_name));
 	}
 
 	// Create library command for the currently selected compiler
-	std::string dynamic_library_command(std::string_view const out_name, std::string_view const out_dir) const {
+	[[nodiscard]] std::string dynamic_library_command(std::string_view const out_name, std::string_view const out_dir) const {
 		auto const lib = selected_cl.dlib.string();
 		return std::vformat(selected_cl.dlib_command, std::make_format_args(lib, out_dir, out_name));
 	}
 
 	// Create a reference to a module
-	auto build_reference(std::string_view module_name) const -> std::string {
+	[[nodiscard]] auto build_reference(std::string_view module_name) const -> std::string {
 		auto const out = (output_dir() / module_name).string();
 		return std::vformat(selected_cl.reference, std::make_format_args(module_name, out));
 	}
 
 	// Create a reference to modules
-	auto build_references(std::set<std::string> const& module_names) const -> std::string {
+	[[nodiscard]] auto build_references(std::set<std::string> const& module_names) const -> std::string {
 		std::string refs;
 		if (!selected_cl.reference.empty()) {
 			for (auto const& s : module_names) {
@@ -283,7 +283,7 @@ public:
 		return refs;
 	}
 
-	std::string build_define(std::string_view const def) const {
+	[[nodiscard]] std::string build_define(std::string_view const def) const {
 		return std::format(" {}{}", selected_cl.define, def);
 	}
 

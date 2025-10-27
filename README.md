@@ -1,98 +1,98 @@
-# Gorking Build System v0.16
-Creating my own build system for fun.
+# Gorking Build System v0.17
 
-# Features
-Uses a fixed directory structure to automatically find source files and compile them.
+A rule-based build system to automatically find source files and compile them. No need for build scripts.
 
-- top-level directory
-  - `src` - source files for main executeable
-  - `lib` - libraries, named subdirectory per library.
-	- `lib/s.libname/` for static library named _libname_
-	- `lib/d.libname/` for dynamic library named _libname_
-  - `unittest` - unit tests (not implemented yet)
-	- One `.cpp` file per test?
-  - `deps` - dependencies (not implemented yet)
-	- fetch from eg. github and build them
-  - `*` (not implemented yet)
-	- other directories, not starting with `.`, are compiled to their own executables
+# Rules
+- A root folder holds one-or-more projects.
+- Source files are recursively found in the `src` folder of each project or library.
+- Projects are placed in subfolders.
+  - The name of the project folder is the name of the resulting executable.
+  - Names starting with `s.` or `d.` produce static- and dynamic libraries, respectively.
+- `lib` folder is for libraries.
+  - Libraries are shared across all projects.
+  - Static libraries are in folders starting with `s.`.
+  - Dynamic libraries are in folders starting with `d.`.
+  - Other folders are added to the includes list. They are not searched for source files.
+  - Include paths for libraries are automatically added to projects.
+    - Also inlcudes `inc` and `include` subfolders, if present.
+- `unittest` folder is for unit tests.
+  - Each `test.*.cpp` file is compiled into a unittest executable `test.*.exe`.
+  - Other sourcefiles are linked to each unittest executable.
+- Files and folders starting with `x.` are ignored.
+- TODO: Files and folders postfixed with `.win`, `.linux`, `.darwin` are only compiled on matching platforms.
+
+## Example folder structure
+- `example`
+  - `lib`
+	- `s.libname1`
+      - `inc`/`src`
+	- `d.libname2`
+      - `inc`/`src`
+  - `example` - main executable
+	- `src`
+    - `unittest`
+  - `other_executeable`
+	- `src`
+    - `unittest`
+  - `d.some_dll`
+    - etc.
+  - etc...
 
 # Usage
-`gbs` **_[commands...]_**
+`gbs [command, ...]`
+
+Calling `gbs` without any commands will do a debug build of the current directory and run all unittests.
 
 The following commands are supported:
-- **version**
-	- Shows the current version of the build system
 
-- **build**_=[directories]_
-	- Builds the current directory.
-	- If no `config` is specified, `debug,warnings` is used by default.
-	- _[directories]_ is not implemented yet.
-
-- **clean**=_[configuration]_
-	- Cleans the build output folder (`gbs.out`).
-	- TODO: only clean specified configuration.
- 
-- **config**=_[configuration]_
-	- Sets the configurations to use for compilation. Currently `debug`, `release`, `analyze` have built-in support, and will be created if not found.
-	- A configuration name corresponds to a response file in the folder `.gbs/`.
-		- Response files are simple text files containing command line arguments for the selected compiler.
-		- They can be created manually or you can use the auto generated ones. You are free to change them as you see fit.
-	- Example: `gbs config=release,analyze build` will perform a release build with additional analysis enabled.
-
-- **run**_=[parameters]_
-	- Runs the last built executable with the optionally specified parameters. If no parameters are specified, the executable is run without parameters.
-	- If no executable is found, an error is returned.
-	- Example: `gbs build run=version` run in gbs' directory will build gbs and run the built executable as `gbs version`.
-
-- **get_cl**=_compiler_:_version_
-	- Downloads the compiler with at least the specified version. Supports clang and gcc.
-	- This also sets the compiler for subsequent commands, as if `cl=` was used.
-	- Example: `gbs get_cl=gcc` will try and download the latest version of gcc.
-	- Example: `gbs get_cl=clang:18` will try and download the latest version 18 of clang _(ie. 18.1.8)_.
-	- Example: `gbs get_cl=clang:17.2.2` will try and download version 17.2.2 of clang.
-
-- **cl**=_compiler_:_version_
-	- Selects the compiler to use for subsequent commands.
-		- If the compiler is not found, an error is returned.
-	- Example: `gbs cl=msvc:19 build cl=clang:17.3.1 build`
-
-- _TODO_ **new**=_project_name_
-	- Creates a new project with the specified name in the current directory.
-	- The project will have the following structure:
-		- `src` - source files for main executeable
-		- `lib` - libraries
-		- `unittest` - unit tests
-		- `deps` - dependencies
-	- _Not implemented yet_
-
-- _TODO_ **unittest**_=[directories]_
-	- Builds and runs unit tests in the specified directories. If no directories are specified, the current directory is used.
-	- Unit tests are expected to be in the `unittest` subdirectory of the specified directory.
-	- _Not implemented yet_
-
-- **enum_cl**
-	- Enumerates installed compilers
-
-- **ide**=_[ide]_
-	- Generates **tasks.vs.json** for the specified IDE. Supported IDEs are `vscode` and `vs`.
-	- Example: `gbs ide=vs` will allow a folder to be opened in Visual Studio and allow the user to right-click the top-most folder and have several build options available, without needing a project or solution.
+* `version` Shows the current version of the build system.
+* `config=<reponse file, ...>` Sets the configurations to use for compilation.
+    * Configurations are provided as a comma-separated list of response files. Currently `debug`, `release`, `analyze` have built-in support, and will be created if not found.
+	* A configuration name corresponds to a response file in the folder `.gbs/`.
+		* Response files are simple text files containing command line arguments for the selected compiler.
+		* They can be created manually or you can use the auto generated ones. You are free to change them as you see fit.
+	* Example: `gbs config=release,analyze build` will do an analyzed release build.
+* `build` Builds the current directory.
+	* If no configuration is specified (via `config` command), `debug,warnings` is used by default.
+* `clean` cleans the build output folder (`gbs.out`).
+    * Uses same format as `config`.
+	* TODO: only clean specified configuration (`=<configuration>`).
+* `run=<parameters>` Runs the last built executable with the optionally specified parameters.
+    * If no parameters are specified, the executable is run without parameters.
+	* `gbs build run="hello cli"` will build and then run the executable as `<exe> hello cli`.
+* `unittest=<args>` Runs built unittests.
+    * `args` are passed verbatim to the unittest executables.
+* `cl=<compiler>:<major.minor.patch>` Selects the compiler to use for subsequent commands.
+	* `gbs cl=msvc build cl=clang:17.3.1 build` will first build with latest msvc, then build with clang 17.3.1.
+* `get_cl=<compiler>:<major.minor.patch>` Downloads the compiler with at least the specified version. Supports clang and gcc.
+	* This also sets the compiler for subsequent commands, as if `cl=...` was used.
+* `enum_cl` Enumerates installed compilers.
+* `ide=<ide name>` Generates **tasks.vs.json** for the specified IDE.
+    * Supported IDEs are `vscode` and `vs`.
+	* Example: `gbs ide=vs` will let a folder to be opened in Visual Studio and allow the user to right-click a folder and have several build options available, without needing a project or solution.
+* _TODO_ `new=<project_name>` Creates a new project with the specified name in the current directory.
+	* If no name is specified, the current directory name is used.
+    * The project will have the following structure:
+		* `src` - source files for main executeable
+		* `lib` - libraries
+		* `unittest` - unit tests
+		* `deps` - dependencies ?
 
 # Supported compilers
-The following compilers can produce a working executeable:
+The following compilers can be used by `gbs` to build `gbs`:
 
 - [x] msvc 19.38+
-- [ ] clang 21+ (crashes on 'gbs' compile when using modules)
-- [x] gcc 15+
+- [x] clang 21+
+- [ ] gcc 15+ (linking error when using `std::print`)
 
 # Upcoming versions (not in a specific order)
-- Compile unit tests in 'unittest'
 - Fetch dependencies in 'deps'
 - Build dependencies in 'deps'
 - Custom build steps (via 'run'?)
 
 ## Todo
 - [ ] Good documentation for all commands
-- [ ] Compiling/running unit tests
+- [x] Compiling/running unit tests
 - [ ] Fetch dependencies from external sites like GitHub.
 	- [ ] Use installed package managers
 	- [ ] Support for compiling externally fetched dependencies
@@ -104,9 +104,9 @@ The following compilers can produce a working executeable:
 - [x] Automatic compilation without build scripts
 	- [x] Find source files automatically
 	- [x] Don't compile things that don't need it
+	- [ ] Don't link things that don't need it
     - [x] Deduce executable name from current directory
-	- [x] Compile module sources
-		- [x] Figure out a way to do it in correct order
+	- [x] Compile module sources in correct order
 	- [x] Compile nested sources
 	- [x] Compile GBS with itself
 - [x] Automated support for `import std;`

@@ -3,100 +3,27 @@
   "defaults": {},
   "configurations": [
     {
-      "name": "[msvc] all sample project",
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "gbs.exe",
+      "currentDir": ".",
+      "name": "gbs.exe"
+    },
+    {
+      "name": "Unittest sample project",
       "type": "default",
       "project": "CMakeLists.txt",
       "currentDir": "./sample_project_all/",
       "projectTarget": "gbs.exe",
       "args": [
-        "version cl=msvc config clean build run"
-      ]
-    },
-    {
-      "name": "[msvc] slib sample project",
-      "type": "default",
-      "project": "CMakeLists.txt",
-      "currentDir": "./sample_project_slib",
-      "projectTarget": "gbs.exe",
-      "args": [
-        "version cl=msvc config clean build run"
-      ]
-    },
-    {
-      "name": "[msvc] dlib sample project",
-      "type": "default",
-      "project": "CMakeLists.txt",
-      "currentDir": "./sample_project_dlib/",
-      "projectTarget": "gbs.exe",
-      "args": [
-        "version cl=msvc config clean build run"
-      ]
-    },
-    {
-      "name": "[clang] all sample project",
-      "type": "default",
-      "project": "CMakeLists.txt",
-      "currentDir": "./sample_project_all/",
-      "projectTarget": "gbs.exe",
-      "args": [
-        "version cl=clang config clean build run"
-      ]
-    },
-    {
-      "name": "[clang] slib sample project",
-      "type": "default",
-      "project": "CMakeLists.txt",
-      "currentDir": "./sample_project_slib",
-      "projectTarget": "gbs.exe",
-      "args": [
-        "version cl=clang config clean build run"
-      ]
-    },
-    {
-      "name": "[clang] dlib sample project",
-      "type": "default",
-      "project": "CMakeLists.txt",
-      "currentDir": "./sample_project_dlib/",
-      "projectTarget": "gbs.exe",
-      "args": [
-        "version cl=clang clean build run"
-      ]
-    },
-    {
-      "name": "[gcc] all sample project",
-      "type": "default",
-      "project": "CMakeLists.txt",
-      "currentDir": "./sample_project_all/",
-      "projectTarget": "gbs.exe",
-      "args": [
-        "version cl=gcc clean build run"
-      ]
-    },
-    {
-      "name": "[gcc] slib sample project",
-      "type": "default",
-      "project": "CMakeLists.txt",
-      "currentDir": "./sample_project_slib",
-      "projectTarget": "gbs.exe",
-      "args": [
-        "version cl=gcc clean build run"
-      ]
-    },
-    {
-      "name": "[gcc] dlib sample project",
-      "type": "default",
-      "project": "CMakeLists.txt",
-      "currentDir": "./sample_project_dlib/",
-      "projectTarget": "gbs.exe",
-      "args": [
-        "version cl=gcc clean build run"
+        "cl=msvc config=debug,warnings,analyze build unittest"
       ]
     },
     {
       "name": "version",
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": "./",
+      "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
         "version"
@@ -106,7 +33,7 @@
       "name": "get_cl",
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": "./",
+      "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
         "get_cl"
@@ -116,7 +43,7 @@
       "name": "Enumerate compilers",
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": "./",
+      "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
         "enum_cl"
@@ -129,7 +56,7 @@
       "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=msvc build run=version"
+        "clean cl=msvc build unittest run=version"
       ]
     },
     {
@@ -139,7 +66,7 @@
       "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=clang build run=version"
+        "clean cl=clang build unittest run=version"
       ]
     },
     {
@@ -149,7 +76,7 @@
       "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=gcc build run=version"
+        "clean cl=gcc build unittest run=version"
       ]
     },
     {
@@ -166,7 +93,7 @@
       "name": "[clang] self analyze",
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": "./test",
+      "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
         "clean cl=clang config=debug,analyze,warnings build"
@@ -176,7 +103,7 @@
       "name": "[msvc] self analyze",
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": "./",
+      "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
         "clean cl=msvc config=debug,analyze,warnings build"

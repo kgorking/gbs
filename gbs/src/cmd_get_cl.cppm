@@ -9,7 +9,7 @@ std::string gcc_get_download_url(std::string_view const version) {
 	// Output: https://github.com/brechtsanders/winlibs_mingw/releases/download/15.2.0posix-13.0.0-ucrt-r1/winlibs-x86_64-posix-seh-gcc-15.2.0-mingw-w64msvcrt-13.0.0-r1.zip
 	//         https://github.com/brechtsanders/winlibs_mingw/releases/download/15.2.0posix-13.0.0-msvcrt-r1/winlibs-x86_64-posix-seh-gcc-15.2.0-mingw-w64msvcrt-13.0.0-r1.zip
 
-	static constexpr std::string_view template_url = "https://github.com/brechtsanders/winlibs_mingw/releases/download/{0}/winlibs-x86_64-posix-seh-gcc-{1}-mingw-w64msvcrt-{2}-{3}.zip";
+	static constexpr std::string_view template_url = "https://github.com/brechtsanders/winlibs_mingw/releases/download/{0}/winlibs-x86_64-posix-seh-gcc-{1}-mingw-w64ucrt-{2}-{3}.zip";
 	std::string_view const gcc_ver = version.substr(0, version.find_first_not_of("0123456789."));
 
 	std::string_view posix_ver = version.substr(version.find_first_of('-') + 1);
@@ -110,7 +110,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 		cl.executable = "mingw64/bin/gcc";
 		version_prefix = "refs/tags/";
 
-		git_search_cmd = std::format("git ls-remote --exit-code --refs --tags --sort=\"-version:refname\" https://github.com/brechtsanders/winlibs_mingw *{}*posix*msvcrt* > {}",
+		git_search_cmd = std::format("git ls-remote --exit-code --refs --tags --sort=\"-version:refname\" https://github.com/brechtsanders/winlibs_mingw *{}*posix*ucrt* > {}",
 			version,
 			"version_list.txt");
 
@@ -126,7 +126,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 			return false;
 		}
 
-		std::string_view const vstools_args = "--passive --wait"
+		constexpr std::string_view vstools_args = "--passive --wait"
 			" --add Microsoft.VisualStudio.Workload.VCTools"
 			" --add Microsoft.VisualStudio.Component.VC.ASAN"
 			" --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"

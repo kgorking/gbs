@@ -71,3 +71,4 @@ bld/
 /.vs/slnx.sqlite-journal
 /test/gcm.cache
 /gcm.cache
+/.idea
