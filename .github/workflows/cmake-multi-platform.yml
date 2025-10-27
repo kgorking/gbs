@@ -51,14 +51,14 @@ jobs:
       if: ${{ matrix.os == 'windows-latest' && matrix.cpp_compiler == 'cl' && matrix.build_type == 'Debug' }}
       run: |
         curl -fSLO https://github.com/kgorking/gbs/releases/download/v0.17-alpha/gbs.exe
-        ./gbs.exe cl=msvc config=debug,warnings build unittest
+        ./gbs.exe cl=msvc config=debug,warnings build unittest=--no-intro
 
     - name: Set up GCC
       if: ${{ startsWith(matrix.cpp_compiler, 'gcc') }}
       run: |
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
           sudo apt update
-          sudo apt install gcc-15 g++-15 libstdc++-13-dev -y
+          sudo apt install gcc-15 g++-15 libstdc++-15-dev -y
 
     - name: Set up Clang
       if: ${{ startsWith(matrix.cpp_compiler, 'clang') }}
@@ -66,7 +66,7 @@ jobs:
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
           sudo ./llvm.sh 21
-          sudo apt install libstdc++-13-dev libc++-21-dev libc++abi-21-dev -y
+          sudo apt install libstdc++-15-dev libc++-21-dev libc++abi-21-dev -y
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
