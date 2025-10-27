@@ -87,9 +87,11 @@ public:
 			},
 			{"_shared",
 				"-std=c++23 "
-	#ifdef _MSC_VER
-			// Needed to use std module
-			"-Wno-include-angled-in-module-purview -Wno-reserved-module-identifier"
+#ifdef _MSC_VER
+				// Needed to use std module
+				"-Wno-include-angled-in-module-purview -Wno-reserved-module-identifier "
+#else
+				 "-stdlib=libc++ "
 #endif
 		},
 		{"debug", "-O0"},
