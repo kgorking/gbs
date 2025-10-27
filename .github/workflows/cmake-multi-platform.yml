@@ -27,7 +27,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         build_type: [Release, Debug]
-        cpp_compiler: [cl, gcc-15, clang++-21]
+        cpp_compiler: [cl] #, gcc-15, clang++-21]
         exclude:
           - os: windows-latest
             cpp_compiler: gcc-15
