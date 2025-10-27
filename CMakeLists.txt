@@ -70,9 +70,8 @@ else()
         -Wextra
         -Werror
         -Wpedantic
-        -fmodule-mapper=../../c++/libc++.modules.json
     )
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang") # GNU/MSVC
-        target_compile_options(gbs PRIVATE -stdlib=libc++)
+        target_compile_options(gbs PRIVATE -stdlib=libc++ -fmodule-mapper=../../c++/libc++.modules.json)
     endif()
 endif()

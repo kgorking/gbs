@@ -56,8 +56,8 @@ jobs:
     - name: Set up GCC
       if: ${{ startsWith(matrix.cpp_compiler, 'gcc') }}
       run: |
-          sudo add-apt-repository universe
-          sudo apt update
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/ppa -y
+          sudo apt-get update
           sudo apt install gcc-15 g++-15 -y
 
     - name: Set up Clang
