@@ -104,7 +104,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 				if (fs::exists(lib / "include")) includes.insert(lib / "include");
 
 				if (!lib.has_extension()) {
-					std::println("<gbs> warning: unknown library prefix for {}", lib.generic_string().c_str());
+					includes.insert(lib);
 					continue;
 				}
 
