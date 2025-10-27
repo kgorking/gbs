@@ -56,6 +56,13 @@ jobs:
           sudo ./llvm.sh 21
           sudo apt install libc++-21-dev libc++abi-21-dev -y
 
+    - name: Compile with GBS v0.17-alpha
+      if: ${{ matrix.os == 'windows-latest' }}
+      run: |
+        curl -fSLO https://github.com/kgorking/gbs/releases/download/v0.17-alpha/gbs.exe
+        ./gbs.exe cl=msvc build unittest
+        ./gbs.exe get_cl=clang cl=clang build unittest
+
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
       id: strings
