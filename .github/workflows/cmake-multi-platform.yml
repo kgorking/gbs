@@ -42,14 +42,16 @@ jobs:
         cmakeVersion: "~4.1.0"
         ninjaVersion: "^1.11.1"
 
+    - uses: actions/checkout@v4
+
+    - uses: ilammy/msvc-dev-cmd@v1
+      if: matrix.os == 'windows-latest'
+
     - name: Compile with GBS v0.17-alpha
       if: ${{ matrix.os == 'windows-latest' && matrix.cpp_compiler == 'cl' && matrix.build_type == 'Debug' }}
       run: |
         curl -fSLO https://github.com/kgorking/gbs/releases/download/v0.17-alpha/gbs.exe
         ./gbs.exe cl=msvc config=debug,warnings build unittest
-
-    - uses: ilammy/msvc-dev-cmd@v1
-      if: matrix.os == 'windows-latest'
 
     - name: Set up GCC
       if: ${{ startsWith(matrix.cpp_compiler, 'gcc') }}
