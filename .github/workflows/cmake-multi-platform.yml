@@ -56,17 +56,17 @@ jobs:
     - name: Set up GCC
       if: ${{ startsWith(matrix.cpp_compiler, 'gcc') }}
       run: |
-          sudo add-apt-repository ppa:ubuntu-toolchain-r/plucky -y
-          sudo apt-get update
-          sudo apt install gcc-15 g++-15 -y
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+          sudo apt update
+          sudo apt install gcc-15 g++-15 libstdc++-13-dev -y
 
     - name: Set up Clang
       if: ${{ startsWith(matrix.cpp_compiler, 'clang') }}
       run: |
-          wget https://apt.llvm.org/llvm.sh || wget https://146.75.30.49/llvm.sh
+          wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
           sudo ./llvm.sh 21
-          sudo apt install libc++-21-dev libc++abi-21-dev -y
+          sudo apt install libstdc++-13-dev libc++-21-dev libc++abi-21-dev -y
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
