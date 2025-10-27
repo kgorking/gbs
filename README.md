@@ -1,40 +1,41 @@
 # Gorking Build System v0.17
 
 A rule-based build system to automatically find source files and compile them. No need for build scripts.
-Your source files are organized in a specific folder structure, and `gbs` will find them and compile them accordingly.
 
 # Rules
 - A root folder holds one-or-more projects.
 - Source files are recursively found in the `src` folder of each project or library.
 - Projects are placed in subfolders.
-  - Name of the project folder is used as the name of the resulting executable.
-  - Names starting with `s.` or `d.` produce static and dynamic libraries, respectively.
-- Libraries are in the `lib` folder.
+  - The name of the project folder is the name of the resulting executable.
+  - Names starting with `s.` or `d.` produce static- and dynamic libraries, respectively.
+- `lib` folder is for libraries.
   - Libraries are shared across all projects.
   - Static libraries are in folders starting with `s.`.
   - Dynamic libraries are in folders starting with `d.`.
   - Other folders are added to the includes list. They are not searched for source files.
   - Include paths for libraries are automatically added to projects.
-    - Also inlucdes `inc` and `include` subfolders, if present.
-- Unit tests are in the `unittest` folder.
+    - Also inlcudes `inc` and `include` subfolders, if present.
+- `unittest` folder is for unit tests.
   - Each `test.*.cpp` file is compiled into a unittest executable `test.*.exe`.
   - Other sourcefiles are linked to each unittest executable.
 - Files and folders starting with `x.` are ignored.
-- TODO: Files and folders postfixed with `.win`, `.linux`, `.mac` are only included on the matching platform.
+- TODO: Files and folders postfixed with `.win`, `.linux`, `.darwin` are only compiled on matching platforms.
 
-## Folder structure
-- `top-level directory`
+## Example folder structure
+- `example`
   - `lib`
 	- `s.libname1`
       - `inc`/`src`
 	- `d.libname2`
       - `inc`/`src`
-  - `project1`
+  - `example` - main executable
 	- `src`
     - `unittest`
-  - `project2`
+  - `other_executeable`
 	- `src`
     - `unittest`
+  - `d.some_dll`
+    - etc.
   - etc...
 
 # Usage
