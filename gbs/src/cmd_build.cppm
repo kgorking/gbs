@@ -179,7 +179,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 	// Compile all source files
 	for(auto const& [index, sources]: all_sources) {
 		if (!ok) return false;
-		std::for_each(std::execution::par_unseq, sources.begin(), sources.end(), [&](auto const& pair) {
+		std::for_each(std::execution::par, sources.begin(), sources.end(), [&](auto const& pair) {
 			auto const& [path, imports] = pair;
 			fs::path const obj = get_object_filepath(path, ctx);
 			if (is_file_out_of_date(path, obj)) {
@@ -190,7 +190,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 	}
 
 	// Link dynamic libraries
-	std::for_each(std::execution::par_unseq, dynamic_libraries.begin(), dynamic_libraries.end(), [&](std::pair<fs::path const, std::vector<fs::path>> const& pair) {
+	std::for_each(std::execution::par, dynamic_libraries.begin(), dynamic_libraries.end(), [&](std::pair<fs::path const, std::vector<fs::path>> const& pair) {
 		if (!ok) return;
 
 		auto const& [p, vec] = pair;
@@ -226,7 +226,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 	liblist.close();
 
 	// Link all the unittests
-	std::for_each(std::execution::par_unseq, unittests.begin(), unittests.end(), [&](std::pair<fs::path const, std::vector<fs::path>>& pair) {
+	std::for_each(std::execution::par, unittests.begin(), unittests.end(), [&](std::pair<fs::path const, std::vector<fs::path>>& pair) {
 		if (!ok) return;
 
 		auto& [p, vec] = pair;
@@ -261,7 +261,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		return false;
 
 	// Link the projects executable
-	std::for_each(std::execution::par_unseq, executables.begin(), executables.end(), [&](std::pair<fs::path const, std::vector<fs::path>> const& pair) {
+	std::for_each(std::execution::par, executables.begin(), executables.end(), [&](std::pair<fs::path const, std::vector<fs::path>> const& pair) {
 		if (!ok)
 			return;
 
