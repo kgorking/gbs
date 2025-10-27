@@ -27,7 +27,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         build_type: [Release, Debug]
-        cpp_compiler: [cl, gcc, clang]
+        cpp_compiler: [cl, gcc-15, clang++-21]
         exclude:
           - os: windows-latest
             cpp_compiler: gcc-15
@@ -60,10 +60,10 @@ jobs:
           sudo apt install libc++-21-dev libc++abi-21-dev -y
 
     - name: Compile with GBS v0.17-alpha
-      if: ${{ matrix.os == 'windows-latest' && matrix.cpp_compiler == 'cl' }}
+      if: ${{ matrix.os == 'windows-latest' && matrix.cpp_compiler == 'cl' && matrix.build_type == 'Debug' }}
       run: |
         curl -fSLO https://github.com/kgorking/gbs/releases/download/v0.17-alpha/gbs.exe
-        ./gbs.exe cl=msvc config=${{ matrix.build_type }},warnings build unittest
+        ./gbs.exe cl=msvc config=debug,warnings build unittest
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
