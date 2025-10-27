@@ -27,7 +27,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         build_type: [Release, Debug]
-        cpp_compiler: [cl] #[gcc-15, clang++-21, cl]
+        cpp_compiler: [cl, gcc, clang]
         exclude:
           - os: windows-latest
             cpp_compiler: gcc-15
@@ -38,6 +38,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: true
+
     - uses: ilammy/msvc-dev-cmd@v1
       if: matrix.os == 'windows-latest'
 
@@ -60,8 +63,7 @@ jobs:
       if: ${{ matrix.os == 'windows-latest' }}
       run: |
         curl -fSLO https://github.com/kgorking/gbs/releases/download/v0.17-alpha/gbs.exe
-        ./gbs.exe cl=msvc build unittest
-        ./gbs.exe get_cl=clang cl=clang build unittest
+        ./gbs.exe cl=${{ matrix.cpp_compiler }} config=${{ matrix.build_type }},warnings build unittest
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
