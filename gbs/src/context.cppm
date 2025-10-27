@@ -93,10 +93,10 @@ public:
 #else
 				 "-stdlib=libc++ "
 #endif
-		},
-		{"debug", "-O0"},
-		{"release", "-O3"},
-		{"analyze", "--analyze -Wno-unused-command-line-argument"} // ignore -c
+			},
+			{"debug", "-O0"},
+			{"release", "-O3"},
+			{"analyze", "--analyze -Wno-unused-command-line-argument"} // ignore -c
 		};
 
 		response_map["gcc"] = {
