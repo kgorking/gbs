@@ -11,7 +11,7 @@ export bool cmd_enum_cl(context& ctx, std::string_view /*args*/) {
 	for (auto const& [name, compilers] : ctx.get_compiler_collection()) {
 		std::println("<gbs>   {}: ", name);
 		for (auto const& c : compilers) {
-			std::println("<gbs>     {}.{} - {}", c.major, c.minor, c.dir.generic_string());
+			std::println("<gbs>     {}.{}.{} - {}", c.major, c.minor, c.patch, c.dir.generic_string());
 		}
 	}
 
