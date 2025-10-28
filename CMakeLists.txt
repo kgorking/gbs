@@ -14,8 +14,8 @@ set(CMAKE_CXX_MODULE_STD ON)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-
 project ("gbs" LANGUAGES CXX)
+
 add_executable (gbs "gbs/src/gbs.cpp" "gbs/src/msvc.cpp")
 target_sources(gbs PUBLIC FILE_SET CXX_MODULES FILES
 	"gbs/src/source_enum.cppm"
@@ -37,7 +37,8 @@ target_sources(gbs PUBLIC FILE_SET CXX_MODULES FILES
     "gbs/src/cmd_unittest.cppm"
     "gbs/src/enumerate_compilers.cppm"
     "gbs/src/enumerate_compilers_clang.cppm"
-    "gbs/src/enumerate_compilers_msvc.cppm" "gbs/src/enumerate_compilers_gcc.cppm")
+    "gbs/src/enumerate_compilers_msvc.cppm"
+    "gbs/src/enumerate_compilers_gcc.cppm")
 
 if(MSVC)
 	target_compile_definitions(gbs PRIVATE _MSVC_STL_HARDENING=1 _MSVC_STL_DESTRUCTOR_TOMBSTONES=1)
@@ -75,8 +76,8 @@ else()
         -Wpedantic
     )
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang") # GNU/MSVC
-        target_compile_options(gbs PRIVATE -stdlib=libc++)# -fmodule-mapper=../../c++/libc++.modules.json)
-        target_link_options(gbs PRIVATE -stdlib=libc++)
+        #target_compile_options(gbs PRIVATE -stdlib=libc++)# -fmodule-mapper=../../c++/libc++.modules.json)
+        #target_link_options(gbs PRIVATE -stdlib=libc++)
     else()
         target_compile_options(gbs PRIVATE -stdlib=libstdc++ -fmodule-mapper=../../c++/libstdc++.modules.json)
         target_link_options(gbs PRIVATE -stdlib=libstdc++)

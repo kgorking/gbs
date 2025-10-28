@@ -6,6 +6,7 @@ import get_source_groups;
 namespace fs = std::filesystem;
 
 bool init_msvc(context const& ctx) {
+#ifdef _MSC_VER
 	// Executes 'vcvars64.bat' and pulls out the INCLUDE, LIB, LIBPATH environment variables
 	constexpr std::string_view include_cmd = R"(echo /I"%INCLUDE:;=" /I"%")";
 	constexpr std::string_view libpath_cmd = R"(echo /LIBPATH:"%LIB:;=" /LIBPATH:"%" /LIBPATH:"%LIBPATH:;=" /LIBPATH:"%")";
@@ -24,6 +25,6 @@ bool init_msvc(context const& ctx) {
 		std::println("<gbs> Error: failed to extract vars from 'vcvars64.bat'");
 		return false;
 	}
-
+#endif
 	return true;
 }

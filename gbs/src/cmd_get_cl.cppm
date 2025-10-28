@@ -117,36 +117,6 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 		get_download_url = gcc_get_download_url;
 		extract_output_dir = "gcc-{0}_{1}";
 	}
-	else if (cl.name == "msvc") {
-		auto const vs_buildtools = homedir / ".gbs" / "vs_BuildTools.exe";
-		std::println("<gbs>    downloading Visual Studio build tools...");
-		if (0 != std::system(std::format("curl -fSL https://aka.ms/vs/{1}/release/vs_BuildTools.exe --output \"{0}\"", vs_buildtools.generic_string(), version).c_str())) {
-			std::filesystem::remove(vs_buildtools);
-			std::println("<gbs>    Error downloading msvc build tools");
-			return false;
-		}
-
-		constexpr std::string_view vstools_args = "--passive --wait"
-			" --add Microsoft.VisualStudio.Workload.VCTools"
-			" --add Microsoft.VisualStudio.Component.VC.ASAN"
-			" --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
-			" --add Microsoft.VisualStudio.Component.VC.Llvm.Clang"
-			" --add Microsoft.VisualStudio.Component.VC.Modules.x86.x64"
-			" --add Microsoft.VisualStudio.Component.VC.140"
-			" --add Microsoft.VisualStudio.Component.VC.v141.x86.x64"
-			" --add Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64";
-
-		std::println("<gbs>    installing Visual Studio build tools, this will take a while...");
-		if (0 != std::system(std::format("{} {}", vs_buildtools.generic_string(), vstools_args).c_str())) {
-			std::filesystem::remove(vs_buildtools);
-			std::println("<gbs>    Error installing msvc build tools");
-			return false;
-		}
-
-		std::filesystem::remove(vs_buildtools);
-		std::println("<gbs>    Download and install successful");
-		return true;
-	}
 	else {
 		std::println("<gbs>    Unsupported compiler {}", cl.name);
 		return false;
