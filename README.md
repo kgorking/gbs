@@ -52,7 +52,7 @@ The following commands are supported:
 		* Response files are simple text files containing command line arguments for the selected compiler.
 		* They can be created manually or you can use the auto generated ones. You are free to change them as you see fit.
 	* Example: `gbs config=release,analyze build` will do an analyzed release build.
-* `build` Builds the current directory.
+* `build=<machine:vendor:os>` Builds the current directory.
 	* If no configuration is specified (via `config` command), `debug,warnings` is used by default.
 * `clean` cleans the build output folder (`gbs.out`).
     * Uses same format as `config`.

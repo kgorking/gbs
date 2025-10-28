@@ -77,14 +77,6 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 
 	std::string(*get_download_url)(std::string_view) = nullptr;
 
-#ifdef _WIN64
-	cl.arch = "x64";
-#elif __linux__
-	cl.arch = "x64";
-#elif _ARM // ??
-	cl.arch = "arm64";
-#endif
-
 	if (cl.name == "clang") {
 		cl.executable = "bin/clang";
 
@@ -171,7 +163,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 	auto const gbs_user_path = std::filesystem::path(homedir) / ".gbs";
 	auto const downloaded_file_path = gbs_user_path / filename;
 	auto const compiler_dir = gbs_user_path / cl.name;
-	auto const download_dir = compiler_dir / std::vformat(extract_output_dir, std::make_format_args(version, cl.arch));
+	auto const download_dir = compiler_dir / std::vformat(extract_output_dir, std::make_format_args(version, "x64"));
 	auto const dest_dir = compiler_dir / std::format("{}_{}.{}.{}", cl.name, cl.major, cl. minor, cl.patch);
 
 	// Check if already downloaded

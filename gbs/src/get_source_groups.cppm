@@ -23,8 +23,8 @@ export using depth_ordered_sources_map = std::map<std::size_t, source_group>;
 
 export bool should_not_exclude(fs::path const& path) {
 	return
-		!path.string().starts_with("x.") &&
-		!path.filename().stem().string().starts_with("x.");
+		!path.generic_string().starts_with("x.") &&
+		!path.filename().stem().generic_string().starts_with("x.");
 }
 
 // Recursively merge a files child dependencies with its own dependencies.

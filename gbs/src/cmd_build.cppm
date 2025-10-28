@@ -32,14 +32,17 @@ static std::string make_build_command(fs::path const& path, std::set<std::string
 	std::string const define = path_defines.contains(parent_dir) ? ctx.build_define(path_defines.at(parent_dir)) : "";
 
 	return ctx.build_command_prefix() +
-		ctx.build_command(path.string(), obj) +
+		ctx.build_command(path.generic_string(), obj) +
+		ctx.build_target_triple() +
 		ctx.get_response_args().data() +
 		ctx.build_references(imports) +
 		define;
 }
 
 // The build command
-export bool cmd_build(context& ctx, std::string_view /*const args*/) {
+export bool cmd_build(context& ctx, std::string_view target) {
+	std::println("<gbs> Building...");
+
 	// Bail if no compiler is selected
 	auto const& selected_cl = ctx.get_selected_compiler();
 	if (selected_cl.name.empty()) {
@@ -52,8 +55,8 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		if (!cmd_config(ctx, "debug,warnings"))
 			return false;
 
-
-	std::println("<gbs> Building...");
+	// Set the target triple in the context
+	ctx.set_target_triple(target);
 
 	// Make sure the output and response directories exist
 	fs::create_directories(ctx.output_dir());
@@ -108,7 +111,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 					continue;
 				}
 
-				auto const source_files = get_grouped_source_files(lib / "src");
+				auto source_files = get_grouped_source_files(lib / "src");
 				auto const files_view = source_files | std::views::values | std::views::join | std::views::keys;
 				if (lib.stem() == "s") {
 					for (fs::path const& path : files_view) {
@@ -194,7 +197,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		if (!ok) return;
 
 		auto const& [p, vec] = pair;
-		std::string const name = p.extension().string().substr(1);
+		std::string const name = p.extension().generic_string().substr(1);
 
 		// Create the object list file for the .lib file
 		fs::path objlist_name = name + "_OBJLIST";
@@ -231,10 +234,10 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 
 		auto& [p, vec] = pair;
 
-		std::string const name = p.stem().string();
+		std::string const name = p.stem().generic_string();
 
 		// Partion the source files into unittests and support files
-		auto it = std::ranges::partition(vec, [](fs::path const& path) { return !path.filename().string().starts_with("test."); });
+		auto it = std::ranges::partition(vec, [](fs::path const& path) { return !path.filename().generic_string().starts_with("test."); });
 
 		// Create the object list file for non-test files
 		fs::path objlist_name = name + "_OBJLIST";
@@ -248,7 +251,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		// Link each unittest
 		std::ranges::for_each(it, [&](fs::path const& src) {
 			if (!ok) return;
-			std::string const test_name = src.stem().string();
+			std::string const test_name = src.stem().generic_string();
 
 			std::println("<gbs> Linking unittest '{}'...", test_name);
 			std::string const obj_resp = std::format(" @{0}/{1} {0}/{2}.obj", ctx.output_dir().generic_string(), objlist_name.generic_string(), test_name);
@@ -267,7 +270,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 
 		auto const& [p, vec] = pair;
 
-		std::string const name = p == "." ? fs::current_path().stem().string() : p.stem().string();
+		std::string const name = p == "." ? fs::current_path().stem().generic_string() : p.stem().generic_string();
 
 		// Create the object list file
 		fs::path objlist_name = name + "_OBJLIST";

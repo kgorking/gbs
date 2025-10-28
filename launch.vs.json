@@ -50,7 +50,7 @@
       ]
     },
     {
-      "name": "[msvc] self",
+      "name": "[msvc] build",
       "type": "default",
       "project": "CMakeLists.txt",
       "currentDir": ".",
@@ -60,7 +60,7 @@
       ]
     },
     {
-      "name": "[clang] self",
+      "name": "[clang] build",
       "type": "default",
       "project": "CMakeLists.txt",
       "currentDir": ".",
@@ -70,7 +70,17 @@
       ]
     },
     {
-      "name": "[gcc] self",
+      "name": "[clang] build for linux",
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": ".",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "clean cl=clang:22 build unittest run=version"
+      ]
+    },
+    {
+      "name": "[gcc] build",
       "type": "default",
       "project": "CMakeLists.txt",
       "currentDir": ".",

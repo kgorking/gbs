@@ -22,14 +22,14 @@ export bool cmd_unittest(context& ctx, std::string_view args) {
 		if (!it.is_regular_file())
 			continue;
 
-		if(it.path().extension() != ".exe" || !it.path().filename().string().starts_with("test."))
+		if(it.path().extension() != ".exe" || !it.path().filename().generic_string().starts_with("test."))
 			continue;
 
-		std::println("<gbs> Running unittest {:?}", it.path().filename().string());
+		std::println("<gbs> Running unittest \"{0}\"", it.path().filename().generic_string());
 
-		auto const cmd = std::format("call {:?} {}", it.path().generic_string(), args);
+		auto const cmd = std::format("call \"{0}\" {1}", it.path().generic_string(), args);
 		if (0 != std::system(cmd.c_str())) {
-			std::println(std::cerr, "<gbs> Unittest '{}' failed.", it.path().filename().string());
+			std::println(std::cerr, "<gbs> Unittest '{}' failed.", it.path().filename().generic_string());
 			return false;
 		}
 

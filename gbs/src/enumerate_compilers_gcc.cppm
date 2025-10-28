@@ -11,7 +11,7 @@ export void enumerate_compilers_gcc(environment const& env, auto&& callback) {
 		return;
 
 	for (auto const& dir : std::filesystem::directory_iterator(download_dir)) {
-		auto const path = dir.path().filename().string();
+		auto const path = dir.path().filename().generic_string();
 		std::string_view gcc_version = path;
 
 		if (path.starts_with("gcc_")) {
@@ -30,7 +30,6 @@ export void enumerate_compilers_gcc(environment const& env, auto&& callback) {
 			auto const& actual_path = dir.path();
 
 			comp.name = "gcc";
-			comp.arch = "x64";
 			comp.dir = dir;
 			comp.executable = actual_path / "bin" / "g++";
 			comp.linker = comp.executable;
@@ -69,6 +68,7 @@ export void enumerate_compilers_gcc(environment const& env, auto&& callback) {
 			comp.define = "-D";
 			comp.include = "-I{0}";
 			comp.reference = "";
+			comp.target = " -target {} ";
 			callback(std::move(comp));
 		}
 	}

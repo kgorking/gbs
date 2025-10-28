@@ -5,7 +5,7 @@ import get_source_groups;
 
 namespace fs = std::filesystem;
 
-bool init_msvc(context const& ctx) {
+bool init_msvc([[maybe_unused]] context const& ctx) {
 #ifdef _MSC_VER
 	// Executes 'vcvars64.bat' and pulls out the INCLUDE, LIB, LIBPATH environment variables
 	constexpr std::string_view include_cmd = R"(echo /I"%INCLUDE:;=" /I"%")";
@@ -16,7 +16,7 @@ bool init_msvc(context const& ctx) {
 
 	std::string const vcvars_cmd = std::format(R"("cd {0} && {1:?} -no_logo -arch=amd64 -host_arch=amd64 && call {2} >INCLUDE && call {3} >LIBPATH")",
 		ctx.output_dir().generic_string(),
-		vcvars.string(),
+		vcvars.generic_string(),
 		include_cmd,
 		libpath_cmd);
 	//std::puts(vcvars_cmd.c_str());

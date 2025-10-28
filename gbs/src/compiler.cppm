@@ -2,13 +2,11 @@ export module compiler;
 import std;
 import env;
 
-constexpr std::array<std::string_view, 1> archs = { /*"arm64",*/ "x64" };
-
 export struct compiler {
 	int major = 0, minor = 0, patch = 0;
 	std::string name_and_version;
 	std::string_view name;
-	std::string_view arch;
+	//std::string_view arch;
 	std::string_view build_source;
 	std::string_view build_module;
 	std::string_view build_command_prefix;
@@ -18,6 +16,7 @@ export struct compiler {
 	std::string_view define;
 	std::string_view include;
 	std::string_view reference;
+	std::string_view target;
 	std::filesystem::path dir;
 	std::filesystem::path executable;
 	std::filesystem::path linker;

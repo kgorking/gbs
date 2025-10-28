@@ -12,6 +12,7 @@ export class context {
 	// Configuration of compile ('debug,analyze', etc...)
 	std::string_view config{};
 	std::string config_dir{};
+	std::string target_triple;
 
 	// Folder to store gbs related files
 	const std::filesystem::path gbs_internal{ ".gbs" };
@@ -175,6 +176,14 @@ public:
 		return config;
 	}
 
+	void set_target_triple(std::string_view const target) noexcept {
+		target_triple = target;
+	}
+
+	[[nodiscard]] std::string_view get_target_triple() const noexcept {
+		return target_triple;
+	}
+
 	void set_response_args(std::string&& resp) noexcept {
 		resp_args = std::forward<std::string>(resp);
 	}
@@ -235,14 +244,14 @@ public:
 
 	// Create build command for the currently selected compiler
 	[[nodiscard]] std::string build_command_prefix() const {
-		auto const compiler = selected_cl.executable.string();
-		auto const out = output_dir().string();
+		auto const compiler = selected_cl.executable.generic_string();
+		auto const out = output_dir().generic_string();
 		return std::vformat(selected_cl.build_command_prefix, std::make_format_args(compiler, out));
 	}
 
 	// Create build args for a single file
 	[[nodiscard]] std::string build_command(std::string_view file, std::filesystem::path const& obj_file) const {
-		std::string_view const build_cmd = (file.ends_with(".cppm") || file.ends_with(".ixx"))
+		std::string_view const build_cmd = (file.ends_with(".cppm") || file.ends_with(".ixx") || file.ends_with(".cc"))
 			? selected_cl.build_module
 			: selected_cl.build_source;
 
@@ -250,27 +259,34 @@ public:
 		return std::vformat(build_cmd, std::make_format_args(file, str));
 	}
 
+	// Create target triple args
+	[[nodiscard]] std::string build_target_triple() const {
+		if (target_triple.empty())
+			return "";
+		return std::vformat(selected_cl.target, std::make_format_args(target_triple));
+	}
+
 	// Create link command for the currently selected compiler
 	[[nodiscard]] std::string link_command(std::string_view exe_name, std::string_view const out_dir) const {
-		auto const linker = selected_cl.linker.string();
+		auto const linker = selected_cl.linker.generic_string();
 		return std::vformat(selected_cl.link_command, std::make_format_args(linker, out_dir, exe_name));
 	}
 
 	// Create library command for the currently selected compiler
 	[[nodiscard]] std::string static_library_command(std::string_view const out_name, std::string_view const out_dir) const {
-		auto const lib = selected_cl.slib.string();
+		auto const lib = selected_cl.slib.generic_string();
 		return std::vformat(selected_cl.slib_command, std::make_format_args(lib, out_dir, out_name));
 	}
 
 	// Create library command for the currently selected compiler
 	[[nodiscard]] std::string dynamic_library_command(std::string_view const out_name, std::string_view const out_dir) const {
-		auto const lib = selected_cl.dlib.string();
+		auto const lib = selected_cl.dlib.generic_string();
 		return std::vformat(selected_cl.dlib_command, std::make_format_args(lib, out_dir, out_name));
 	}
 
 	// Create a reference to a module
 	[[nodiscard]] auto build_reference(std::string_view module_name) const -> std::string {
-		auto const out = (output_dir() / module_name).string();
+		auto const out = (output_dir() / module_name).generic_string();
 		return std::vformat(selected_cl.reference, std::make_format_args(module_name, out));
 	}
 
@@ -279,7 +295,7 @@ public:
 		std::string refs;
 		if (!selected_cl.reference.empty()) {
 			for (auto const& s : module_names) {
-				auto const out = (output_dir() / s).string();
+				auto const out = (output_dir() / s).generic_string();
 				refs += std::vformat(selected_cl.reference, std::make_format_args(s, out));
 			}
 		}
@@ -297,7 +313,7 @@ public:
 			});
 
 		// Sort compilers from the highest version to lowest
-		for (std::vector<compiler>& compilers : all_compilers | std::views::values) {
+		for (auto& [name, compilers] : all_compilers) {
 			std::ranges::sort(compilers, [](compiler const& c1, compiler const& c2) {
 				if (c1.major == c2.major)
 					if (c1.minor == c2.minor)
@@ -310,7 +326,7 @@ public:
 		}
 
 		// Patch up clang compilers to use msvc std module on windows
-	#ifdef _MSC_VER
+	#if 0//def _MSC_VER
 		if(all_compilers.contains("clang") && all_compilers.contains("msvc")) {
 			// Get the newest msvc compiler
 			compiler const& msvc_compiler = all_compilers["msvc"].front();
@@ -324,13 +340,10 @@ public:
 	}
 
 	bool set_compiler(std::string_view comp) {
-		auto split = comp | std::views::split(':'); // cl:version:arch
-		std::string_view cl, version, arch;
+		auto split = comp | std::views::split(':'); // cl:version
+		std::string_view cl, version;
 
 		switch (std::ranges::distance(split)) {
-		case 3:
-			// Version and architecture requested
-			arch = std::string_view{ *std::next(split.begin(), 2) }; [[fallthrough]];
 		case 2:
 			// Version requested
 			version = std::string_view{ *std::next(split.begin()) }; [[fallthrough]];
@@ -340,7 +353,7 @@ public:
 			break;
 
 		default:
-			std::println("<gbs>   Error: ill-formed compiler descriptor: {}", comp);
+			std::println("<gbs>   Error: ill-formed compiler descriptor: '{}'", comp);
 			std::exit(1);
 		}
 
@@ -377,22 +390,7 @@ public:
 			return {};
 		}
 
-		if (arch.empty()) {
-			selected_cl = version_compilers.front();
-			return true;
-		}
-
-		// Select architecture
-		auto arch_compilers = version_compilers | std::views::filter([arch](compiler const& c) {
-			return arch == c.arch;
-			});
-
-		if (arch_compilers.empty()) {
-			std::println("<gbs>   Error: A compiler with architecture '{}' was not found.", arch);
-			return false;
-		}
-
-		selected_cl = arch_compilers.front();
+		selected_cl = version_compilers.front();
 		return true;
 	}
 
