@@ -3,6 +3,7 @@ import std;
 import env;
 import compiler;
 import monad;
+import enumerate_compilers;
 
 export class context {
 	using compiler_collection = std::unordered_map<std::string_view, std::vector<compiler>>;

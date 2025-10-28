@@ -1,6 +1,5 @@
 export module cmd_enum_cl;
 import std;
-import compiler;
 import context;
 
 export bool cmd_enum_cl(context& ctx, std::string_view /*args*/) {

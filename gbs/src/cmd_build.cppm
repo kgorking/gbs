@@ -60,7 +60,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 
 #ifdef _MSC_VER
 	// Initialize msvc environment
-	if (selected_cl.name == "msvc" || selected_cl.name == "clang") {
+	if (selected_cl.name == "msvc" /*|| selected_cl.name == "clang"*/) {
 		extern bool init_msvc(context const&);
 		if (!init_msvc(ctx))
 			return false;
