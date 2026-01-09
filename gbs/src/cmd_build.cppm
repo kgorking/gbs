@@ -1,5 +1,19 @@
+module;
+#include <string>
+#include <string_view>
+#include <locale>
+#include <filesystem>
+#include <set>
+#include <unordered_map>
+#include <unordered_set>
+#include <print>
+#include <iostream>
+#include <shared_mutex>
+#include <ranges>
+#include <fstream>
+#include <algorithm>
+#include <execution>
 export module cmd_build;
-import std;
 import env;
 import context;
 import get_source_groups;
@@ -29,14 +43,14 @@ static fs::path get_object_filepath(fs::path const& path, context const& ctx) {
 
 static std::string make_build_command(fs::path const& path, std::set<std::string> const& imports, fs::path const& obj, std::unordered_map<fs::path, std::string> const& path_defines, context const& ctx) {
 	fs::path const parent_dir = path.parent_path();
-	std::string const define = path_defines.contains(parent_dir) ? ctx.build_define(path_defines.at(parent_dir)) : "";
+	std::string const def= path_defines.contains(parent_dir) ? ctx.build_define(path_defines.at(parent_dir)) : "";
 
 	return ctx.build_command_prefix() +
 		ctx.build_command(path.generic_string(), obj) +
 		ctx.build_target_triple() +
 		ctx.get_response_args().data() +
 		ctx.build_references(imports) +
-		define;
+		def;
 }
 
 // The build command
@@ -111,8 +125,9 @@ export bool cmd_build(context& ctx, std::string_view target) {
 					continue;
 				}
 
-				auto source_files = get_grouped_source_files(lib / "src");
-				auto const files_view = source_files | std::views::values | std::views::join | std::views::keys;
+				depth_ordered_sources_map const& source_files = get_grouped_source_files(lib / "src");
+				auto const files_view = std::views::keys(std::views::join(std::views::values(source_files)));
+
 				if (lib.stem() == "s") {
 					for (fs::path const& path : files_view) {
 						if (should_not_exclude(path))
@@ -131,7 +146,7 @@ export bool cmd_build(context& ctx, std::string_view target) {
 		else {
 			if (fs::exists(p / "src")) {
 				auto const source_files = get_grouped_source_files(p / "src");
-				auto const files_view = source_files | std::views::values | std::views::join | std::views::keys;
+				auto const files_view = std::views::keys(std::views::join(std::views::values(source_files)));
 				executables[p].append_range(files_view);
 
 				for (auto [index, sources] : source_files)
@@ -140,7 +155,7 @@ export bool cmd_build(context& ctx, std::string_view target) {
 
 			if (fs::exists(p / "unittest")) {
 				auto const source_files = get_grouped_source_files(p / "unittest");
-				auto const files_view = source_files | std::views::values | std::views::join | std::views::keys;
+				auto const files_view = std::views::keys(std::views::join(std::views::values(source_files)));
 				unittests[p].append_range(files_view);
 
 				for (auto [index, sources] : source_files)
@@ -210,13 +225,17 @@ export bool cmd_build(context& ctx, std::string_view target) {
 
 		std::string const cmd = ctx.dynamic_library_command(name, ctx.output_dir().generic_string()) + std::format(" @{}/{}", ctx.output_dir().generic_string(), objlist_name.generic_string());
 
-		{
-			std::scoped_lock sl(mut_libs);
-			libs.insert(ctx.output_dir() / (name + ".lib"));
-		}
-
 		std::println("<gbs> Creating dynamic library '{}'...", name);
 		ok = ok && (0 == std::system(cmd.c_str()));
+
+		// If a .lib was created, add it to the library list
+		fs::path const out_lib = ctx.output_dir() / (name + ".lib");
+		if (fs::exists(out_lib))
+		{
+			std::scoped_lock sl(mut_libs);
+			libs.insert(out_lib);
+		}
+
 		});
 
 	if (!ok)
@@ -236,7 +255,7 @@ export bool cmd_build(context& ctx, std::string_view target) {
 
 		std::string const name = p.stem().generic_string();
 
-		// Partion the source files into unittests and support files
+		// Partition the source files into unittests and support files
 		auto it = std::ranges::partition(vec, [](fs::path const& path) { return !path.filename().generic_string().starts_with("test."); });
 
 		// Create the object list file for non-test files

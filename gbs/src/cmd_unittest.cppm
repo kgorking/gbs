@@ -1,5 +1,8 @@
+module;
+#include <filesystem>
+#include <print>
+#include <iostream>
 export module cmd_unittest;
-import std;
 import context;
 
 namespace fs = std::filesystem;
@@ -27,7 +30,8 @@ export bool cmd_unittest(context& ctx, std::string_view args) {
 
 		std::println("<gbs> Running unittest \"{0}\"", it.path().filename().generic_string());
 
-		auto const cmd = std::format("call \"{0}\" {1}", it.path().generic_string(), args);
+		std::string_view wsl = ctx.get_selected_compiler().is_wsl ? "wsl" : "";
+		auto const cmd = std::format("{} {} {}", wsl, it.path().generic_string(), args);
 		if (0 != std::system(cmd.c_str())) {
 			std::println(std::cerr, "<gbs> Unittest '{}' failed.", it.path().filename().generic_string());
 			return false;

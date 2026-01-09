@@ -1,5 +1,6 @@
+module;
+#include <filesystem>
 export module enumerate_compilers_msvc;
-import std;
 import env;
 import compiler;
 

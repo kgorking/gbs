@@ -1,6 +1,11 @@
 module;
+#include <filesystem>
+#include <string>
+#include <set>
+#include <unordered_map>
+#include <map>
+#include <array>
 export module get_source_groups;
-import std;
 import dep_scan;
 
 namespace fs = std::filesystem;

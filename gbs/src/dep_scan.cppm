@@ -1,5 +1,9 @@
+module;
+#include <string>
+#include <filesystem>
+#include <set>
+#include <fstream>
 export module dep_scan;
-import std;
 
 export struct source_dependency {
 	std::filesystem::path path;

@@ -1,5 +1,7 @@
+module;
+#include <string>
+#include <format>
 export module cmd_config;
-import std;
 import context;
 
 // Converts arguments into response files

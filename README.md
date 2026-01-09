@@ -52,6 +52,8 @@ The following commands are supported:
 		* Response files are simple text files containing command line arguments for the selected compiler.
 		* They can be created manually or you can use the auto generated ones. You are free to change them as you see fit.
 	* Example: `gbs config=release,analyze build` will do an analyzed release build.
+* `cl=<compiler>:<major.minor.patch>` Selects the compiler to use for subsequent commands.
+	* `gbs cl=msvc build cl=clang:17.3.1 build` will first build with latest msvc, then build with clang 17.3.1.
 * `build=<machine:vendor:os>` Builds the current directory.
 	* If no configuration is specified (via `config` command), `debug,warnings` is used by default.
 * `clean` cleans the build output folder (`gbs.out`).
@@ -62,8 +64,6 @@ The following commands are supported:
 	* `gbs build run="hello cli"` will build and then run the executable as `<exe> hello cli`.
 * `unittest=<args>` Runs built unittests.
     * `args` are passed verbatim to the unittest executables.
-* `cl=<compiler>:<major.minor.patch>` Selects the compiler to use for subsequent commands.
-	* `gbs cl=msvc build cl=clang:17.3.1 build` will first build with latest msvc, then build with clang 17.3.1.
 * `get_cl=<compiler>:<major.minor.patch>` Downloads the compiler with at least the specified version. Supports clang and gcc.
 	* This also sets the compiler for subsequent commands, as if `cl=...` was used.
 * `enum_cl` Enumerates installed compilers.

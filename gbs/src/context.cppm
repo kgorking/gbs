@@ -1,8 +1,15 @@
+module;
+#include <string_view>
+#include <filesystem>
+#include <unordered_map>
+#include <print>
+#include <iostream>
+#include <fstream>
+#include <set>
+#include <ranges>
 export module context;
-import std;
 import env;
 import compiler;
-import monad;
 import enumerate_compilers;
 
 export class context {
@@ -100,6 +107,7 @@ public:
 			{"release", "-O3"},
 			{"analyze", "--analyze -Wno-unused-command-line-argument"} // ignore -c
 		};
+		response_map["wsl.clang"] = response_map["clang"];
 
 		response_map["gcc"] = {
 			{"warnings",
@@ -168,7 +176,9 @@ public:
 			std::println(std::cerr, "<gbs> Error: could not create output build directory: '{}'", error_code.message());
 		}
 		else {
-			config_dir = as_monad(config).replace(',', '_').to<std::string>();
+			config_dir = config;
+			std::replace(config_dir.begin(), config_dir.end(), ',', '_');
+			//config_dir = as_monad(config).replace(',', '_').to<std::string>();
 		}
 	}
 
@@ -314,7 +324,7 @@ public:
 
 		// Sort compilers from the highest version to lowest
 		for (auto& [name, compilers] : all_compilers) {
-			std::ranges::sort(compilers, [](compiler const& c1, compiler const& c2) {
+			std::sort(compilers.begin(), compilers.end(), [](compiler const& c1, compiler const& c2) {
 				if (c1.major == c2.major)
 					if (c1.minor == c2.minor)
 						return c1.patch > c2.patch;

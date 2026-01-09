@@ -1,5 +1,10 @@
+module;
+#include <filesystem>
+#include <fstream>
+#include <print>
+#include <string>
+#include <string_view>
 export module cmd_get_cl;
-import std;
 import compiler;
 import context;
 import env;

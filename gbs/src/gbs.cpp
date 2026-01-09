@@ -1,4 +1,6 @@
-﻿import std;
+﻿#include <print>
+#include <unordered_map>
+
 import compiler;
 import context;
 import monad;
@@ -26,7 +28,7 @@ int main(const int argc, char const* argv[], char const** envp) {
 		return 0;
 	}
 
-	static std::unordered_map<std::string_view, bool(*)(context&, std::string_view)> const commands = {
+	auto const commands = std::unordered_map<std::string_view, bool(*)(context&, std::string_view)> {
 		{"version", cmd_version},
 		{"enum_cl", cmd_enum_cl},
 		{"get_cl", cmd_get_cl},

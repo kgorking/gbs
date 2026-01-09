@@ -76,7 +76,7 @@
       "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=clang:22 build unittest run=version"
+        "clean cl=wsl.clang:22 build unittest run=version"
       ]
     },
     {
