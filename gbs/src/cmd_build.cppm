@@ -70,7 +70,7 @@ export bool cmd_build(context& ctx, std::string_view /*target*/) {
 		if (!cmd_config(ctx, "debug,warnings"))
 			return false;
 
-	// Set the target triple in the context
+	// Set the target operating system in the context
 	if (ctx.get_selected_compiler().name == "msvc") {
 		ctx.set_target_os(operating_system::windows);
 	}
@@ -86,7 +86,6 @@ export bool cmd_build(context& ctx, std::string_view /*target*/) {
 			throw std::runtime_error("Unable to determine target os.");
 		}
 	}
-
 
 	// Make sure the output and response directories exist
 	fs::create_directories(ctx.output_dir());
@@ -104,7 +103,6 @@ export bool cmd_build(context& ctx, std::string_view /*target*/) {
 	std::set<fs::path> libs;
 	std::set<fs::path> objects;
 	std::shared_mutex mut_libs;
-	//std::shared_mutex mut_objs;
 
 	// Containers for all source files, includes, defines and targets
 	depth_ordered_sources_map all_sources;
@@ -128,6 +126,7 @@ export bool cmd_build(context& ctx, std::string_view /*target*/) {
 			std::println(std::cerr, "             '{}'", fs::current_path().generic_string());
 			return false;
 		}
+
 		if ("lib" == p) {
 			// 'lib' directory: process all libraries shared between all the projects
 			for (auto dir : fs::directory_iterator("lib")) {
