@@ -1,18 +1,20 @@
-﻿import std;
-import compiler;
-import context;
-import monad;
+﻿#include <print>
+#include <ranges>
+#include <span>
+#include <unordered_map>
 
 import cmd_version;
 import cmd_build;
 import cmd_get_cl;
 import cmd_enum_cl;
 import cmd_clean;
-import cmd_run;
 import cmd_cl;
 import cmd_ide;
 import cmd_config;
 import cmd_unittest;
+
+import context;
+import compiler;
 
 int main(const int argc, char const* argv[], char const** envp) {
 	auto ctx = context{ envp };
@@ -26,7 +28,7 @@ int main(const int argc, char const* argv[], char const** envp) {
 		return 0;
 	}
 
-	static std::unordered_map<std::string_view, bool(*)(context&, std::string_view)> const commands = {
+	auto const commands = std::unordered_map<std::string_view, bool(*)(context&, std::string_view)> {
 		{"version", cmd_version},
 		{"enum_cl", cmd_enum_cl},
 		{"get_cl", cmd_get_cl},
@@ -34,7 +36,6 @@ int main(const int argc, char const* argv[], char const** envp) {
 		{"config", cmd_config},
 		{"clean", cmd_clean},
 		{"build", cmd_build},
-		{"run", cmd_run},
 		{"ide", cmd_ide},
 		{"unittest", cmd_unittest}
 	};

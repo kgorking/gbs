@@ -1,5 +1,10 @@
+module;
+#include <filesystem>
+#include <fstream>
+#include <print>
+#include <string>
+#include <string_view>
 export module cmd_get_cl;
-import std;
 import compiler;
 import context;
 import env;
@@ -8,11 +13,16 @@ std::string gcc_get_download_url(std::string_view const version) {
 	// Input:  15.2.0posix-13.0.0-msvcrt-r1
 	// Output: https://github.com/brechtsanders/winlibs_mingw/releases/download/15.2.0posix-13.0.0-ucrt-r1/winlibs-x86_64-posix-seh-gcc-15.2.0-mingw-w64msvcrt-13.0.0-r1.zip
 	//         https://github.com/brechtsanders/winlibs_mingw/releases/download/15.2.0posix-13.0.0-msvcrt-r1/winlibs-x86_64-posix-seh-gcc-15.2.0-mingw-w64msvcrt-13.0.0-r1.zip
+	//         https://github.com/brechtsanders/winlibs_mingw/releases/download/16.0.0-snapshot20251026posix-14.0.0-ucrt-r1/winlibs-x86_64-posix-seh-gcc-16.0.0-snapshot20251026-mingw-w64ucrt-14.0.0-r1.zip
+	//         https://github.com/brechtsanders/winlibs_mingw/releases/download/16.0.0-snapshot20251026posix-14.0.0-msvcrt-r1/winlibs-x86_64-posix-seh-gcc-16.0.0-snapshot20251026-mingw-w64msvcrt-14.0.0-r1.zip
+	// 
+	//static constexpr std::string_view template_url = "https://github.com/brechtsanders/winlibs_mingw/releases/download/{0}/winlibs-x86_64-posix-seh-gcc-{1}-mingw-w64ucrt-{2}-{3}.zip";
+	static constexpr std::string_view template_url =   "https://github.com/brechtsanders/winlibs_mingw/releases/download/{0}/winlibs-x86_64-posix-seh-gcc-{1}-mingw-w64msvcrt-{2}-{3}.zip";
 
-	static constexpr std::string_view template_url = "https://github.com/brechtsanders/winlibs_mingw/releases/download/{0}/winlibs-x86_64-posix-seh-gcc-{1}-mingw-w64ucrt-{2}-{3}.zip";
-	std::string_view const gcc_ver = version.substr(0, version.find_first_not_of("0123456789."));
+	std::size_t const posix_pos = version.find("posix-");
+	std::string_view const gcc_ver = version.substr(0, posix_pos);
 
-	std::string_view posix_ver = version.substr(version.find_first_of('-') + 1);
+	std::string_view posix_ver = version.substr(posix_pos + 6);
 	posix_ver = posix_ver.substr(0, posix_ver.find_first_of('-'));
 
 	std::string_view const release_ver = version.substr(version.rfind('-') + 1);
@@ -77,14 +87,6 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 
 	std::string(*get_download_url)(std::string_view) = nullptr;
 
-#ifdef _WIN64
-	cl.arch = "x64";
-#elif __linux__
-	cl.arch = "x64";
-#elif _ARM // ??
-	cl.arch = "arm64";
-#endif
-
 	if (cl.name == "clang") {
 		cl.executable = "bin/clang";
 
@@ -110,42 +112,12 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 		cl.executable = "mingw64/bin/gcc";
 		version_prefix = "refs/tags/";
 
-		git_search_cmd = std::format("git ls-remote --exit-code --refs --tags --sort=\"-version:refname\" https://github.com/brechtsanders/winlibs_mingw *{}*posix*ucrt* > {}",
+		git_search_cmd = std::format("git ls-remote --exit-code --refs --tags --sort=\"-version:refname\" https://github.com/brechtsanders/winlibs_mingw *{}*posix*msvcrt* > {}",
 			version,
 			"version_list.txt");
 
 		get_download_url = gcc_get_download_url;
 		extract_output_dir = "gcc-{0}_{1}";
-	}
-	else if (cl.name == "msvc") {
-		auto const vs_buildtools = homedir / ".gbs" / "vs_BuildTools.exe";
-		std::println("<gbs>    downloading Visual Studio build tools...");
-		if (0 != std::system(std::format("curl -fSL https://aka.ms/vs/{1}/release/vs_BuildTools.exe --output \"{0}\"", vs_buildtools.generic_string(), version).c_str())) {
-			std::filesystem::remove(vs_buildtools);
-			std::println("<gbs>    Error downloading msvc build tools");
-			return false;
-		}
-
-		constexpr std::string_view vstools_args = "--passive --wait"
-			" --add Microsoft.VisualStudio.Workload.VCTools"
-			" --add Microsoft.VisualStudio.Component.VC.ASAN"
-			" --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
-			" --add Microsoft.VisualStudio.Component.VC.Llvm.Clang"
-			" --add Microsoft.VisualStudio.Component.VC.Modules.x86.x64"
-			" --add Microsoft.VisualStudio.Component.VC.140"
-			" --add Microsoft.VisualStudio.Component.VC.v141.x86.x64"
-			" --add Microsoft.VisualStudio.ComponentGroup.VC.Tools.142.x86.x64";
-
-		std::println("<gbs>    installing Visual Studio build tools, this will take a while...");
-		if (0 != std::system(std::format("{} {}", vs_buildtools.generic_string(), vstools_args).c_str())) {
-			std::filesystem::remove(vs_buildtools);
-			std::println("<gbs>    Error installing msvc build tools");
-			return false;
-		}
-
-		std::filesystem::remove(vs_buildtools);
-		std::println("<gbs>    Download and install successful");
-		return true;
 	}
 	else {
 		std::println("<gbs>    Unsupported compiler {}", cl.name);
@@ -201,7 +173,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 	auto const gbs_user_path = std::filesystem::path(homedir) / ".gbs";
 	auto const downloaded_file_path = gbs_user_path / filename;
 	auto const compiler_dir = gbs_user_path / cl.name;
-	auto const download_dir = compiler_dir / std::vformat(extract_output_dir, std::make_format_args(version, cl.arch));
+	auto const download_dir = compiler_dir / std::vformat(extract_output_dir, std::make_format_args(version, "x64"));
 	auto const dest_dir = compiler_dir / std::format("{}_{}.{}.{}", cl.name, cl.major, cl. minor, cl.patch);
 
 	// Check if already downloaded

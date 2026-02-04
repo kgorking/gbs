@@ -1,9 +1,25 @@
+module;
+#include <string>
+#include <string_view>
+#include <locale>
+#include <filesystem>
+#include <set>
+#include <unordered_map>
+#include <unordered_set>
+#include <print>
+#include <iostream>
+#include <shared_mutex>
+#include <ranges>
+#include <fstream>
+#include <algorithm>
+#include <execution>
+#include <mutex>
 export module cmd_build;
-import std;
 import env;
 import context;
 import get_source_groups;
 import cmd_config;
+import os;
 
 namespace fs = std::filesystem;
 
@@ -29,17 +45,19 @@ static fs::path get_object_filepath(fs::path const& path, context const& ctx) {
 
 static std::string make_build_command(fs::path const& path, std::set<std::string> const& imports, fs::path const& obj, std::unordered_map<fs::path, std::string> const& path_defines, context const& ctx) {
 	fs::path const parent_dir = path.parent_path();
-	std::string const define = path_defines.contains(parent_dir) ? ctx.build_define(path_defines.at(parent_dir)) : "";
+	std::string const def= path_defines.contains(parent_dir) ? ctx.build_define(path_defines.at(parent_dir)) : "";
 
 	return ctx.build_command_prefix() +
-		ctx.build_command(path.string(), obj) +
+		ctx.build_command(path.generic_string(), obj) +
 		ctx.get_response_args().data() +
 		ctx.build_references(imports) +
-		define;
+		def;
 }
 
 // The build command
-export bool cmd_build(context& ctx, std::string_view /*const args*/) {
+export bool cmd_build(context& ctx, std::string_view /*target*/) {
+	std::println("<gbs> Building...");
+
 	// Bail if no compiler is selected
 	auto const& selected_cl = ctx.get_selected_compiler();
 	if (selected_cl.name.empty()) {
@@ -52,15 +70,29 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		if (!cmd_config(ctx, "debug,warnings"))
 			return false;
 
-
-	std::println("<gbs> Building...");
+	// Set the target operating system in the context
+	if (ctx.get_selected_compiler().name == "msvc") {
+		ctx.set_target_os(operating_system::windows);
+	}
+	else {
+		std::string const base_name = fs::current_path().stem().generic_string();
+		auto const cmd = ctx.build_command_prefix() + ctx.get_response_args().data() + " -dumpmachine > arch.txt";
+		std::string arch;
+		if (0 == std::system(cmd.c_str()) && std::getline(std::ifstream("arch.txt"), arch)) {
+			std::remove("arch.txt");
+			ctx.set_target_os(os_from_target_triple(arch));
+		}
+		else {
+			throw std::runtime_error("Unable to determine target os.");
+		}
+	}
 
 	// Make sure the output and response directories exist
 	fs::create_directories(ctx.output_dir());
 
 #ifdef _MSC_VER
 	// Initialize msvc environment
-	if (selected_cl.name == "msvc" || selected_cl.name == "clang") {
+	if (selected_cl.name == "msvc" /*|| selected_cl.name == "clang"*/) {
 		extern bool init_msvc(context const&);
 		if (!init_msvc(ctx))
 			return false;
@@ -71,7 +103,6 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 	std::set<fs::path> libs;
 	std::set<fs::path> objects;
 	std::shared_mutex mut_libs;
-	//std::shared_mutex mut_objs;
 
 	// Containers for all source files, includes, defines and targets
 	depth_ordered_sources_map all_sources;
@@ -95,6 +126,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 			std::println(std::cerr, "             '{}'", fs::current_path().generic_string());
 			return false;
 		}
+
 		if ("lib" == p) {
 			// 'lib' directory: process all libraries shared between all the projects
 			for (auto dir : fs::directory_iterator("lib")) {
@@ -108,8 +140,9 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 					continue;
 				}
 
-				auto const source_files = get_grouped_source_files(lib / "src");
-				auto const files_view = source_files | std::views::values | std::views::join | std::views::keys;
+				depth_ordered_sources_map const& source_files = get_grouped_source_files(lib / "src");
+				auto const files_view = std::views::keys(std::views::join(std::views::values(source_files)));
+
 				if (lib.stem() == "s") {
 					for (fs::path const& path : files_view) {
 						if (should_not_exclude(path))
@@ -128,7 +161,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		else {
 			if (fs::exists(p / "src")) {
 				auto const source_files = get_grouped_source_files(p / "src");
-				auto const files_view = source_files | std::views::values | std::views::join | std::views::keys;
+				auto const files_view = std::views::keys(std::views::join(std::views::values(source_files)));
 				executables[p].append_range(files_view);
 
 				for (auto [index, sources] : source_files)
@@ -137,7 +170,7 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 
 			if (fs::exists(p / "unittest")) {
 				auto const source_files = get_grouped_source_files(p / "unittest");
-				auto const files_view = source_files | std::views::values | std::views::join | std::views::keys;
+				auto const files_view = std::views::keys(std::views::join(std::views::values(source_files)));
 				unittests[p].append_range(files_view);
 
 				for (auto [index, sources] : source_files)
@@ -194,7 +227,8 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		if (!ok) return;
 
 		auto const& [p, vec] = pair;
-		std::string const name = p.extension().string().substr(1);
+		std::string const name = p.extension().generic_string().substr(1);
+		std::string const dll_name = os_get_dynamic_library_name(ctx.get_target_os(), name);
 
 		// Create the object list file for the .lib file
 		fs::path objlist_name = name + "_OBJLIST";
@@ -205,15 +239,19 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		}
 		dll_objlist.close();
 
-		std::string const cmd = ctx.dynamic_library_command(name, ctx.output_dir().generic_string()) + std::format(" @{}/{}", ctx.output_dir().generic_string(), objlist_name.generic_string());
+		std::string const cmd = ctx.dynamic_library_command(dll_name, ctx.output_dir().generic_string()) + std::format(" @{}/{}", ctx.output_dir().generic_string(), objlist_name.generic_string());
 
+		std::println("<gbs> Creating dynamic library '{}'...", dll_name);
+		ok = ok && (0 == std::system(cmd.c_str()));
+
+		// If a .lib/.a was created, add it to the library list
+		fs::path const out_lib = ctx.output_dir() / (name + ".lib");
+		if (fs::exists(out_lib))
 		{
 			std::scoped_lock sl(mut_libs);
-			libs.insert(ctx.output_dir() / (name + ".lib"));
+			libs.insert(out_lib);
 		}
 
-		std::println("<gbs> Creating dynamic library '{}'...", name);
-		ok = ok && (0 == std::system(cmd.c_str()));
 		});
 
 	if (!ok)
@@ -226,15 +264,16 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 	liblist.close();
 
 	// Link all the unittests
+	ctx.clear_unittests();
 	std::for_each(std::execution::par, unittests.begin(), unittests.end(), [&](std::pair<fs::path const, std::vector<fs::path>>& pair) {
 		if (!ok) return;
 
 		auto& [p, vec] = pair;
 
-		std::string const name = p.stem().string();
+		std::string const name = p.stem().generic_string();
 
-		// Partion the source files into unittests and support files
-		auto it = std::ranges::partition(vec, [](fs::path const& path) { return !path.filename().string().starts_with("test."); });
+		// Partition the source files into unittests and support files
+		auto it = std::ranges::partition(vec, [](fs::path const& path) { return !path.filename().generic_string().starts_with("test."); });
 
 		// Create the object list file for non-test files
 		fs::path objlist_name = name + "_OBJLIST";
@@ -248,11 +287,16 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		// Link each unittest
 		std::ranges::for_each(it, [&](fs::path const& src) {
 			if (!ok) return;
-			std::string const test_name = src.stem().string();
+			std::string const test_name = src.stem().generic_string();
+			std::string const exe_name = os_get_executable_name(ctx.get_target_os(), test_name);
 
-			std::println("<gbs> Linking unittest '{}'...", test_name);
+			// Save the unittest executable in the context
+			ctx.add_unittest(ctx.output_dir() / exe_name);
+
+			// Link the unittest
+			std::println("<gbs> Linking unittest '{}'...", exe_name);
 			std::string const obj_resp = std::format(" @{0}/{1} {0}/{2}.obj", ctx.output_dir().generic_string(), objlist_name.generic_string(), test_name);
-			std::string const cmd = ctx.link_command(test_name, ctx.output_dir().generic_string()) + obj_resp;
+			std::string const cmd = ctx.link_command(exe_name, ctx.output_dir().generic_string()) + obj_resp;
 			ok = ok && (0 == std::system(cmd.c_str()));
 			});
 		});
@@ -267,7 +311,8 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 
 		auto const& [p, vec] = pair;
 
-		std::string const name = p == "." ? fs::current_path().stem().string() : p.stem().string();
+		std::string const name = p == "." ? fs::current_path().stem().generic_string() : p.stem().generic_string();
+		std::string const exe_name = os_get_executable_name(ctx.get_target_os(), name);
 
 		// Create the object list file
 		fs::path objlist_name = name + "_OBJLIST";
@@ -278,9 +323,9 @@ export bool cmd_build(context& ctx, std::string_view /*const args*/) {
 		}
 		exe_objlist.close();
 
-		std::println("<gbs> Linking executable '{}'...", name);
+		std::println("<gbs> Linking executable '{}'...", exe_name);
 		std::string const obj_resp = std::format(" @{0}/{1}", ctx.output_dir().generic_string(), objlist_name.generic_string());
-		std::string const cmd = ctx.link_command(name, ctx.output_dir().generic_string()) + obj_resp;
+		std::string const cmd = ctx.link_command(exe_name, ctx.output_dir().generic_string()) + obj_resp;
 		ok = ok && (0 == std::system(cmd.c_str()));
 		});
 

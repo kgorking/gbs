@@ -1,10 +1,10 @@
 export module source_enum;
-import std;
+/*import std;
 
 namespace fs = std::filesystem;
 
 // Enumerate all files in a directory. They are ordered by their extension
-/*export std::vector<fs::path> enum_sources(fs::path start_dir) {
+export std::vector<fs::path> enum_sources(fs::path start_dir) {
 	if (!fs::is_directory(start_dir))
 		return {};
 

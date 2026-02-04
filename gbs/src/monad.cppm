@@ -1,7 +1,16 @@
 module;
 #include <version>
+#include <ranges>
+#include <new>
+#include <future>
+#include <print>
+#include <iostream>
+#include <stacktrace>
+#include <semaphore>
+#include <expected>
+#include <execution>
+#include <thread>
 export module monad;
-import std;
 
 #if 0//def __cpp_deleted_function
 #define REASON(x) (x)

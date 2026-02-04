@@ -1,6 +1,10 @@
+module;
+#include <filesystem>
+#include <iostream>
+#include <print>
 export module cmd_unittest;
-import std;
 import context;
+import wsl;
 
 namespace fs = std::filesystem;
 
@@ -18,18 +22,13 @@ export bool cmd_unittest(context& ctx, std::string_view args) {
 	int num_tests_run = 0;
 	auto test = fs::current_path();
 
-	for (auto const& it : fs::directory_iterator(ctx.output_dir())) {
-		if (!it.is_regular_file())
-			continue;
+	for (auto const& unittest : ctx.get_unittests()) {
+		std::println("<gbs> Running unittest \"{0}\"", unittest.filename().generic_string());
 
-		if(it.path().extension() != ".exe" || !it.path().filename().string().starts_with("test."))
-			continue;
-
-		std::println("<gbs> Running unittest {:?}", it.path().filename().string());
-
-		auto const cmd = std::format("call {:?} {}", it.path().generic_string(), args);
+		std::string const wsl = get_wsl_command(ctx.get_selected_compiler().wsl);
+		auto const cmd = std::format("{}\"{}\" {}", wsl, unittest.generic_string(), args);
 		if (0 != std::system(cmd.c_str())) {
-			std::println(std::cerr, "<gbs> Unittest '{}' failed.", it.path().filename().string());
+			std::println(std::cerr, "<gbs> Unittest '{}' failed.", unittest.filename().generic_string());
 			return false;
 		}
 

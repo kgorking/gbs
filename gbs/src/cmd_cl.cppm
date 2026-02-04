@@ -1,5 +1,9 @@
+module;
+#include <string_view>
+#include <print>
+#include <iostream>
+
 export module cmd_cl;
-import std;
 import context;
 
 export bool cmd_cl(context& ctx, std::string_view args) {

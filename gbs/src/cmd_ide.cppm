@@ -1,6 +1,8 @@
+module;
+#include <print>
+#include <fstream>
 export module cmd_ide;
 import context;
-import std;
 
 void create_vs_tasks();
 void create_vscode_tasks();

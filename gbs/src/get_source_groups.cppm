@@ -1,6 +1,11 @@
 module;
+#include <filesystem>
+#include <string>
+#include <set>
+#include <unordered_map>
+#include <map>
+#include <array>
 export module get_source_groups;
-import std;
 import dep_scan;
 
 namespace fs = std::filesystem;
@@ -23,8 +28,8 @@ export using depth_ordered_sources_map = std::map<std::size_t, source_group>;
 
 export bool should_not_exclude(fs::path const& path) {
 	return
-		!path.string().starts_with("x.") &&
-		!path.filename().stem().string().starts_with("x.");
+		!path.generic_string().starts_with("x.") &&
+		!path.filename().stem().generic_string().starts_with("x.");
 }
 
 // Recursively merge a files child dependencies with its own dependencies.
@@ -53,7 +58,7 @@ void group_by_dependency_depth(depth_ordered_sources_map& sources, source_info c
 
 bool is_valid_sourcefile(fs::path const& file) {
 	static constexpr std::array<std::string_view, 4> extensions{".cpp", ".c", ".cppm", ".ixx"};
-	return std::ranges::contains(extensions, file.extension());
+	return extensions.end() != std::find(extensions.begin(), extensions.end(), file.extension());
 }
 
 // Find the source files and dependencies

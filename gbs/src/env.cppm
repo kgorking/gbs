@@ -1,5 +1,10 @@
+﻿module;
+#include <filesystem>
+#include <optional>
+#include <stdexcept>
+#include <string_view>
+#include <unordered_map>
 export module env;
-import std;
 
 export class environment {
 	std::unordered_map<std::string_view, std::string_view> vars{};

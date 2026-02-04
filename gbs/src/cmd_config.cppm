@@ -1,11 +1,12 @@
+module;
+#include <format>
+#include <string>
 export module cmd_config;
-import std;
 import context;
-import monad;
 
 // Converts arguments into response files
-std::string convert_arg_to_response(std::string_view arg, std::filesystem::path const& response_dir) {
-	return std::format(" @{}/{}", response_dir.generic_string(), arg);
+std::string convert_arg_to_response(std::string_view arg, context const& ctx) {
+	return std::format(" @{}/{}", ctx.response_dir().generic_string(), arg);
 }
 
 export bool cmd_config(context& ctx, std::string_view args) {
@@ -21,13 +22,14 @@ export bool cmd_config(context& ctx, std::string_view args) {
 	ctx.set_config(args);
 
 	// Arguments to the compiler.
-	ctx.set_response_args(as_monad(args)
-		.join()
-		.split(',')
-		.prefix("_shared")
-		.map(convert_arg_to_response, ctx.response_dir())
-		.to<std::string>()
-		);
+	std::string response_args = convert_arg_to_response("_shared", ctx);
+	while (!args.empty()) {
+		std::size_t const index = args.find(',');
+		response_args += convert_arg_to_response(args.substr(0, index), ctx);
+		args.remove_prefix(index == std::string_view::npos ? args.size() : index + 1);
+	}
+
+	ctx.set_response_args(std::move(response_args));
 
 	return true;
 }

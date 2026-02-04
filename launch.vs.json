@@ -50,33 +50,43 @@
       ]
     },
     {
-      "name": "[msvc] self",
+      "name": "[msvc] build",
       "type": "default",
       "project": "CMakeLists.txt",
       "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=msvc build unittest run=version"
+        "clean cl=msvc build unittest"
       ]
     },
     {
-      "name": "[clang] self",
+      "name": "[clang] build",
       "type": "default",
       "project": "CMakeLists.txt",
       "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=clang build unittest run=version"
+        "clean cl=clang:21 build unittest"
       ]
     },
     {
-      "name": "[gcc] self",
+      "name": "[clang] build for linux",
       "type": "default",
       "project": "CMakeLists.txt",
       "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=gcc build unittest run=version"
+        "clean cl=wsl.clang:22 build unittest"
+      ]
+    },
+    {
+      "name": "[gcc] build",
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": ".",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "clean cl=gcc build unittest"
       ]
     },
     {
@@ -87,6 +97,16 @@
       "projectTarget": "gbs.exe",
       "args": [
         "get_cl=clang get_cl=gcc"
+      ]
+    },
+    {
+      "name": "Download latest gcc",
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": ".",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "get_cl=gcc"
       ]
     },
     {
