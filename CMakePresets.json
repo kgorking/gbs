@@ -104,13 +104,5 @@
                 "CMAKE_CXX_COMPILER": "cl.exe"
             }
         }
-    ],
-    "buildPresets": [
-        {
-            "name": "test-debug",
-            "displayName": "Visual Studio Community 2022 Preview - amd64 - Debug",
-            "configurePreset": "test",
-            "configuration": "Debug"
-        }
     ]
 }

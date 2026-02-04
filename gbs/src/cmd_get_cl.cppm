@@ -13,11 +13,16 @@ std::string gcc_get_download_url(std::string_view const version) {
 	// Input:  15.2.0posix-13.0.0-msvcrt-r1
 	// Output: https://github.com/brechtsanders/winlibs_mingw/releases/download/15.2.0posix-13.0.0-ucrt-r1/winlibs-x86_64-posix-seh-gcc-15.2.0-mingw-w64msvcrt-13.0.0-r1.zip
 	//         https://github.com/brechtsanders/winlibs_mingw/releases/download/15.2.0posix-13.0.0-msvcrt-r1/winlibs-x86_64-posix-seh-gcc-15.2.0-mingw-w64msvcrt-13.0.0-r1.zip
+	//         https://github.com/brechtsanders/winlibs_mingw/releases/download/16.0.0-snapshot20251026posix-14.0.0-ucrt-r1/winlibs-x86_64-posix-seh-gcc-16.0.0-snapshot20251026-mingw-w64ucrt-14.0.0-r1.zip
+	//         https://github.com/brechtsanders/winlibs_mingw/releases/download/16.0.0-snapshot20251026posix-14.0.0-msvcrt-r1/winlibs-x86_64-posix-seh-gcc-16.0.0-snapshot20251026-mingw-w64msvcrt-14.0.0-r1.zip
+	// 
+	//static constexpr std::string_view template_url = "https://github.com/brechtsanders/winlibs_mingw/releases/download/{0}/winlibs-x86_64-posix-seh-gcc-{1}-mingw-w64ucrt-{2}-{3}.zip";
+	static constexpr std::string_view template_url =   "https://github.com/brechtsanders/winlibs_mingw/releases/download/{0}/winlibs-x86_64-posix-seh-gcc-{1}-mingw-w64msvcrt-{2}-{3}.zip";
 
-	static constexpr std::string_view template_url = "https://github.com/brechtsanders/winlibs_mingw/releases/download/{0}/winlibs-x86_64-posix-seh-gcc-{1}-mingw-w64ucrt-{2}-{3}.zip";
-	std::string_view const gcc_ver = version.substr(0, version.find_first_not_of("0123456789."));
+	std::size_t const posix_pos = version.find("posix-");
+	std::string_view const gcc_ver = version.substr(0, posix_pos);
 
-	std::string_view posix_ver = version.substr(version.find_first_of('-') + 1);
+	std::string_view posix_ver = version.substr(posix_pos + 6);
 	posix_ver = posix_ver.substr(0, posix_ver.find_first_of('-'));
 
 	std::string_view const release_ver = version.substr(version.rfind('-') + 1);
@@ -107,7 +112,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 		cl.executable = "mingw64/bin/gcc";
 		version_prefix = "refs/tags/";
 
-		git_search_cmd = std::format("git ls-remote --exit-code --refs --tags --sort=\"-version:refname\" https://github.com/brechtsanders/winlibs_mingw *{}*posix*ucrt* > {}",
+		git_search_cmd = std::format("git ls-remote --exit-code --refs --tags --sort=\"-version:refname\" https://github.com/brechtsanders/winlibs_mingw *{}*posix*msvcrt* > {}",
 			version,
 			"version_list.txt");
 

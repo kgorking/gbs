@@ -13,11 +13,13 @@ module;
 #include <fstream>
 #include <algorithm>
 #include <execution>
+#include <mutex>
 export module cmd_build;
 import env;
 import context;
 import get_source_groups;
 import cmd_config;
+import os;
 
 namespace fs = std::filesystem;
 
@@ -47,14 +49,13 @@ static std::string make_build_command(fs::path const& path, std::set<std::string
 
 	return ctx.build_command_prefix() +
 		ctx.build_command(path.generic_string(), obj) +
-		ctx.build_target_triple() +
 		ctx.get_response_args().data() +
 		ctx.build_references(imports) +
 		def;
 }
 
 // The build command
-export bool cmd_build(context& ctx, std::string_view target) {
+export bool cmd_build(context& ctx, std::string_view /*target*/) {
 	std::println("<gbs> Building...");
 
 	// Bail if no compiler is selected
@@ -70,7 +71,22 @@ export bool cmd_build(context& ctx, std::string_view target) {
 			return false;
 
 	// Set the target triple in the context
-	ctx.set_target_triple(target);
+	if (ctx.get_selected_compiler().name == "msvc") {
+		ctx.set_target_os(operating_system::windows);
+	}
+	else {
+		std::string const base_name = fs::current_path().stem().generic_string();
+		auto const cmd = ctx.build_command_prefix() + ctx.get_response_args().data() + " -dumpmachine > arch.txt";
+		std::string arch;
+		if (0 == std::system(cmd.c_str()) && std::getline(std::ifstream("arch.txt"), arch)) {
+			std::remove("arch.txt");
+			ctx.set_target_os(os_from_target_triple(arch));
+		}
+		else {
+			throw std::runtime_error("Unable to determine target os.");
+		}
+	}
+
 
 	// Make sure the output and response directories exist
 	fs::create_directories(ctx.output_dir());
@@ -213,6 +229,7 @@ export bool cmd_build(context& ctx, std::string_view target) {
 
 		auto const& [p, vec] = pair;
 		std::string const name = p.extension().generic_string().substr(1);
+		std::string const dll_name = os_get_dynamic_library_name(ctx.get_target_os(), name);
 
 		// Create the object list file for the .lib file
 		fs::path objlist_name = name + "_OBJLIST";
@@ -223,12 +240,12 @@ export bool cmd_build(context& ctx, std::string_view target) {
 		}
 		dll_objlist.close();
 
-		std::string const cmd = ctx.dynamic_library_command(name, ctx.output_dir().generic_string()) + std::format(" @{}/{}", ctx.output_dir().generic_string(), objlist_name.generic_string());
+		std::string const cmd = ctx.dynamic_library_command(dll_name, ctx.output_dir().generic_string()) + std::format(" @{}/{}", ctx.output_dir().generic_string(), objlist_name.generic_string());
 
-		std::println("<gbs> Creating dynamic library '{}'...", name);
+		std::println("<gbs> Creating dynamic library '{}'...", dll_name);
 		ok = ok && (0 == std::system(cmd.c_str()));
 
-		// If a .lib was created, add it to the library list
+		// If a .lib/.a was created, add it to the library list
 		fs::path const out_lib = ctx.output_dir() / (name + ".lib");
 		if (fs::exists(out_lib))
 		{
@@ -248,6 +265,7 @@ export bool cmd_build(context& ctx, std::string_view target) {
 	liblist.close();
 
 	// Link all the unittests
+	ctx.clear_unittests();
 	std::for_each(std::execution::par, unittests.begin(), unittests.end(), [&](std::pair<fs::path const, std::vector<fs::path>>& pair) {
 		if (!ok) return;
 
@@ -271,10 +289,15 @@ export bool cmd_build(context& ctx, std::string_view target) {
 		std::ranges::for_each(it, [&](fs::path const& src) {
 			if (!ok) return;
 			std::string const test_name = src.stem().generic_string();
+			std::string const exe_name = os_get_executable_name(ctx.get_target_os(), test_name);
 
-			std::println("<gbs> Linking unittest '{}'...", test_name);
+			// Save the unittest executable in the context
+			ctx.add_unittest(ctx.output_dir() / exe_name);
+
+			// Link the unittest
+			std::println("<gbs> Linking unittest '{}'...", exe_name);
 			std::string const obj_resp = std::format(" @{0}/{1} {0}/{2}.obj", ctx.output_dir().generic_string(), objlist_name.generic_string(), test_name);
-			std::string const cmd = ctx.link_command(test_name, ctx.output_dir().generic_string()) + obj_resp;
+			std::string const cmd = ctx.link_command(exe_name, ctx.output_dir().generic_string()) + obj_resp;
 			ok = ok && (0 == std::system(cmd.c_str()));
 			});
 		});
@@ -290,6 +313,7 @@ export bool cmd_build(context& ctx, std::string_view target) {
 		auto const& [p, vec] = pair;
 
 		std::string const name = p == "." ? fs::current_path().stem().generic_string() : p.stem().generic_string();
+		std::string const exe_name = os_get_executable_name(ctx.get_target_os(), name);
 
 		// Create the object list file
 		fs::path objlist_name = name + "_OBJLIST";
@@ -300,9 +324,9 @@ export bool cmd_build(context& ctx, std::string_view target) {
 		}
 		exe_objlist.close();
 
-		std::println("<gbs> Linking executable '{}'...", name);
+		std::println("<gbs> Linking executable '{}'...", exe_name);
 		std::string const obj_resp = std::format(" @{0}/{1}", ctx.output_dir().generic_string(), objlist_name.generic_string());
-		std::string const cmd = ctx.link_command(name, ctx.output_dir().generic_string()) + obj_resp;
+		std::string const cmd = ctx.link_command(exe_name, ctx.output_dir().generic_string()) + obj_resp;
 		ok = ok && (0 == std::system(cmd.c_str()));
 		});
 

@@ -58,7 +58,7 @@ void group_by_dependency_depth(depth_ordered_sources_map& sources, source_info c
 
 bool is_valid_sourcefile(fs::path const& file) {
 	static constexpr std::array<std::string_view, 4> extensions{".cpp", ".c", ".cppm", ".ixx"};
-	return std::ranges::contains(extensions, file.extension());
+	return extensions.end() != std::find(extensions.begin(), extensions.end(), file.extension());
 }
 
 // Find the source files and dependencies

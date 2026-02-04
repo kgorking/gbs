@@ -1,4 +1,4 @@
-# Gorking Build System v0.17
+﻿# Gorking Build System v0.18
 
 A rule-based build system to automatically find source files and compile them. No need for build scripts.
 
@@ -14,7 +14,7 @@ A rule-based build system to automatically find source files and compile them. N
   - Dynamic libraries are in folders starting with `d.`.
   - Other folders are added to the includes list. They are not searched for source files.
   - Include paths for libraries are automatically added to projects.
-    - Also inlcudes `inc` and `include` subfolders, if present.
+    - Also includes `inc` and `include` subfolders, if present.
 - `unittest` folder is for unit tests.
   - Each `test.*.cpp` file is compiled into a unittest executable `test.*.exe`.
   - Other sourcefiles are linked to each unittest executable.
@@ -22,21 +22,29 @@ A rule-based build system to automatically find source files and compile them. N
 - TODO: Files and folders postfixed with `.win`, `.linux`, `.darwin` are only compiled on matching platforms.
 
 ## Example folder structure
-- `example`
-  - `lib`
-	- `s.libname1`
-      - `inc`/`src`
-	- `d.libname2`
-      - `inc`/`src`
-  - `example` - main executable
-	- `src`
-    - `unittest`
-  - `other_executeable`
-	- `src`
-    - `unittest`
-  - `d.some_dll`
-    - etc.
-  - etc...
+```
+example/
+├── lib/
+│   ├── s.libname1/          (shared static library)
+│   │   ├── inc/
+│   │   └── src/
+│   ├── d.libname2/          (shared dynamic library)
+│   │   ├── inc/
+│   │   └── src/
+│   └── libname3/            (shared header-only include)
+│   │   ├── inc/
+│   │   └── src/             (for building implementions)
+├── example/                 (executable - main project)
+│   └── src/
+├── other_executeable/       (another executable)
+│   └── src/
+├── unittest/
+│   ├── test.example.cpp
+│   └── test.other.cpp
+└── d.some_dll/              (dynamic library)
+    ├── inc/
+    └── src/
+```
 
 # Usage
 `gbs [command, ...]`
@@ -54,14 +62,11 @@ The following commands are supported:
 	* Example: `gbs config=release,analyze build` will do an analyzed release build.
 * `cl=<compiler>:<major.minor.patch>` Selects the compiler to use for subsequent commands.
 	* `gbs cl=msvc build cl=clang:17.3.1 build` will first build with latest msvc, then build with clang 17.3.1.
-* `build=<machine:vendor:os>` Builds the current directory.
+* `build` Builds the current directory.
 	* If no configuration is specified (via `config` command), `debug,warnings` is used by default.
 * `clean` cleans the build output folder (`gbs.out`).
     * Uses same format as `config`.
 	* TODO: only clean specified configuration (`=<configuration>`).
-* `run=<parameters>` Runs the last built executable with the optionally specified parameters.
-    * If no parameters are specified, the executable is run without parameters.
-	* `gbs build run="hello cli"` will build and then run the executable as `<exe> hello cli`.
 * `unittest=<args>` Runs built unittests.
     * `args` are passed verbatim to the unittest executables.
 * `get_cl=<compiler>:<major.minor.patch>` Downloads the compiler with at least the specified version. Supports clang and gcc.
@@ -83,23 +88,27 @@ The following compilers can be used by `gbs` to build `gbs`:
 
 - [x] msvc 19.38+
 - [x] clang 21+
-- [ ] gcc 15+ (linking error when using `std::print`)
+- [x] gcc 15+ (linking error when using `std::print`)
+  - Requires manual edits to `print` and `ostream` std headers to fix linking errors. In the function `vprint_unicode`, in both files, change the line:
+	```cpp
+		#if !defined(_WIN32) || defined(__CYGWIN__)
+	```
+	to
+	```cpp
+		#if 1//!defined(_WIN32) || defined(__CYGWIN__)
+	```
 
 # Upcoming versions (not in a specific order)
-- Fetch dependencies in 'deps'
-- Build dependencies in 'deps'
-- Custom build steps (via 'run'?)
+- Support package managers (vcpkg, conan, etc.)
 
 ## Todo
 - [ ] Good documentation for all commands
 - [x] Compiling/running unit tests
-- [ ] Fetch dependencies from external sites like GitHub.
-	- [ ] Use installed package managers
-	- [ ] Support for compiling externally fetched dependencies
+- [ ] Use package managers
 - [ ] Add a `get_cl=compiler:?` option to list versions available for download
 - [ ] Allow matrix builds, eg. `gbs build=[debug,release] run` results in 2 builds and 2 runs
 - [ ] Support for running custom build steps before/after compilation
-- [ ] WSL support ?
+- [x] WSL support
 - [x] Create a simple build system
 - [x] Automatic compilation without build scripts
 	- [x] Find source files automatically

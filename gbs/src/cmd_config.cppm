@@ -1,6 +1,6 @@
 module;
-#include <string>
 #include <format>
+#include <string>
 export module cmd_config;
 import context;
 

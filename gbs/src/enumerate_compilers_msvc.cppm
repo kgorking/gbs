@@ -1,5 +1,6 @@
 module;
 #include <filesystem>
+#include <fstream>
 export module enumerate_compilers_msvc;
 import env;
 import compiler;
@@ -25,9 +26,9 @@ static void enumerate_compiler_msvc(std::filesystem::path msvc_path, auto&& call
 		comp.build_source = " {0:?} ";
 		comp.build_module = " {0:?} ";
 		comp.build_command_prefix = "call {0:?} @{1}/INCLUDE @{1}/SRC_INCLUDES /c /interface /TP /ifcOutput {1}/ /Fo:{1}/ ";
-		comp.link_command = "call {0:?} /NOLOGO /OUT:{1}/{2}.exe @{1}/LIBPATH @{1}/OBJLIST @{1}/LIBLIST";
-		comp.slib_command = "call {0:?} /NOLOGO /OUT:{1}/{2}.lib @{1}/LIBPATH @{1}/OBJLIST";
-		comp.dlib_command = "call {0:?} /NOLOGO /DLL /OUT:{1}/{2}.dll @{1}/LIBPATH @{1}/OBJLIST";
+		comp.link_command = "call {0:?} /NOLOGO /OUT:{1}/{2} @{1}/LIBPATH @{1}/OBJLIST @{1}/LIBLIST";
+		comp.slib_command = "call {0:?} /NOLOGO /OUT:{1}/{2} @{1}/LIBPATH @{1}/OBJLIST";
+		comp.dlib_command = "call {0:?} /NOLOGO /DLL /OUT:{1}/{2} @{1}/LIBPATH @{1}/OBJLIST";
 		comp.define = "/D";
 		comp.include = "/I{0}";
 		comp.reference = " /reference {0}={1}.ifc ";
@@ -56,7 +57,7 @@ static void enumerate_compiler_msvc(std::filesystem::path msvc_path, auto&& call
 export void enumerate_compilers_msvc(environment const& env, auto&& callback) {
 	// Look for installations of Visual Studio
 	std::string msvc_std_module{};
-	if (int const inst = std::system("\">instpath.txt \"%ProgramFiles(x86)%/Microsoft Visual Studio/Installer/vswhere.exe\" -prerelease -property installationPath 2>nul\""); inst == 0) {
+	if (0 == std::system("\">instpath.txt \"%ProgramFiles(x86)%/Microsoft Visual Studio/Installer/vswhere.exe\" -prerelease -property installationPath 2>nul\"")) {
 		std::string line;
 		std::ifstream file("instpath.txt");
 

@@ -1,7 +1,7 @@
 module;
-#include <string_view>
 #include <filesystem>
 #include <optional>
+#include <string_view>
 export module compiler;
 import env;
 
@@ -27,7 +27,7 @@ export struct compiler {
 	std::filesystem::path dlib;
 	std::optional<std::filesystem::path> std_module;
 
-	bool is_wsl = false;
+	std::optional<std::string> wsl;
 };
 
 

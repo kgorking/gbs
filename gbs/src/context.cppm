@@ -11,6 +11,7 @@ export module context;
 import env;
 import compiler;
 import enumerate_compilers;
+import os;
 
 export class context {
 	using compiler_collection = std::unordered_map<std::string_view, std::vector<compiler>>;
@@ -19,7 +20,6 @@ export class context {
 	// Configuration of compile ('debug,analyze', etc...)
 	std::string_view config{};
 	std::string config_dir{};
-	std::string target_triple;
 
 	// Folder to store gbs related files
 	const std::filesystem::path gbs_internal{ ".gbs" };
@@ -39,6 +39,11 @@ export class context {
 	// The response args to use during build
 	std::string resp_args{};
 
+	// The current compilers target OS
+	operating_system target_os;
+
+	// All the unittests created during last build
+	std::vector<std::filesystem::path> unittests;
 
 	environment env;
 
@@ -141,6 +146,26 @@ public:
 		};
 	}
 
+	void add_unittest(std::filesystem::path const& test_executable) {
+		unittests.push_back(test_executable);
+	}
+
+	[[nodiscard]] std::vector<std::filesystem::path> const& get_unittests() const noexcept {
+		return unittests;
+	}
+
+	void clear_unittests() noexcept {
+		unittests.clear();
+	}
+
+	void set_target_os(operating_system const os) noexcept {
+		target_os = os;
+	}
+
+	[[nodiscard]] operating_system get_target_os() const noexcept {
+		return target_os;
+	}
+
 	// Get an environment variable
 	[[nodiscard]] std::optional<std::string_view> get_env_value(const std::string_view var) const {
 		return env.get(var);
@@ -184,14 +209,6 @@ public:
 
 	[[nodiscard]] std::string_view get_config() const noexcept {
 		return config;
-	}
-
-	void set_target_triple(std::string_view const target) noexcept {
-		target_triple = target;
-	}
-
-	[[nodiscard]] std::string_view get_target_triple() const noexcept {
-		return target_triple;
 	}
 
 	void set_response_args(std::string&& resp) noexcept {
@@ -267,13 +284,6 @@ public:
 
 		auto const str = obj_file.generic_string();
 		return std::vformat(build_cmd, std::make_format_args(file, str));
-	}
-
-	// Create target triple args
-	[[nodiscard]] std::string build_target_triple() const {
-		if (target_triple.empty())
-			return "";
-		return std::vformat(selected_cl.target, std::make_format_args(target_triple));
 	}
 
 	// Create link command for the currently selected compiler
@@ -381,7 +391,7 @@ public:
 
 		// Select the version
 		int major = 0, minor = 0, patch = 0;
-		auto const dots = std::ranges::count(version, '.');
+		auto const dots = std::count(version.begin(), version.end(), '.');
 		extract_compiler_version(version, major, minor, patch);
 
 		auto version_compilers = named_compilers | std::views::filter([&](compiler const& c) {

@@ -9,6 +9,7 @@ module;
 #include <semaphore>
 #include <expected>
 #include <execution>
+#include <thread>
 export module monad;
 
 #if 0//def __cpp_deleted_function
