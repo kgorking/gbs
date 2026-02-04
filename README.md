@@ -88,18 +88,19 @@ The following compilers can be used by `gbs` to build `gbs`:
 
 - [x] msvc 19.38+
 - [x] clang 21+
-- [x] gcc 15+ (linking error when using `std::print`)
+- [ ] gcc 15+ (linking error when using `std::print`)
   - Requires manual edits to `print` and `ostream` std headers to fix linking errors. In the function `vprint_unicode`, in both files, change the line:
 	```cpp
-		#if !defined(_WIN32) || defined(__CYGWIN__)
+	#if !defined(_WIN32) || defined(__CYGWIN__)
 	```
 	to
 	```cpp
-		#if 1//!defined(_WIN32) || defined(__CYGWIN__)
+	#if 1//!defined(_WIN32) || defined(__CYGWIN__)
 	```
 
 # Upcoming versions (not in a specific order)
 - Support package managers (vcpkg, conan, etc.)
+- Use GCC on WSL
 
 ## Todo
 - [ ] Good documentation for all commands
@@ -141,7 +142,6 @@ The following compilers can be used by `gbs` to build `gbs`:
 	- [x] clang
 	- [x] gcc
 - [x] Download compilers, eg. `gbs get_cl=clang:19`
-	- [x] msvc
 	- [x] clang
 	- [x] gcc
 - [x] Integrate with Visual Studio [Code]
