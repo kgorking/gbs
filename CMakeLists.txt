@@ -38,7 +38,13 @@ target_sources(gbs PUBLIC FILE_SET CXX_MODULES FILES
     "gbs/src/enumerate_compilers.cppm"
     "gbs/src/enumerate_compilers_clang.cppm"
     "gbs/src/enumerate_compilers_msvc.cppm"
-    "gbs/src/enumerate_compilers_gcc.cppm" "gbs/src/wsl.cppm" "gbs/src/os.cppm")
+    "gbs/src/enumerate_compilers_gcc.cppm"
+	"gbs/src/wsl.cppm"
+	"gbs/src/os.cppm"
+	"gbs/src/task/thread_pool.cppm"
+	"gbs/src/task/task_graph.cppm"
+	"gbs/src/task/task.cppm"
+)
 
 if(MSVC)
 	target_compile_definitions(gbs PRIVATE _MSVC_STL_HARDENING=1 _MSVC_STL_DESTRUCTOR_TOMBSTONES=1)

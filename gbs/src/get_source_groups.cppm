@@ -1,10 +1,11 @@
 module;
-#include <filesystem>
-#include <string>
-#include <set>
-#include <unordered_map>
-#include <map>
 #include <array>
+#include <filesystem>
+#include <generator>
+#include <map>
+#include <set>
+#include <string>
+#include <unordered_map>
 export module get_source_groups;
 import dep_scan;
 
@@ -26,7 +27,7 @@ export using source_group = std::unordered_map<fs::path, import_set>;
 export using depth_ordered_sources_map = std::map<std::size_t, source_group>;
 
 
-export bool should_not_exclude(fs::path const& path) {
+export bool should_include(fs::path const& path) {
 	return
 		!path.generic_string().starts_with("x.") &&
 		!path.filename().stem().generic_string().starts_with("x.");
@@ -56,9 +57,20 @@ void group_by_dependency_depth(depth_ordered_sources_map& sources, source_info c
 	sources[dep_size][path].merge(imports);
 }
 
-bool is_valid_sourcefile(fs::path const& file) {
+static bool is_valid_sourcefile(fs::path const& file) {
 	static constexpr std::array<std::string_view, 4> extensions{".cpp", ".c", ".cppm", ".ixx"};
 	return extensions.end() != std::find(extensions.begin(), extensions.end(), file.extension());
+}
+
+export std::generator<fs::path> get_source_files(fs::path const& dir) {
+	for (auto const& dir_it : fs::recursive_directory_iterator(dir)) {
+		if (!dir_it.is_regular_file())
+			continue;
+		fs::path const file_path = dir_it.path();
+		if (!is_valid_sourcefile(file_path) || !should_include(file_path))
+			continue;
+		co_yield file_path;
+	}
 }
 
 // Find the source files and dependencies
@@ -73,7 +85,7 @@ export depth_ordered_sources_map get_grouped_source_files(fs::path const& dir) {
 			continue;
 
 		fs::path const file_path = dir_it.path();
-		if (!is_valid_sourcefile(file_path) || !should_not_exclude(file_path))
+		if (!is_valid_sourcefile(file_path) || !should_include(file_path))
 			continue;
 
 		source_dependency const sd = extract_module_dependencies(file_path);

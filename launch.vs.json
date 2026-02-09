@@ -76,7 +76,7 @@
       "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=wsl.clang:22 build unittest"
+        "clean cl=clang:22 config=release,warnings build unittest"
       ]
     },
     {

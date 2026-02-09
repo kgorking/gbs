@@ -37,7 +37,6 @@ export bool cmd_unittest(context& ctx, std::string_view args) {
 
 	if (num_tests_run == 0) {
 		std::println("<gbs> No unittests found to run.");
-		return false;
 	}
 	return true;
 }

@@ -31,8 +31,7 @@ static void enumerate_compiler_msvc(std::filesystem::path msvc_path, auto&& call
 		comp.dlib_command = "call {0:?} /NOLOGO /DLL /OUT:{1}/{2} @{1}/LIBPATH @{1}/OBJLIST";
 		comp.define = "/D";
 		comp.include = "/I{0}";
-		comp.reference = " /reference {0}={1}.ifc ";
-		comp.target = " /arch:{} ";
+		comp.module_path = " /ifcSearchDir {}";
 
 		if (!std::filesystem::exists(comp.executable))
 			continue;

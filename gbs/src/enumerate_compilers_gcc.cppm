@@ -70,10 +70,8 @@ export void enumerate_compilers_gcc(environment const& env, auto&& callback) {
 			comp.slib_command = "call {0:?} rcs {1}/{2} @{1}/OBJLIST";
 			comp.define = "-D";
 			comp.include = "-I{0}";
-			comp.reference = "";
-			comp.target = " -target {} ";
+			comp.module_path = " -fmodule-mapper=\"|@g++-mapper-server --root {}\"";
 			callback(std::move(comp));
 		}
 	}
 }
-
