@@ -1,5 +1,5 @@
-#include "../inc/lib2.hpp"
+#include "../inc/lib2.h"
 
-extern "C" bool does_it_work_dynamic() {
+extern "C" LIB2_API bool lib2_does_it_work() {
 	return true;
 }

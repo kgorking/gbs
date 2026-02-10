@@ -301,10 +301,10 @@ public:
 		return std::vformat(selected_cl.slib_command, std::make_format_args(lib, out_dir, out_name));
 	}
 
-	// Create library command for the currently selected compiler
-	[[nodiscard]] std::string dynamic_library_command(std::string_view const out_name, std::string_view const out_dir) const {
+	// Create dynamic library command for the currently selected compiler
+	[[nodiscard]] std::string dynamic_library_command(std::string_view const dll_name, std::string_view const lib_name, std::string_view const out_dir) const {
 		auto const lib = selected_cl.dlib.generic_string();
-		return std::vformat(selected_cl.dlib_command, std::make_format_args(lib, out_dir, out_name));
+		return std::vformat(selected_cl.dlib_command, std::make_format_args(lib, out_dir, dll_name, lib_name));
 	}
 
 	// Create a reference to a module

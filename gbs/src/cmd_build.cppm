@@ -208,18 +208,20 @@ export bool cmd_build(context& ctx, std::string_view /*target*/) {
 					auto const objlist_name = create_object_file_list(ctx, name, vec);
 
 					// Add it to the library list
-					//fs::path const out_lib = ctx.output_dir() / os_get_static_library_name(ctx.get_target_os(), name);
-					//libs.insert(out_lib);
+					fs::path const out_lib = ctx.output_dir() / os_get_static_library_name(ctx.get_target_os(), name);
+					libs.insert(out_lib);
 
 					auto dll_task = graph.create_task(lib, [&ctx, name, objlist_name] {
+						std::string const lib_name = os_get_static_library_name(ctx.get_target_os(), name);
 						std::string const dll_name = os_get_dynamic_library_name(ctx.get_target_os(), name);
 
 						std::println("<gbs> Creating dynamic library '{}'...", dll_name);
 						std::string const obj_resp = std::format(" @{}", objlist_name.generic_string());
-						std::string const cmd = ctx.dynamic_library_command(dll_name, ctx.output_dir().generic_string()) + obj_resp;
+						std::string const cmd = ctx.dynamic_library_command(dll_name, lib_name, ctx.output_dir().generic_string()) + obj_resp;
 						std::system(cmd.c_str());
 						});
 
+					graph.add_dependency(dll_task, lib_task);
 					for (fs::path const& path : vec) {
 						if (should_include(path)) {
 							auto src_task = create_build_task(ctx, graph, path, modmap, impmap, export_define);
@@ -303,10 +305,10 @@ export bool cmd_build(context& ctx, std::string_view /*target*/) {
 						});
 
 					auto src_task = create_build_task(ctx, graph, test, modmap, impmap);
-					//graph.add_dependency(src_task, exe_task);
-					//graph.add_dependency(lib_task, exe_task);
+					graph.add_dependency(lib_task, src_task);
+					graph.add_dependency(src_task, exe_task);
 					for (auto const& support_task : support_tasks) {
-						graph.add_dependency(lib_task, support_task);
+						//graph.add_dependency(lib_task, support_task);
 						graph.add_dependency(support_task, exe_task);
 					}
 				}
