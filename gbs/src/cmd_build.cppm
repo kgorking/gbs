@@ -297,7 +297,7 @@ export bool cmd_build(context& ctx, std::string_view /*target*/) {
 					ctx.add_unittest(ctx.output_dir() / exe_name);
 
 					// Create the unittest task
-					auto exe_task = graph.create_task(test, [&ctx, test_name, exe_name, objlist_name] {
+					auto exe_task = graph.create_task(exe_name, [&ctx, test_name, exe_name, objlist_name] {
 						std::println("<gbs> Linking unittest '{}'...", exe_name);
 						std::string const obj_resp = std::format(" @{} {}/{}.obj", objlist_name.generic_string(), ctx.output_dir().generic_string(), test_name);
 						std::string const cmd = ctx.link_command(exe_name, ctx.output_dir().generic_string()) + obj_resp;

@@ -1,4 +1,4 @@
-#pragma once
+//#pragma once
 
 #ifdef _WIN32
 	#ifdef LIB2_EXPORTS
@@ -10,4 +10,4 @@
 	#define LIB2_API
 #endif
 
-extern "C" LIB2_API bool lib2_does_it_work();
+extern "C" __declspec(dllimport) bool lib2_does_it_work();

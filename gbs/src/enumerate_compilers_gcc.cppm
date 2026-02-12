@@ -62,8 +62,8 @@ export void enumerate_compilers_gcc(environment const& env, auto&& callback) {
 				"-DWINPTHREAD_THREAD_DECL=WINPTHREADS_ALWAYS_INLINE "
 				;
 #ifdef _MSC_VER
-			comp.link_command = "call {0:?} -static -Wl,--allow-multiple-definition -lstdc++exp -o {1}/{2} @{1}/OBJLIST @{1}/LIBLIST";
-			comp.dlib_command = "call {0:?} -shared -Wl,--out-implib,{1}/{3} -lstdc++exp -o {1}/{2} @{1}/OBJLIST";
+			comp.link_command = "call {0:?} -static -Wl,--allow-multiple-definition -lstdc++exp  @{1}/OBJLIST @{1}/LIBLIST -o {1}/{2}";
+			comp.dlib_command = "call {0:?} -shared -Wl,--out-implib,{1}/{3} -lstdc++exp @{1}/OBJLIST -o {1}/{2}";
 #else
 			comp.link_command = "call {0:?} -static -o {1}/{2} @{1}/OBJLIST @{1}/LIBLIST";
 			comp.dlib_command = "call {0:?} -shared -o {1}/{2} @{1}/OBJLIST";
