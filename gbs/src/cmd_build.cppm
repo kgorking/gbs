@@ -208,7 +208,8 @@ export bool cmd_build(context& ctx, std::string_view /*target*/) {
 					auto const objlist_name = create_object_file_list(ctx, name, vec);
 
 					// Add it to the library list
-					fs::path const out_lib = ctx.output_dir() / os_get_static_library_name(ctx.get_target_os(), name);
+					auto const lib_or_dll_name = (ctx.get_selected_compiler().name == "gcc") ? os_get_dynamic_library_name(ctx.get_target_os(), name) : os_get_static_library_name(ctx.get_target_os(), name);
+					fs::path const out_lib = ctx.output_dir() / lib_or_dll_name;// os_get_static_library_name(ctx.get_target_os(), name);
 					libs.insert(out_lib);
 
 					auto dll_task = graph.create_task(lib, [&ctx, name, objlist_name] {
