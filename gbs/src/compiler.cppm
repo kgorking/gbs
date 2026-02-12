@@ -17,8 +17,7 @@ export struct compiler {
 	std::string_view dlib_command;
 	std::string_view define;
 	std::string_view include;
-	std::string_view reference;
-	std::string_view target;
+	std::string_view module_path;
 
 	std::filesystem::path dir;
 	std::filesystem::path executable;

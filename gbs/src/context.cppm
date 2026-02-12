@@ -12,6 +12,8 @@ import env;
 import compiler;
 import enumerate_compilers;
 import os;
+import task;
+import task_graph;
 
 export class context {
 	using compiler_collection = std::unordered_map<std::string_view, std::vector<compiler>>;
@@ -45,6 +47,7 @@ export class context {
 	// All the unittests created during last build
 	std::vector<std::filesystem::path> unittests;
 
+	// Environment variables
 	environment env;
 
 public:
@@ -102,8 +105,8 @@ public:
 			{"_shared",
 				"-std=c++23 "
 #ifdef _MSC_VER
-				// Needed to use std module
-				"-Wno-include-angled-in-module-purview -Wno-reserved-module-identifier "
+			// Needed to use std module
+			"-Wno-include-angled-in-module-purview -Wno-reserved-module-identifier "
 #else
 				 "-stdlib=libc++ "
 #endif
@@ -298,28 +301,19 @@ public:
 		return std::vformat(selected_cl.slib_command, std::make_format_args(lib, out_dir, out_name));
 	}
 
-	// Create library command for the currently selected compiler
-	[[nodiscard]] std::string dynamic_library_command(std::string_view const out_name, std::string_view const out_dir) const {
+	// Create dynamic library command for the currently selected compiler
+	[[nodiscard]] std::string dynamic_library_command(std::string_view const dll_name, std::string_view const lib_name, std::string_view const out_dir) const {
 		auto const lib = selected_cl.dlib.generic_string();
-		return std::vformat(selected_cl.dlib_command, std::make_format_args(lib, out_dir, out_name));
+		return std::vformat(selected_cl.dlib_command, std::make_format_args(lib, out_dir, dll_name, lib_name));
 	}
 
 	// Create a reference to a module
-	[[nodiscard]] auto build_reference(std::string_view module_name) const -> std::string {
-		auto const out = (output_dir() / module_name).generic_string();
-		return std::vformat(selected_cl.reference, std::make_format_args(module_name, out));
-	}
-
-	// Create a reference to modules
-	[[nodiscard]] auto build_references(std::set<std::string> const& module_names) const -> std::string {
-		std::string refs;
-		if (!selected_cl.reference.empty()) {
-			for (auto const& s : module_names) {
-				auto const out = (output_dir() / s).generic_string();
-				refs += std::vformat(selected_cl.reference, std::make_format_args(s, out));
-			}
+	[[nodiscard]] auto get_module_directory() const -> std::string {
+		if (!selected_cl.module_path.empty()) {
+			auto const out = output_dir().generic_string();
+			return std::vformat(selected_cl.module_path, std::make_format_args(out));
 		}
-		return refs;
+		return std::string{};
 	}
 
 	[[nodiscard]] std::string build_define(std::string_view const def) const {

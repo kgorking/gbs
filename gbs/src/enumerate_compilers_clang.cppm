@@ -29,9 +29,7 @@ compiler new_compiler(std::string_view version, std::size_t prefix_size) {
 	comp.dlib_command = "call {0} -shared -fPIC -o {1}/{2} @{1}/OBJLIST";
 	comp.define = "-D";
 	comp.include = "-I\"{0}/\"";
-	comp.reference = " -fmodule-file={}={}.pcm ";
-	comp.target = " -target {} ";
-
+	comp.module_path = " -fprebuilt-module-path={}";
 
 	return comp;
 }

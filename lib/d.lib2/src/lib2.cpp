@@ -1,5 +1,4 @@
-#include "../inc/lib2.hpp"
-
-extern "C" bool does_it_work_dynamic() {
+//#include "../inc/lib2.h"
+extern "C" __declspec(dllexport) bool lib2_does_it_work() {
 	return true;
 }

@@ -50,13 +50,23 @@
       ]
     },
     {
+      "name": "[ALL] build",
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": ".",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "clean cl=msvc build unittest=-ni cl=clang:21 build unittest=-ni cl=gcc build unittest=-ni"
+      ]
+    },
+    {
       "name": "[msvc] build",
       "type": "default",
       "project": "CMakeLists.txt",
       "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=msvc build unittest"
+        "clean cl=msvc build unittest=-ni"
       ]
     },
     {
@@ -66,7 +76,7 @@
       "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=clang:21 build unittest"
+        "clean cl=clang:21 build unittest=-ni"
       ]
     },
     {
@@ -76,7 +86,7 @@
       "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=wsl.clang:22 build unittest"
+        "clean cl=clang:22 config=release,warnings build unittest=-ni"
       ]
     },
     {
@@ -86,7 +96,7 @@
       "currentDir": ".",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=gcc build unittest"
+        "clean cl=gcc build unittest=-ni"
       ]
     },
     {

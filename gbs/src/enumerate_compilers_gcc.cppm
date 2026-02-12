@@ -40,7 +40,6 @@ export void enumerate_compilers_gcc(environment const& env, auto&& callback) {
 			comp.dlib = actual_path / "bin" / "g++";
 
 			if (comp.major >= 15) {
-				// /usr/include/c++/15/bits/std.cc
 				comp.std_module = actual_path / "include" / "c++" / comp.name_and_version.substr(4) / "bits" / "std.cc";
 				if (!std::filesystem::exists(*comp.std_module)) {
 					std::println(std::cerr, "<gbs> Error: Could not find 'std.cc' at location {}", comp.std_module->generic_string());
@@ -62,18 +61,17 @@ export void enumerate_compilers_gcc(environment const& env, auto&& callback) {
 				"-DWINPTHREAD_THREAD_DECL=WINPTHREADS_ALWAYS_INLINE "
 				;
 #ifdef _MSC_VER
-			comp.link_command = "call {0:?} -o {1}/{2} @{1}/OBJLIST @{1}/LIBLIST -static -Wl,--allow-multiple-definition -lstdc++exp";
+			comp.link_command = "call {0:?} -static -Wl,--allow-multiple-definition -lstdc++exp  @{1}/OBJLIST @{1}/LIBLIST -o {1}/{2}";
+			comp.dlib_command = "call {0:?} -shared -Wl,--out-implib,{1}/{3} -lstdc++exp @{1}/OBJLIST -o {1}/{2}";
 #else
-			comp.link_command = "call {0:?} -o {1}/{2} @{1}/OBJLIST @{1}/LIBLIST -static";
+			comp.link_command = "call {0:?} -static -o {1}/{2} @{1}/OBJLIST @{1}/LIBLIST";
+			comp.dlib_command = "call {0:?} -shared -o {1}/{2} @{1}/OBJLIST";
 #endif
-			comp.dlib_command = "call {0:?} -o {1}/{2} @{1}/OBJLIST -static -shared -Wl,--out-implib={1}/{2}.lib -lstdc++exp";
 			comp.slib_command = "call {0:?} rcs {1}/{2} @{1}/OBJLIST";
 			comp.define = "-D";
 			comp.include = "-I{0}";
-			comp.reference = "";
-			comp.target = " -target {} ";
+			comp.module_path = " -fmodule-mapper=\"|@g++-mapper-server --root {}\"";
 			callback(std::move(comp));
 		}
 	}
 }
-
