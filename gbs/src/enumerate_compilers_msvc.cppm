@@ -38,16 +38,17 @@ static void enumerate_compiler_msvc(std::filesystem::path msvc_path, auto&& call
 
 		std::string const cmd = std::format(R"("{}" 1>nul 2>version)", comp.executable.generic_string());
 		if (0 == std::system(cmd.c_str())) {
-			std::string version;
-			std::getline(std::ifstream("version"), version);
+			{
+				std::string version;
+				std::getline(std::ifstream("version"), version);
 
-			std::string_view sv(version);
-			sv.remove_prefix(sv.find_first_of("0123456789", 0));
-			sv = sv.substr(0, sv.find_first_of(' '));
+				std::string_view sv(version);
+				sv.remove_prefix(sv.find_first_of("0123456789", 0));
+				sv = sv.substr(0, sv.find_first_of(' '));
 
-			extract_compiler_version(sv, comp.major, comp.minor, comp.patch);
-			callback(std::move(comp));
-
+				extract_compiler_version(sv, comp.major, comp.minor, comp.patch);
+				callback(std::move(comp));
+			}
 			std::filesystem::remove("version");
 		}
 	}
@@ -65,8 +66,7 @@ export void enumerate_compilers_msvc(environment const& env, auto&& callback) {
 			enumerate_compiler_msvc(msvc_path / "VC" / "Tools" / "MSVC", callback);
 		}
 		file.close();
-		std::error_code ec;
-		std::filesystem::remove("instpath.txt", ec);
+		std::filesystem::remove("instpath.txt");
 	}
 
 	// Look for user installations of Microsoft Build Tools

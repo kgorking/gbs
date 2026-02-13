@@ -443,7 +443,11 @@ public:
 		}
 
 		if (!std::filesystem::exists(response_dir())) {
-			std::filesystem::create_directories(response_dir());
+			std::error_code ec{};
+			if (!std::filesystem::create_directories(response_dir(), ec)) {
+				std::println("<gbs> Error: could not create response file directory {}/{}: '{}'", std::filesystem::current_path().generic_string(), response_dir().generic_string(), ec.message());
+				return false;
+			}
 		}
 
 		if (!ensure_response_file_exists("_shared"))
