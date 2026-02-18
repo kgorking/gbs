@@ -1,4 +1,4 @@
-﻿# Gorking Build System v0.18
+﻿# Gorking Build System v0.18.1
 
 A rule-based build system to automatically find source files and compile them. No need for build scripts.
 
@@ -7,6 +7,7 @@ A rule-based build system to automatically find source files and compile them. N
 - Source files are recursively found in the `src` folder of each project or library.
 - Projects are placed in subfolders.
   - The name of the project folder is the name of the resulting executable.
+	- A source file with the same name as the project will contain the `main` function.
   - Names starting with `s.` or `d.` produce static- and dynamic libraries, respectively.
 - `lib` folder is for libraries.
   - Libraries are shared across all projects.
@@ -32,8 +33,8 @@ example/
 │   │   ├── inc/
 │   │   └── src/
 │   └── libname3/            (shared header-only include)
-│   │   ├── inc/
-│   │   └── src/             (for building implementions)
+│       ├── inc/
+│       └── src/             (for building implementions)
 ├── example/                 (executable - main project)
 │   └── src/
 ├── other_executeable/       (another executable)
