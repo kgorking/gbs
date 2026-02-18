@@ -2,9 +2,9 @@ module;
 #include <filesystem>
 #include <iostream>
 #include <print>
+#include "../inc/wsl.h"
 export module cmd_unittest;
 import context;
-import wsl;
 
 namespace fs = std::filesystem;
 

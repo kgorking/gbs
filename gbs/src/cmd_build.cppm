@@ -17,20 +17,20 @@ module;
 #include <unordered_set>
 #include "../inc/env.h"
 #include "../inc/os.h"
+#include "../inc/dep_scan.h"
+
 export module cmd_build;
 import context;
 import get_source_groups;
 import cmd_config;
-import dep_scan;
 import task;
 import task_graph;
 namespace fs = std::filesystem;
 
+std::mutex m;
+
 using imports_map = std::unordered_map<fs::path, import_set>;  // source -> {imports}
 using module_map = std::unordered_map<std::string, fs::path>;  // import -> source
-
-// TODO remove
-auto m = std::mutex{};
 
 // Why doesn't this garbage stl have this already???
 static std::string to_upper(std::string const& cstr) {
@@ -331,7 +331,6 @@ export bool cmd_build(context& ctx, std::string_view /*target*/) {
 					std::println("<gbs> Linking unittest '{}'...", exe_name);
 					std::string const obj_resp = std::format(" @{} @{} {}/{}.obj", objlist_name.generic_string(), sup_objlist_name.generic_string(), ctx.output_dir().generic_string(), test_name);
 					std::string const cmd = ctx.link_command(exe_name, ctx.output_dir().generic_string()) + obj_resp;
-					std::scoped_lock lock(m);
 					std::system(cmd.c_str());
 					});
 

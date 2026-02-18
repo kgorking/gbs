@@ -8,9 +8,9 @@ module;
 #include <string_view>
 #include <system_error>
 #include "../inc/env.h"
+#include "../inc/wsl.h"
 export module enumerate_compilers_clang;
 import compiler;
-import wsl;
 
 compiler new_compiler(std::string_view version, std::size_t prefix_size) {
 	compiler comp;

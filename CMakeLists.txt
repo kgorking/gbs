@@ -21,13 +21,14 @@ add_executable (gbs
 	"gbs/src/msvc.cpp"
 	"gbs/src/env.cpp"
 	"gbs/src/os.cpp"
+	"gbs/src/dep_scan.cpp"
+	"gbs/src/wsl.cpp"
 )
 target_sources(gbs PUBLIC FILE_SET CXX_MODULES FILES
 	"gbs/src/source_enum.cppm"
 	"gbs/src/cmd_get_cl.cppm"
 	"gbs/src/context.cppm"
 	"gbs/src/compiler.cppm"
-	"gbs/src/dep_scan.cppm"
 	"gbs/src/get_source_groups.cppm"
 	"gbs/src/cmd_build.cppm"
 	"gbs/src/cmd_enum_cl.cppm"
@@ -42,7 +43,6 @@ target_sources(gbs PUBLIC FILE_SET CXX_MODULES FILES
     "gbs/src/enumerate_compilers_clang.cppm"
     "gbs/src/enumerate_compilers_msvc.cppm"
     "gbs/src/enumerate_compilers_gcc.cppm"
-	"gbs/src/wsl.cppm"
 	"gbs/src/task/thread_pool.cppm"
 	"gbs/src/task/task_graph.cppm"
 	"gbs/src/task/task.cppm"

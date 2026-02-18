@@ -6,8 +6,8 @@ module;
 #include <set>
 #include <string>
 #include <unordered_map>
+#include "../inc/dep_scan.h"
 export module get_source_groups;
-import dep_scan;
 
 namespace fs = std::filesystem;
 

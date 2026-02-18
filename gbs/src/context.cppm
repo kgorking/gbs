@@ -1,4 +1,6 @@
 module;
+#include "../inc/env.h"
+#include "../inc/os.h"
 #include <string_view>
 #include <filesystem>
 #include <unordered_map>
@@ -7,9 +9,7 @@ module;
 #include <fstream>
 #include <set>
 #include <ranges>
-#include "../inc/env.h"
-#include "../inc/os.h"
-
+#include <vector>
 export module context;
 import compiler;
 import enumerate_compilers;
