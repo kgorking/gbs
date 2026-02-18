@@ -1,4 +1,5 @@
 module;
+#include "../inc/compiler.h"
 #include <string_view>
 #include <print>
 export module cmd_enum_cl;

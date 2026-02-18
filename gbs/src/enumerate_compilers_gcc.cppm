@@ -3,8 +3,8 @@ module;
 #include <iostream>
 #include <print>
 #include "../inc/env.h"
+#include "../inc/compiler.h"
 export module enumerate_compilers_gcc;
-import compiler;
 
 export void enumerate_compilers_gcc(environment const& env, auto&& callback) {
 	// Find compilers in ~/.gbs/*

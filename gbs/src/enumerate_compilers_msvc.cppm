@@ -2,8 +2,8 @@ module;
 #include <filesystem>
 #include <fstream>
 #include "../inc/env.h"
+#include "../inc/compiler.h"
 export module enumerate_compilers_msvc;
-import compiler;
 
 #ifndef _MSC_VER
 export void enumerate_compilers_msvc(environment const&, auto&&) {}

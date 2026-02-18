@@ -4,9 +4,9 @@ module;
 #include <print>
 #include <string>
 #include <string_view>
+#include "../inc/compiler.h"
 #include "../inc/env.h"
 export module cmd_get_cl;
-import compiler;
 import context;
 
 std::string gcc_get_download_url(std::string_view const version) {

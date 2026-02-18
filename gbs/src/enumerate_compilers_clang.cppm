@@ -9,8 +9,8 @@ module;
 #include <system_error>
 #include "../inc/env.h"
 #include "../inc/wsl.h"
+#include "../inc/compiler.h"
 export module enumerate_compilers_clang;
-import compiler;
 
 compiler new_compiler(std::string_view version, std::size_t prefix_size) {
 	compiler comp;
@@ -109,7 +109,7 @@ export void enumerate_compilers_clang(environment const& env, auto&& callback) {
 	std::filesystem::remove("clang_version.txt");
 
 	// Enumerate WSL installed clang compilers
-	auto const wsl_distros = get_wsl_distributions();
+	/*auto const wsl_distros = get_wsl_distributions();
 	for (std::string const& distro : wsl_distros) {
 		std::string const wsl_prefix = "wsl -d " + distro + " ";
 		std::string const command = wsl_prefix + "clang --version > clang_version.txt 2>&1";
@@ -143,7 +143,7 @@ export void enumerate_compilers_clang(environment const& env, auto&& callback) {
 			}
 		}
 		std::filesystem::remove("clang_version.txt");
-	}
+	}*/
 
 	// Find compilers in ~/.gbs/clang
 	std::filesystem::path const download_dir = env.get_home_dir() / ".gbs" / "clang";

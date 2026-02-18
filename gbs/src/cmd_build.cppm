@@ -331,7 +331,7 @@ export bool cmd_build(context& ctx, std::string_view /*target*/) {
 					std::println("<gbs> Linking unittest '{}'...", exe_name);
 					std::string const obj_resp = std::format(" @{} @{} {}/{}.obj", objlist_name.generic_string(), sup_objlist_name.generic_string(), ctx.output_dir().generic_string(), test_name);
 					std::string const cmd = ctx.link_command(exe_name, ctx.output_dir().generic_string()) + obj_resp;
-					std::system(cmd.c_str());
+					/*std::scoped_lock sl(m);*/ std::system(cmd.c_str());
 					});
 
 				graph.add_dependency(lib_task, test_exe_task);

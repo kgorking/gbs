@@ -1,8 +1,8 @@
 module;
+#include "../inc/compiler.h"
 #include <string_view>
 #include <print>
 #include <iostream>
-
 export module cmd_cl;
 import context;
 

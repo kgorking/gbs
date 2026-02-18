@@ -1,7 +1,7 @@
 module;
 #include "../inc/env.h"
+#include "../inc/compiler.h"
 export module enumerate_compilers;
-import compiler;
 import enumerate_compilers_clang;
 import enumerate_compilers_gcc;
 import enumerate_compilers_msvc;

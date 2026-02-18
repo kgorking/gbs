@@ -1,4 +1,5 @@
-﻿#include <print>
+﻿#include "../inc/compiler.h"
+#include <print>
 #include <ranges>
 #include <span>
 #include <unordered_map>
@@ -14,7 +15,6 @@ import cmd_config;
 import cmd_unittest;
 
 import context;
-import compiler;
 
 int main(const int argc, char const* argv[], char const** envp) {
 	auto ctx = context{ envp };

@@ -23,12 +23,12 @@ add_executable (gbs
 	"gbs/src/os.cpp"
 	"gbs/src/dep_scan.cpp"
 	"gbs/src/wsl.cpp"
+	"gbs/src/compiler.cpp"
 )
 target_sources(gbs PUBLIC FILE_SET CXX_MODULES FILES
 	"gbs/src/source_enum.cppm"
 	"gbs/src/cmd_get_cl.cppm"
 	"gbs/src/context.cppm"
-	"gbs/src/compiler.cppm"
 	"gbs/src/get_source_groups.cppm"
 	"gbs/src/cmd_build.cppm"
 	"gbs/src/cmd_enum_cl.cppm"

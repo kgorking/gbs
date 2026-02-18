@@ -1,6 +1,7 @@
 module;
 #include "../inc/env.h"
 #include "../inc/os.h"
+#include "../inc/compiler.h"
 #include <string_view>
 #include <filesystem>
 #include <unordered_map>
@@ -11,7 +12,6 @@ module;
 #include <ranges>
 #include <vector>
 export module context;
-import compiler;
 import enumerate_compilers;
 import task;
 import task_graph;

@@ -3,6 +3,7 @@ module;
 #include <iostream>
 #include <print>
 #include "../inc/wsl.h"
+#include "../inc/compiler.h"
 export module cmd_unittest;
 import context;
 
