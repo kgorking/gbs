@@ -7,8 +7,9 @@ module;
 #include <fstream>
 #include <set>
 #include <ranges>
+#include "../inc/env.h"
+
 export module context;
-import env;
 import compiler;
 import enumerate_compilers;
 import os;

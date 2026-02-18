@@ -4,10 +4,10 @@ module;
 #include <print>
 #include <string>
 #include <string_view>
+#include "../inc/env.h"
 export module cmd_get_cl;
 import compiler;
 import context;
-import env;
 
 std::string gcc_get_download_url(std::string_view const version) {
 	// Input:  15.2.0posix-13.0.0-msvcrt-r1

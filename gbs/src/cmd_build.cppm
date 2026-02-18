@@ -15,8 +15,8 @@ module;
 #include <string_view>
 #include <unordered_map>
 #include <unordered_set>
+#include "../inc/env.h"
 export module cmd_build;
-import env;
 import context;
 import get_source_groups;
 import cmd_config;

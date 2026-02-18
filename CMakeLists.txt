@@ -16,13 +16,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project ("gbs" LANGUAGES CXX)
 
-add_executable (gbs "gbs/src/gbs.cpp" "gbs/src/msvc.cpp")
+add_executable (gbs
+	"gbs/src/gbs.cpp"
+	"gbs/src/msvc.cpp"
+	"gbs/src/env.cpp"
+)
 target_sources(gbs PUBLIC FILE_SET CXX_MODULES FILES
 	"gbs/src/source_enum.cppm"
 	"gbs/src/cmd_get_cl.cppm"
 	"gbs/src/context.cppm"
 	"gbs/src/compiler.cppm"
-	"gbs/src/env.cppm"
 	"gbs/src/dep_scan.cppm"
 	"gbs/src/get_source_groups.cppm"
 	"gbs/src/cmd_build.cppm"

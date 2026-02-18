@@ -2,8 +2,8 @@ module;
 #include <filesystem>
 #include <optional>
 #include <string_view>
+#include "../inc/env.h"
 export module compiler;
-import env;
 
 export struct compiler {
 	int major = 0, minor = 0, patch = 0;

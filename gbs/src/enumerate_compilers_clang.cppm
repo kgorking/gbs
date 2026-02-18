@@ -7,8 +7,8 @@ module;
 #include <string>
 #include <string_view>
 #include <system_error>
+#include "../inc/env.h"
 export module enumerate_compilers_clang;
-import env;
 import compiler;
 import wsl;
 
