@@ -258,11 +258,11 @@ export bool cmd_build(context& ctx, std::string_view /*target*/) {
 
 			// Create the object list file for the .lib file
 			auto const source_files = get_source_files(p / "src") | std::ranges::to<std::vector>();
-			auto filter_main = std::views::filter([&](fs::path const& p) { return !p.filename().string().starts_with(name); });
+			auto filter_main = std::views::filter([&](fs::path const& path_to_filter) { return !path_to_filter.filename().string().starts_with(name); });
 			objlist_name = create_object_file_list(ctx, name, source_files | filter_main);
 
 			auto included_source_files = source_files | std::views::filter(should_include);
-			auto const latest_source_time = std::ranges::max(included_source_files | std::views::transform([](const fs::path& p) { return fs::last_write_time(p); }));
+			auto const latest_source_time = std::ranges::max(included_source_files | std::views::transform([](fs::path const& src) { return fs::last_write_time(src); }));
 
 			exe_src_task = graph.create_task(p / "src", []() {});
 
