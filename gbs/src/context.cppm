@@ -8,11 +8,11 @@ module;
 #include <set>
 #include <ranges>
 #include "../inc/env.h"
+#include "../inc/os.h"
 
 export module context;
 import compiler;
 import enumerate_compilers;
-import os;
 import task;
 import task_graph;
 

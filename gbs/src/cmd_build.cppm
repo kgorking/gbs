@@ -16,11 +16,11 @@ module;
 #include <unordered_map>
 #include <unordered_set>
 #include "../inc/env.h"
+#include "../inc/os.h"
 export module cmd_build;
 import context;
 import get_source_groups;
 import cmd_config;
-import os;
 import dep_scan;
 import task;
 import task_graph;
