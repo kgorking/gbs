@@ -1,12 +1,12 @@
 module;
-#include <string>
-#include <string_view>
-#include <optional>
-#include <fstream>
+#include <cstdio>
 #include <filesystem>
 #include <format>
+#include <fstream>
+#include <optional>
+#include <string>
+#include <string_view>
 #include <system_error>
-#include <cstdio>
 export module enumerate_compilers_clang;
 import env;
 import compiler;
@@ -71,7 +71,8 @@ std::optional<std::string> find_std_module_path(compiler const& comp, bool is_wi
 				}
 			}
 
-			std::remove("compiler_output.txt");
+			output.close();
+			std::filesystem::remove("compiler_output.txt");
 			if (line != "End of search list.")
 				return line;
 		}
@@ -105,7 +106,7 @@ export void enumerate_compilers_clang(environment const& env, auto&& callback) {
 			callback(std::move(comp));
 		}
 	}
-	std::remove("clang_version.txt");
+	std::filesystem::remove("clang_version.txt");
 
 	// Enumerate WSL installed clang compilers
 	auto const wsl_distros = get_wsl_distributions();
@@ -141,7 +142,7 @@ export void enumerate_compilers_clang(environment const& env, auto&& callback) {
 				callback(std::move(comp));
 			}
 		}
-		std::remove("clang_version.txt");
+		std::filesystem::remove("clang_version.txt");
 	}
 
 	// Find compilers in ~/.gbs/clang

@@ -32,7 +32,7 @@ export std::vector<std::string> get_wsl_distributions() {
 		}
 	}
 
-	std::remove("wsl_distros.txt");
+	std::filesystem::remove("wsl_distros.txt");
 	return distributions;
 }
 

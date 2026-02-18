@@ -132,7 +132,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 
 	// Search for compiler version
 	if (2 == std::system(git_search_cmd.c_str())) {
-		std::remove("version_list.txt");
+		std::filesystem::remove("version_list.txt");
 		std::println("<gbs>    no valid version found");
 		return false;
 	}
@@ -166,7 +166,7 @@ export bool cmd_get_cl(context& ctx, std::string_view args) {
 			return false;
 		} 
 	}
-	std::remove("version_list.txt");
+	std::filesystem::remove("version_list.txt");
 
 
 	std::string_view const filename = std::string_view{ url }.substr(1 + url.find_last_of('/'));
