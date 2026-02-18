@@ -29,6 +29,9 @@ namespace fs = std::filesystem;
 using imports_map = std::unordered_map<fs::path, import_set>;  // source -> {imports}
 using module_map = std::unordered_map<std::string, fs::path>;  // import -> source
 
+// TODO remove
+auto m = std::mutex{};
+
 // Why doesn't this garbage stl have this already???
 static std::string to_upper(std::string const& cstr) {
 	std::string str = cstr;
@@ -111,7 +114,9 @@ static bool is_valid_sourcefile(fs::path const& file) {
 }
 
 // Create the object list file
-static fs::path create_object_file_list(context& ctx, std::string_view name, std::span<const fs::path> paths) {
+template<typename Range>
+	requires std::ranges::range<Range> && std::same_as<std::ranges::range_value_t<Range>, fs::path>
+static fs::path create_object_file_list(context& ctx, std::string_view name, Range&& paths) {
 	fs::path objlist_name = (ctx.output_dir() / name).concat("_OBJLIST");
 	std::ofstream objlist(objlist_name);
 	for(fs::path const& src : paths) {
@@ -246,27 +251,31 @@ export bool cmd_build(context& ctx, std::string_view /*target*/) {
 		}
 
 		task_ptr exe_src_task;
+		fs::path objlist_name;
 
 		if (fs::exists(p / "src")) {
 			std::string const name = p == "." ? fs::current_path().stem().generic_string() : p.stem().generic_string();
 
 			// Create the object list file for the .lib file
 			auto const source_files = get_source_files(p / "src") | std::ranges::to<std::vector>();
-			auto const objlist_name = create_object_file_list(ctx, name, source_files);
+			auto filter_main = std::views::filter([&](fs::path const& p) { return !p.filename().string().starts_with(name); });
+			objlist_name = create_object_file_list(ctx, name, source_files | filter_main);
 
 			auto included_source_files = source_files | std::views::filter(should_include);
-			auto const latest_source_time = std::ranges::max(included_source_files | std::views::transform((fs::file_time_type(*)(const fs::path&))fs::last_write_time));
+			auto const latest_source_time = std::ranges::max(included_source_files | std::views::transform([](const fs::path& p) { return fs::last_write_time(p); }));
 
 			exe_src_task = graph.create_task(p / "src", []() {});
 
 			task_ptr exe_task = graph.create_task(p, [=, &ctx] {
+				std::string const main_obj_name = (ctx.output_dir() / p.filename()).replace_extension("obj").generic_string();
 				std::string const exe_name = os_get_executable_name(ctx.get_target_os(), name);
+
 				auto const exe_path = ctx.output_dir() / exe_name;
 				if (fs::exists(exe_path) && latest_source_time < fs::last_write_time(exe_path))
 					return;
 
 				std::println("<gbs> Linking executable '{}'...", exe_name);
-				std::string const obj_resp = std::format(" @{}", objlist_name.generic_string());
+				std::string const obj_resp = std::format(" @{} {}", objlist_name.generic_string(), main_obj_name);
 				std::string const cmd = ctx.link_command(exe_name, ctx.output_dir().generic_string()) + obj_resp;
 				std::system(cmd.c_str());
 				});
@@ -295,7 +304,7 @@ export bool cmd_build(context& ctx, std::string_view /*target*/) {
 			//auto const last_write_time = std::ranges::max(supports | std::views::transform([](fs::path const& path) { return fs::last_write_time(path); }));
 
 			// Create the object list file for non-test files
-			fs::path objlist_name = create_object_file_list(ctx, "sup_" + name, supports);
+			fs::path sup_objlist_name = create_object_file_list(ctx, "sup_" + name, supports);
 
 			// Create the build tasks for the support files
 			task_ptr support_task = graph.create_task(p / "unittest_support", []() {});
@@ -318,10 +327,11 @@ export bool cmd_build(context& ctx, std::string_view /*target*/) {
 				ctx.add_unittest(ctx.output_dir() / exe_name);
 
 				// Create the unittest task
-				auto test_exe_task = graph.create_task(exe_name, [&ctx, test_name, exe_name, objlist_name] {
+				auto test_exe_task = graph.create_task(exe_name, [&ctx, test_name, exe_name, objlist_name, sup_objlist_name] mutable {
 					std::println("<gbs> Linking unittest '{}'...", exe_name);
-					std::string const obj_resp = std::format(" @{} {}/{}.obj", objlist_name.generic_string(), ctx.output_dir().generic_string(), test_name);
+					std::string const obj_resp = std::format(" @{} @{} {}/{}.obj", objlist_name.generic_string(), sup_objlist_name.generic_string(), ctx.output_dir().generic_string(), test_name);
 					std::string const cmd = ctx.link_command(exe_name, ctx.output_dir().generic_string()) + obj_resp;
+					std::scoped_lock lock(m);
 					std::system(cmd.c_str());
 					});
 
