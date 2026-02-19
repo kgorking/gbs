@@ -27,14 +27,14 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         build_type: [Release, Debug]
-        cpp_compiler: [cl] #, gcc-15, clang++-21]
-        exclude:
-          - os: windows-latest
-            cpp_compiler: gcc-15
-          - os: windows-latest
-            cpp_compiler: clang++-21
-          - os: ubuntu-latest
-            cpp_compiler: cl
+        cpp_compiler: [cl, gcc-15, clang++-21]
+        #exclude:
+        #  - os: windows-latest
+        #    cpp_compiler: gcc-15
+        #  - os: windows-latest
+        #    cpp_compiler: clang++-21
+        #  - os: ubuntu-latest
+        #    cpp_compiler: cl
 
     steps:
     - uses: lukka/get-cmake@latest
