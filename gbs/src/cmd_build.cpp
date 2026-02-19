@@ -1,10 +1,11 @@
-module;
+#include "../inc/commands.h"
+#include "../inc/context.h"
 #include "../inc/dep_scan.h"
 #include "../inc/env.h"
+#include "../inc/get_source_groups.h"
 #include "../inc/os.h"
+#include "../inc/task/task_graph.h"
 #include <algorithm>
-#include <coroutine>
-#include <execution>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -17,17 +18,8 @@ module;
 #include <string>
 #include <string_view>
 #include <unordered_map>
-#include <unordered_set>
 
-export module cmd_build;
-import context;
-import get_source_groups;
-import cmd_config;
-import task;
-import task_graph;
 namespace fs = std::filesystem;
-
-std::mutex m;
 
 using imports_map = std::unordered_map<fs::path, import_set>;  // source -> {imports}
 using module_map = std::unordered_map<std::string, fs::path>;  // import -> source
@@ -143,8 +135,8 @@ static task_ptr create_build_task(context const& ctx, task_graph& tg, fs::path c
 	return {};
 }
 
-export bool cmd_build(context& ctx, std::string_view /*target*/) {
-	//std::println("<gbs> Building...");
+bool cmd_build(context& ctx, std::string_view /*target*/) {
+	std::println("<gbs> Building...");
 
 	if (!init_build(ctx))
 		return false;
@@ -154,7 +146,7 @@ export bool cmd_build(context& ctx, std::string_view /*target*/) {
 	std::set<fs::path> objects;
 
 	// Containers for all source files, includes, defines and targets
-	std::unordered_set<fs::path> includes;
+	std::set<fs::path> includes;
 	module_map modmap;
 	imports_map impmap;
 	task_graph graph;
@@ -231,7 +223,7 @@ export bool cmd_build(context& ctx, std::string_view /*target*/) {
 		}
 	}
 
-	for (auto dir_it : fs::directory_iterator(".", fs::directory_options::follow_directory_symlink | fs::directory_options::skip_permission_denied)) {
+	for (auto const& dir_it : fs::directory_iterator(".", fs::directory_options::follow_directory_symlink | fs::directory_options::skip_permission_denied)) {
 		if (!dir_it.is_directory())
 			continue;
 

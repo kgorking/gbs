@@ -1,18 +1,17 @@
-module;
+#include "../inc/compiler.h"
+#include "../inc/env.h"
+#include "../inc/wsl.h"
 #include <cstdio>
 #include <filesystem>
 #include <format>
 #include <fstream>
+#include <functional>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <system_error>
-#include "../inc/env.h"
-#include "../inc/wsl.h"
-#include "../inc/compiler.h"
-export module enumerate_compilers_clang;
 
-compiler new_compiler(std::string_view version, std::size_t prefix_size) {
+static compiler new_compiler(std::string_view version, std::size_t prefix_size) {
 	compiler comp;
 
 	comp.name_and_version = version;
@@ -34,7 +33,7 @@ compiler new_compiler(std::string_view version, std::size_t prefix_size) {
 	return comp;
 }
 
-std::optional<std::string> find_std_module_path(compiler const& comp, bool is_windows) {
+static std::optional<std::string> find_std_module_path(compiler const& comp, bool is_windows) {
 	// Select the correct NULL device based on the operating system
 #ifdef WIN32
 	std::string_view const null_device = "NUL";
@@ -81,7 +80,7 @@ std::optional<std::string> find_std_module_path(compiler const& comp, bool is_wi
 	return std::nullopt;
 }
 
-export void enumerate_compilers_clang(environment const& env, auto&& callback) {
+void enumerate_compilers_clang(environment const& env, std::function<void(compiler&&)> callback) {
 	// Enumerate installed clang compiler
 	if (0 == std::system("clang --version > clang_version.txt 2>&1")) {
 		std::ifstream file("clang_version.txt");

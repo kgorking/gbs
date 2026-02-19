@@ -1,13 +1,11 @@
-module;
+#include "../inc/compiler.h"
+#include "../inc/context.h"
+#include "../inc/env.h"
 #include <filesystem>
 #include <fstream>
 #include <print>
 #include <string>
 #include <string_view>
-#include "../inc/compiler.h"
-#include "../inc/env.h"
-export module cmd_get_cl;
-import context;
 
 std::string gcc_get_download_url(std::string_view const version) {
 	// Input:  15.2.0posix-13.0.0-msvcrt-r1
@@ -35,7 +33,7 @@ std::string clang_get_download_url(std::string_view const version) {
 	return std::format("https://github.com/llvm/llvm-project/releases/download/llvmorg-{0}/clang+llvm-{0}-x86_64-pc-windows-msvc.tar.xz", version);
 }
 
-export bool cmd_get_cl(context& ctx, std::string_view args) {
+bool cmd_get_cl(context& ctx, std::string_view args) {
 	std::println("<gbs> '{}' - Searching remotely for newest version...", args);
 
 	if (ctx.set_compiler(args)) {

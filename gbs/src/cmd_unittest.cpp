@@ -1,15 +1,13 @@
-module;
+#include "../inc/compiler.h"
+#include "../inc/context.h"
+#include "../inc/wsl.h"
 #include <filesystem>
 #include <iostream>
 #include <print>
-#include "../inc/wsl.h"
-#include "../inc/compiler.h"
-export module cmd_unittest;
-import context;
 
 namespace fs = std::filesystem;
 
-export bool cmd_unittest(context& ctx, std::string_view args) {
+bool cmd_unittest(context& ctx, std::string_view args) {
 	if (ctx.get_config().empty()) {
 		std::println(std::cerr, "<gbs> No build configuration selected. Please set 'config=<...>' before running unittests.");
 		return false;

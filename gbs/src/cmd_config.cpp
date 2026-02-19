@@ -1,15 +1,14 @@
-module;
+#include "../inc/commands.h"
+#include "../inc/context.h"
 #include <format>
 #include <string>
-export module cmd_config;
-import context;
 
 // Converts arguments into response files
 std::string convert_arg_to_response(std::string_view arg, context const& ctx) {
 	return std::format(" @{}/{}", ctx.response_dir().generic_string(), arg);
 }
 
-export bool cmd_config(context& ctx, std::string_view args) {
+bool cmd_config(context& ctx, std::string_view args) {
 	// Set the default build config if none is specified
 	if (args.empty())
 		args = "release,warnings";

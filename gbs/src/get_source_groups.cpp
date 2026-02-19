@@ -1,33 +1,12 @@
-module;
-#include <array>
-#include <filesystem>
-#include <generator>
-#include <map>
-#include <set>
-#include <string>
-#include <unordered_map>
 #include "../inc/dep_scan.h"
-export module get_source_groups;
+#include "../inc/get_source_groups.h"
+#include <array>
+#include <generator>
+#include <set>
 
 namespace fs = std::filesystem;
 
-// A set of imports for a module
-export using import_set = std::set<std::string>;
-
-// Holds a single source files module dependencies
-export using source_info = std::pair<fs::path, import_set>;
-
-// A map of source files to their module dependencies
-using file_to_imports_map = std::unordered_map<fs::path, import_set>;
-
-// A single group of source files that can be compiled in parallel
-export using source_group = std::unordered_map<fs::path, import_set>;
-
-// A map of source files grouped by their dependency depth
-export using depth_ordered_sources_map = std::map<std::size_t, source_group>;
-
-
-export bool should_include(fs::path const& path) {
+bool should_include(fs::path const& path) {
 	return
 		!path.generic_string().starts_with("x.") &&
 		!path.filename().stem().generic_string().starts_with("x.");
@@ -36,7 +15,7 @@ export bool should_include(fs::path const& path) {
 // Recursively merge a files child dependencies with its own dependencies.
 //   Fx. A -> B -> C
 //   Results in A's dependencies being [B, C]
-static source_info recursive_merge(fs::path const&file, import_set const& deps, std::unordered_map<std::string, fs::path> const& module_name_to_file_map, file_to_imports_map const& file_imports) {
+static source_info recursive_merge(fs::path const&file, import_set const& deps, std::map<std::string, fs::path> const& module_name_to_file_map, file_to_imports_map const& file_imports) {
 	import_set all_merged_deps{ deps };
 
 	for (auto const& dep : deps) {
@@ -62,7 +41,7 @@ static bool is_valid_sourcefile(fs::path const& file) {
 	return extensions.end() != std::find(extensions.begin(), extensions.end(), file.extension());
 }
 
-export std::generator<fs::path> get_source_files(fs::path const& dir) {
+std::generator<fs::path> get_source_files(fs::path const& dir) {
 	for (auto const& dir_it : fs::recursive_directory_iterator(dir)) {
 		if (!dir_it.is_regular_file())
 			continue;
@@ -73,13 +52,12 @@ export std::generator<fs::path> get_source_files(fs::path const& dir) {
 	}
 }
 
-// Find the source files and dependencies
-export depth_ordered_sources_map get_grouped_source_files(fs::path const& dir) {
+depth_ordered_sources_map get_grouped_source_files(fs::path const& dir) {
 	file_to_imports_map file_imports;
 
 	// Maps an export module name to its filename
 	// and find all immediate dependencies for each file
-	std::unordered_map<std::string, fs::path> module_name_to_file_map;
+	std::map<std::string, fs::path> module_name_to_file_map;
 	for (auto const& dir_it : fs::recursive_directory_iterator(dir)) {
 		if (!dir_it.is_regular_file())
 			continue;

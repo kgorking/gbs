@@ -24,28 +24,23 @@ add_executable (gbs
 	"gbs/src/dep_scan.cpp"
 	"gbs/src/wsl.cpp"
 	"gbs/src/compiler.cpp"
-)
-target_sources(gbs PUBLIC FILE_SET CXX_MODULES FILES
-	"gbs/src/source_enum.cppm"
-	"gbs/src/cmd_get_cl.cppm"
-	"gbs/src/context.cppm"
-	"gbs/src/get_source_groups.cppm"
-	"gbs/src/cmd_build.cppm"
-	"gbs/src/cmd_enum_cl.cppm"
-	"gbs/src/cmd_clean.cppm"
-	"gbs/src/cmd_cl.cppm"
-	"gbs/src/cmd_ide.cppm"
-	"gbs/src/monad.cppm"
-	"gbs/src/cmd_version.cppm"
-	"gbs/src/cmd_config.cppm"
-    "gbs/src/cmd_unittest.cppm"
-    "gbs/src/enumerate_compilers.cppm"
-    "gbs/src/enumerate_compilers_clang.cppm"
-    "gbs/src/enumerate_compilers_msvc.cppm"
-    "gbs/src/enumerate_compilers_gcc.cppm"
-	"gbs/src/task/thread_pool.cppm"
-	"gbs/src/task/task_graph.cppm"
-	"gbs/src/task/task.cppm"
+	"gbs/src/get_source_groups.cpp"
+    "gbs/src/enumerate_compilers.cpp"
+    "gbs/src/enumerate_compilers_clang.cpp"
+    "gbs/src/enumerate_compilers_gcc.cpp"
+    "gbs/src/enumerate_compilers_msvc.cpp"
+	"gbs/src/task/task_graph.cpp"
+	"gbs/src/task/thread_pool.cpp"
+	"gbs/src/context.cpp"
+	"gbs/src/cmd_build.cpp"
+	"gbs/src/cmd_cl.cpp"
+	"gbs/src/cmd_clean.cpp"
+	"gbs/src/cmd_config.cpp"
+	"gbs/src/cmd_enum_cl.cpp"
+	"gbs/src/cmd_get_cl.cpp"
+	"gbs/src/cmd_ide.cpp"
+    "gbs/src/cmd_unittest.cpp"
+	"gbs/src/cmd_version.cpp"
 )
 
 if(MSVC)
@@ -73,7 +68,7 @@ if(MSVC)
 		/w14906     # string literal cast to 'LPWSTR' 
 		/w14928     # illegal copy-initialization; more than one user-defined conversion has been implicitly applied 
 	)
-	if(NOT VS_CONFIGURATION_TYPE STREQUAL "Debug")
+	if(NOT VS_CONFIGURATION_TYPE STREQUAL "x64 Debug")
 		target_link_options(gbs PRIVATE /LTCG /OPT:REF /OPT:ICF)
 	endif()
 else()
