@@ -90,6 +90,15 @@
       ]
     },
     {
+      "name": "[clang-WSL] build for linux",
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": "${workspaceRoot}",
+      "args": [
+        "clean cl=clang:22 config=release,warnings build unittest=-ni"
+      ]
+    },
+    {
       "name": "[gcc] build",
       "type": "default",
       "project": "CMakeLists.txt",

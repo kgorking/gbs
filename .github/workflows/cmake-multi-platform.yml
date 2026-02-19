@@ -52,7 +52,7 @@ jobs:
       run: |
         curl -fSLO https://github.com/kgorking/gbs/releases/download/v0.19-alpha/gbs-v0.19-x64-windows.zip
         Expand-Archive -Path gbs-v0.19-x64-windows.zip -DestinationPath .
-        ./gbs.exe cl=msvc config=debug,warnings build
+        ./gbs.exe cl=msvc config=debug,warnings build unittest
 
     - name: Set up GCC
       if: ${{ matrix.os == 'ubuntu-latest' && startsWith(matrix.cpp_compiler, 'gcc') }}
