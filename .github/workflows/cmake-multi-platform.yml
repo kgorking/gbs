@@ -47,6 +47,20 @@ jobs:
     - uses: ilammy/msvc-dev-cmd@v1
       if: matrix.os == 'windows-latest'
 
+    - name: Compile with GBS v0.19-alpha (windows)
+      if: ${{ matrix.os == 'windows-latest' }}
+      run: |
+        curl -fSLO https://github.com/kgorking/gbs/releases/download/v0.19-alpha/gbs-v0.19-x64-windows.zip
+        Expand-Archive -Path gbs-v0.19-x64-windows.zip -DestinationPath .
+        ./gbs.exe cl=msvc config=debug,warnings build
+
+    - name: Compile with GBS v0.19-alpha (ubuntu)
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: |
+        curl -fSLO https://github.com/kgorking/gbs/releases/download/v0.19-alpha/gbs-v0.19-x64-linux.tar | tar xf -
+        ./gbs cl=clang config=debug,warnings build
+        ./gbs cl=gcc config=debug,warnings build
+
     - name: Set up GCC
       if: ${{ matrix.os == 'ubuntu-latest' && startsWith(matrix.cpp_compiler, 'gcc') }}
       run: |
@@ -61,20 +75,6 @@ jobs:
           chmod +x llvm.sh
           sudo ./llvm.sh 22
           sudo apt install libc++-22-dev libc++abi-22-dev -y
-
-    - name: Compile with GBS v0.19-alpha (windows)
-      if: ${{ matrix.os == 'windows-latest' }}
-      run: |
-        curl -fSLO https://github.com/kgorking/gbs/releases/download/v0.19-alpha/gbs-v0.19-x64-windows.zip
-        Expand-Archive -Path gbs-v0.19-x64-windows.zip -DestinationPath .
-        ./gbs.exe cl=msvc config=debug,warnings build
-
-    - name: Compile with GBS v0.19-alpha (ubuntu)
-      if: ${{ matrix.os == 'ubuntu-latest' }}
-      run: |
-        curl -fSLO https://github.com/kgorking/gbs/releases/download/v0.19-alpha/gbs-v0.19-x64-linux.tar | tar xf -
-        ./gbs cl=clang config=debug,warnings build
-        ./gbs cl=gcc config=debug,warnings build
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
