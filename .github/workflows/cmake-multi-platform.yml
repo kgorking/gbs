@@ -27,12 +27,12 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         build_type: [Release, Debug]
-        cpp_compiler: [cl, clang++-22, gcc-15]
+        cpp_compiler: [cl, clang++-21] #, gcc-15]
         exclude:
           - os: windows-latest
             cpp_compiler: gcc-15
           - os: windows-latest
-            cpp_compiler: clang++-22
+            cpp_compiler: clang++-21
           - os: ubuntu-latest
             cpp_compiler: cl
 
@@ -59,8 +59,8 @@ jobs:
       run: |
           wget https://apt.llvm.org/llvm.sh || wget https://146.75.78.49:443/llvm.sh
           chmod +x llvm.sh
-          sudo ./llvm.sh 22
-          sudo apt install libc++-22-dev libc++abi-22-dev -y
+          sudo ./llvm.sh 21
+          sudo apt install libc++-21-dev libc++abi-21-dev -y
 
     # - name: Download GBS v0.17-alpha
     #   if: ${{ matrix.os == 'windows-latest' && matrix.cpp_compiler == 'cl' && matrix.build_type == 'Debug' }}
