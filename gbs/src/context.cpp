@@ -27,7 +27,7 @@ context::context(char const** envp) : env(envp) {
 			"/w14906 "     // string literal cast to 'LPWSTR' 
 			"/w14928 "     // illegal copy-initialization; more than one user-defined conversion has been implicitly applied 
 		},
-		{"_shared", "/nologo /EHsc /std:c++23preview /fastfail /sdl /D_MSVC_STL_HARDENING=1 /D_MSVC_STL_DESTRUCTOR_TOMBSTONES=1"},
+		{"_shared", "/nologo /EHsc /std:c++23preview /sdl /D_MSVC_STL_HARDENING=1 /D_MSVC_STL_DESTRUCTOR_TOMBSTONES=1"},
 		{"debug",   "/Od /MDd"},
 		{"release", "/DNDEBUG /O2 /MD"},
 		{"analyze", "/external:W0 /external:Ilib /external:anglebrackets /analyze:external- /analyze:WX- /analyze:plugin EspXEngine.dll"}
@@ -65,7 +65,7 @@ context::context(char const** envp) : env(envp) {
 		{"release", "-O3"},
 		{"analyze", "--analyze -Wno-unused-command-line-argument"} // ignore -c
 	};
-	response_map["wsl.clang"] = response_map["clang"];
+	response_map["clang.wsl"] = response_map["clang"];
 
 	response_map["gcc"] = {
 		{"warnings",
