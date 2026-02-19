@@ -27,12 +27,12 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         build_type: [Release, Debug]
-        cpp_compiler: [cl] #, clang++-21, gcc-15] # requires clang-22 and gcc-16
+        cpp_compiler: [cl, clang] #, clang++-21, gcc-15] # requires clang-22 and gcc-16
         exclude:
           - os: windows-latest
             cpp_compiler: gcc-15
           - os: windows-latest
-            cpp_compiler: clang++-21
+            cpp_compiler: clang
           - os: ubuntu-latest
             cpp_compiler: cl
 
@@ -62,13 +62,19 @@ jobs:
           sudo ./llvm.sh 22
           sudo apt install libc++-22-dev libc++abi-22-dev -y
 
-    # - name: Download GBS v0.17-alpha
-    #   if: ${{ matrix.os == 'windows-latest' && matrix.cpp_compiler == 'cl' && matrix.build_type == 'Debug' }}
-    #   run: curl -fSLO https://github.com/kgorking/gbs/releases/download/v0.17-alpha/gbs.exe
-    # 
-    # - name: Compile with GBS v0.17-alpha
-    #   if: ${{ matrix.os == 'windows-latest' && matrix.cpp_compiler == 'cl' && matrix.build_type == 'Debug' }}
-    #   run: ./gbs.exe cl=msvc config=debug,warnings build
+    - name: Compile with GBS v0.19-alpha (windows)
+      if: ${{ matrix.os == 'windows-latest' }}
+      run: |
+        curl -fSLO https://github.com/kgorking/gbs/releases/download/v0.19-alpha/gbs-v0.19-x64-windows.zip
+        Expand-Archive -Path gbs-v0.19-x64-windows.zip -DestinationPath .
+        ./gbs.exe cl=msvc config=debug,warnings build
+
+    - name: Compile with GBS v0.19-alpha (ubuntu)
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: |
+        curl -fSLO https://github.com/kgorking/gbs/releases/download/v0.19-alpha/gbs-v0.19-x64-linux.tar | tar xf -
+        ./gbs cl=clang config=debug,warnings build
+        ./gbs cl=gcc config=debug,warnings build
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
