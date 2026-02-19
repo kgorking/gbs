@@ -1,12 +1,9 @@
-module;
-#include <string_view>
+#include "../inc/commands.h"
+#include "../inc/compiler.h"
+#include "../inc/context.h"
 #include <print>
-#include <iostream>
 
-export module cmd_cl;
-import context;
-
-export bool cmd_cl(context& ctx, std::string_view args) {
+bool cmd_cl(context& ctx, std::string_view args) {
 	if (ctx.get_compiler_collection().empty()) {
 		ctx.fill_compiler_collection();
 		if (ctx.get_compiler_collection().empty()) {

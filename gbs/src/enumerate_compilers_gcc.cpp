@@ -1,12 +1,11 @@
-module;
+#include "../inc/compiler.h"
+#include "../inc/env.h"
 #include <filesystem>
+#include <functional>
 #include <iostream>
 #include <print>
-export module enumerate_compilers_gcc;
-import env;
-import compiler;
 
-export void enumerate_compilers_gcc(environment const& env, auto&& callback) {
+void enumerate_compilers_gcc(environment const& env, std::function<void(compiler&&)> callback) {
 	// Find compilers in ~/.gbs/*
 	auto const download_dir = env.get_home_dir() / ".gbs" / "gcc";
 

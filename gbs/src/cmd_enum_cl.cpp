@@ -1,10 +1,9 @@
-module;
-#include <string_view>
+#include "../inc/compiler.h"
+#include "../inc/context.h"
 #include <print>
-export module cmd_enum_cl;
-import context;
+#include <string_view>
 
-export bool cmd_enum_cl(context& ctx, std::string_view /*args*/) {
+bool cmd_enum_cl(context& ctx, std::string_view /*args*/) {
 	std::println("<gbs> Enumerating compilers:");
 
 	ctx.fill_compiler_collection();

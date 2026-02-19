@@ -1,11 +1,10 @@
-module;
-#include <string_view>
-#include <print>
+#include "../inc/context.h"
+#include "../inc/commands.h"
 #include <filesystem>
-export module cmd_clean;
-import context;
+#include <print>
+#include <string_view>
 
-export bool cmd_clean(context& ctx, std::string_view /*args*/) {
+bool cmd_clean(context& ctx, std::string_view /*args*/) {
 	std::println("<gbs> Cleaning...");
 
 	// TODO args, clean=release

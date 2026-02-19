@@ -1,22 +1,8 @@
-module;
-#include <string>
-#include <filesystem>
-#include <set>
 #include <fstream>
-export module dep_scan;
-
-export struct source_dependency {
-	std::filesystem::path path;
-	std::string export_name{};
-	std::set<std::string> import_names{};
-
-	bool is_export() const noexcept {
-		return !export_name.empty();
-	}
-};
+#include "../inc/dep_scan.h"
 
 // Returns a source files module dependencies.
-export auto extract_module_dependencies(std::filesystem::path path) -> source_dependency {
+auto extract_module_dependencies(std::filesystem::path path) -> source_dependency {
 	source_dependency dependencies{ path };
 
 	std::string line;
@@ -69,4 +55,4 @@ export auto extract_module_dependencies(std::filesystem::path path) -> source_de
 	}
 
 	return dependencies;
-	};
+};

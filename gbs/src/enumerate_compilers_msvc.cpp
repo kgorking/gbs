@@ -1,14 +1,13 @@
-module;
+#include "../inc/compiler.h"
+#include "../inc/env.h"
 #include <filesystem>
 #include <fstream>
-export module enumerate_compilers_msvc;
-import env;
-import compiler;
+#include <functional>
 
 #ifndef _MSC_VER
-export void enumerate_compilers_msvc(environment const&, auto&&) {}
+void enumerate_compilers_msvc(environment const&, std::function<void(compiler&&)>) {}
 #else
-static void enumerate_compiler_msvc(std::filesystem::path msvc_path, auto&& callback) {
+static void enumerate_compiler_msvc(std::filesystem::path msvc_path, std::function<void(compiler&&)> callback) {
 	if (!std::filesystem::exists(msvc_path))
 		return;
 
@@ -54,7 +53,7 @@ static void enumerate_compiler_msvc(std::filesystem::path msvc_path, auto&& call
 	}
 }
 
-export void enumerate_compilers_msvc(environment const& env, auto&& callback) {
+void enumerate_compilers_msvc(environment const& env, std::function<void(compiler&&)> callback) {
 	// Look for installations of Visual Studio
 	std::string msvc_std_module{};
 	if (0 == std::system("\">instpath.txt \"%ProgramFiles(x86)%/Microsoft Visual Studio/Installer/vswhere.exe\" -prerelease -property installationPath 2>nul\"")) {

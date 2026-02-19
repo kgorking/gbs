@@ -1,20 +1,10 @@
-﻿#include <print>
+﻿#include "../inc/commands.h"
+#include "../inc/compiler.h"
+#include "../inc/context.h"
+#include <print>
 #include <ranges>
 #include <span>
 #include <unordered_map>
-
-import cmd_version;
-import cmd_build;
-import cmd_get_cl;
-import cmd_enum_cl;
-import cmd_clean;
-import cmd_cl;
-import cmd_ide;
-import cmd_config;
-import cmd_unittest;
-
-import context;
-import compiler;
 
 int main(const int argc, char const* argv[], char const** envp) {
 	auto ctx = context{ envp };
