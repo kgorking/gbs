@@ -1,4 +1,7 @@
 module;
+#include "../inc/dep_scan.h"
+#include "../inc/env.h"
+#include "../inc/os.h"
 #include <algorithm>
 #include <coroutine>
 #include <execution>
@@ -15,9 +18,6 @@ module;
 #include <string_view>
 #include <unordered_map>
 #include <unordered_set>
-#include "../inc/env.h"
-#include "../inc/os.h"
-#include "../inc/dep_scan.h"
 
 export module cmd_build;
 import context;
