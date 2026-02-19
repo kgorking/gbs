@@ -27,7 +27,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         build_type: [Release, Debug]
-        cpp_compiler: [cl] #, clang++-21, gcc-15] # requires clang-22 and gcc-16
+        cpp_compiler: [cl] #, clang] #, clang++-21, gcc-15] # requires clang-22 and gcc-16
         exclude:
           - os: windows-latest
             cpp_compiler: gcc-15
@@ -46,6 +46,13 @@ jobs:
 
     - uses: ilammy/msvc-dev-cmd@v1
       if: matrix.os == 'windows-latest'
+
+    - name: Compile with GBS v0.19-alpha (windows)
+      if: ${{ matrix.os == 'windows-latest' }}
+      run: |
+        curl -fSLO https://github.com/kgorking/gbs/releases/download/v0.19-alpha/gbs-v0.19-x64-windows.zip
+        Expand-Archive -Path gbs-v0.19-x64-windows.zip -DestinationPath .
+        ./gbs.exe cl=msvc config=debug,warnings build
 
     - name: Set up GCC
       if: ${{ matrix.os == 'ubuntu-latest' && startsWith(matrix.cpp_compiler, 'gcc') }}

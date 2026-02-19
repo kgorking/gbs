@@ -107,6 +107,7 @@ void enumerate_compilers_clang(environment const& env, std::function<void(compil
 	}
 	std::filesystem::remove("clang_version.txt");
 
+#ifdef _WIN32
 	// Enumerate WSL installed clang compilers
 	auto const wsl_distros = get_wsl_distributions();
 	for (std::string const& distro : wsl_distros) {
@@ -143,6 +144,7 @@ void enumerate_compilers_clang(environment const& env, std::function<void(compil
 		}
 		std::filesystem::remove("clang_version.txt");
 	}
+#endif
 
 	// Find compilers in ~/.gbs/clang
 	std::filesystem::path const download_dir = env.get_home_dir() / ".gbs" / "clang";
