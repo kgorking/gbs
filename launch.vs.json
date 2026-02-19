@@ -6,7 +6,7 @@
       "type": "default",
       "project": "CMakeLists.txt",
       "projectTarget": "gbs.exe",
-      "currentDir": ".",
+      "currentDir": "${workspaceRoot}",
       "name": "gbs.exe"
     },
     {
@@ -23,7 +23,7 @@
       "name": "version",
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": ".",
+      "currentDir": "${workspaceRoot}",
       "projectTarget": "gbs.exe",
       "args": [
         "version"
@@ -33,7 +33,7 @@
       "name": "get_cl",
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": ".",
+      "currentDir": "${workspaceRoot}",
       "projectTarget": "gbs.exe",
       "args": [
         "get_cl"
@@ -43,7 +43,7 @@
       "name": "Enumerate compilers",
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": ".",
+      "currentDir": "${workspaceRoot}",
       "projectTarget": "gbs.exe",
       "args": [
         "enum_cl"
@@ -53,7 +53,7 @@
       "name": "[ALL] build",
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": ".",
+      "currentDir": "${workspaceRoot}",
       "projectTarget": "gbs.exe",
       "args": [
         "clean cl=msvc build unittest=-ni cl=clang:21 build unittest=-ni cl=gcc build unittest=-ni"
@@ -63,7 +63,7 @@
       "name": "[msvc] build",
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": ".",
+      "currentDir": "${workspaceRoot}",
       "projectTarget": "gbs.exe",
       "args": [
         "clean cl=msvc build unittest=-ni"
@@ -73,7 +73,7 @@
       "name": "[clang] build",
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": ".",
+      "currentDir": "${workspaceRoot}",
       "projectTarget": "gbs.exe",
       "args": [
         "clean cl=clang:21 build unittest=-ni"
@@ -83,7 +83,7 @@
       "name": "[clang] build for linux",
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": ".",
+      "currentDir": "${workspaceRoot}",
       "projectTarget": "gbs.exe",
       "args": [
         "clean cl=clang:22 config=release,warnings build unittest=-ni"
@@ -93,7 +93,7 @@
       "name": "[gcc] build",
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": ".",
+      "currentDir": "${workspaceRoot}",
       "projectTarget": "gbs.exe",
       "args": [
         "clean cl=gcc build unittest=-ni"
@@ -103,7 +103,7 @@
       "name": "Download latest gcc + clang",
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": ".",
+      "currentDir": "${workspaceRoot}",
       "projectTarget": "gbs.exe",
       "args": [
         "get_cl=clang get_cl=gcc"
@@ -113,7 +113,7 @@
       "name": "Download latest gcc",
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": ".",
+      "currentDir": "${workspaceRoot}",
       "projectTarget": "gbs.exe",
       "args": [
         "get_cl=gcc"
@@ -123,7 +123,7 @@
       "name": "[clang] self analyze",
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": ".",
+      "currentDir": "${workspaceRoot}",
       "projectTarget": "gbs.exe",
       "args": [
         "clean cl=clang config=debug,analyze,warnings build"
@@ -133,7 +133,7 @@
       "name": "[msvc] self analyze",
       "type": "default",
       "project": "CMakeLists.txt",
-      "currentDir": ".",
+      "currentDir": "${workspaceRoot}",
       "projectTarget": "gbs.exe",
       "args": [
         "clean cl=msvc config=debug,analyze,warnings build"

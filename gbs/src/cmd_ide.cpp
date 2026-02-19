@@ -1,13 +1,11 @@
-module;
-#include <print>
+#include "../inc/context.h"
 #include <fstream>
-export module cmd_ide;
-import context;
+#include <print>
 
 void create_vs_tasks();
 void create_vscode_tasks();
 
-export bool cmd_ide(context&, std::string_view args) {
+bool cmd_ide(context&, std::string_view args) {
     if (args.empty() || args == "?") {
         std::println("Usage: gbs ide=[arg]");
         std::println("arg:");
