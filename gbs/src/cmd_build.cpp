@@ -246,7 +246,8 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 		fs::path objlist_name;
 
 		if (fs::exists(p / "src")) {
-			std::string const name = p == "." ? fs::current_path().stem().generic_string() : p.stem().generic_string();
+			fs::path const path = p == "." ? fs::current_path() : p;
+			std::string const name = path.stem().generic_string();
 
 			// Create the object list file for the .lib file
 			auto const source_files = get_source_files(p / "src") | std::ranges::to<std::vector>();
@@ -260,23 +261,54 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 
 			task_ptr exe_task = graph.create_task(p, [=, &ctx] {
 				std::string const main_obj_name = (ctx.output_dir() / p.filename()).replace_extension("obj").generic_string();
-				std::string const exe_name = os_get_executable_name(ctx.get_target_os(), name);
+				if (path.string().starts_with("s.")) {
+					auto const ext_name = p.extension().generic_string().substr(1);
 
-				auto const exe_path = ctx.output_dir() / exe_name;
-				if (fs::exists(exe_path) && latest_source_time < fs::last_write_time(exe_path))
-					return;
+					// static library, create the .lib
+					std::string const lib_name = os_get_static_library_name(ctx.get_target_os(), ext_name);
 
-				std::println("<gbs> Linking executable '{}'...", exe_name);
-				std::string const obj_resp = std::format(" @{} {}", objlist_name.generic_string(), main_obj_name);
-				std::string const cmd = ctx.link_command(exe_name, ctx.output_dir().generic_string()) + obj_resp;
-				std::system(cmd.c_str());
+					auto const lib_path = ctx.output_dir() / lib_name;
+					if (fs::exists(lib_path) && latest_source_time < fs::last_write_time(lib_path))
+						return;
+
+					std::string const cmd = ctx.static_library_command(lib_name, ctx.output_dir().generic_string()) + std::format(" @{}", objlist_name.generic_string());
+					std::println("<gbs> Linking static library '{}'...", lib_name);
+					std::system(cmd.c_str());
+				}
+				else if (path.string().starts_with("d.")) {
+					auto const ext_name = p.extension().generic_string().substr(1);
+					
+					// dynamic library, link the .dll
+					std::string const lib_name = os_get_static_library_name(ctx.get_target_os(), ext_name);
+					std::string const dll_name = os_get_dynamic_library_name(ctx.get_target_os(), ext_name);
+
+					auto const dll_path = ctx.output_dir() / dll_name;
+					if (fs::exists(dll_path) && latest_source_time < fs::last_write_time(dll_path))
+						return;
+
+					std::string const cmd = ctx.dynamic_library_command(dll_name, lib_name, ctx.output_dir().generic_string()) + std::format(" @{}", objlist_name.generic_string());
+					std::println("<gbs> Linking dynamic library '{}'...", dll_name);
+					std::system(cmd.c_str());
+				}
+				else {
+					std::string const exe_name = os_get_executable_name(ctx.get_target_os(), name);
+
+					auto const exe_path = ctx.output_dir() / exe_name;
+					if (fs::exists(exe_path) && latest_source_time < fs::last_write_time(exe_path))
+						return;
+
+					std::println("<gbs> Linking executable '{}'...", exe_name);
+					std::string const obj_resp = std::format(" @{} {}", objlist_name.generic_string(), main_obj_name);
+					std::string const cmd = ctx.link_command(exe_name, ctx.output_dir().generic_string()) + obj_resp;
+					std::system(cmd.c_str());
+				}
 				});
 
 			graph.add_dependency(lib_task, exe_task);
 			graph.add_dependency(exe_src_task, exe_task);
 
-			for (fs::path const& path : included_source_files) {
-				auto src_task = create_build_task(ctx, graph, path, modmap, impmap);
+			for (fs::path const& include_path : included_source_files) {
+				auto src_task = create_build_task(ctx, graph, include_path, modmap, impmap);
 				if (src_task) {
 					graph.add_dependency(src_task, exe_src_task);
 					//graph.add_dependency(src_task, exe_task);
@@ -376,7 +408,7 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 					}
 				}
 				else {
-					std::println("<gbs> module '{}' imported by '{}' not found", imp, path.generic_string());
+					std::println("<gbs> build: module '{}' imported by '{}' not found", imp, path.generic_string());
 					//return false;
 				}
 			}
