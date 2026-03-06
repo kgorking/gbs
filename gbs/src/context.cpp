@@ -290,17 +290,18 @@ void context::fill_compiler_collection() {
 	}
 
 	// Patch up clang compilers to use msvc std module on windows
-#if 0//def _MSC_VER
-	if(all_compilers.contains("clang") && all_compilers.contains("msvc")) {
-		// Get the newest msvc compiler
-		compiler const& msvc_compiler = all_compilers["msvc"].front();
-		auto const std_module = std::filesystem::path(*msvc_compiler.std_module);
+	if constexpr (is_host_windows()) {
+		if(all_compilers.contains("clang") && all_compilers.contains("msvc")) {
+			// Get the newest msvc compiler
+			compiler const& msvc_compiler = all_compilers["msvc"].front();
+			auto const std_module = std::filesystem::path(*msvc_compiler.std_module);
 
-		for(compiler& clang : all_compilers["clang"]) {
-			clang.std_module = std_module;
+			for(compiler& clang : all_compilers["clang"]) {
+				if (!clang.std_module && !clang.wsl)
+					clang.std_module = std_module;
+			}
 		}
 	}
-#endif
 }
 
 bool context::set_compiler(std::string_view comp) {

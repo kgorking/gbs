@@ -1,14 +1,33 @@
+#include "../inc/context.h"
+#include "../inc/dep_scan.h"
 #include <fstream>
 #include <print>
-#include "../inc/dep_scan.h"
 
 // Returns a source files module dependencies.
-auto extract_module_dependencies(std::filesystem::path path) -> source_dependency {
+auto extract_module_dependencies(context const& ctx, std::filesystem::path path) -> source_dependency {
 	source_dependency dependencies{ path };
 
+	auto const& cl = ctx.get_selected_compiler();
+	if (cl.wsl && !std::filesystem::exists(path)) {
+		std::string new_path = std::format(R"(\\wsl.localhost\{}{})", *cl.wsl, path.string());
+		if (std::filesystem::exists(new_path)) {
+			path = new_path;
+		}
+		else {
+			std::println("<gbs-depscan> error: file '{}' doesn't exist for compiler {}, aborting dependency scan", path.string(), cl.name_and_version);
+			return dependencies;
+		}
+	}
+
+	bool const is_msvc = ctx.compiler_name() == "msvc";
 	std::string main_module = "";
 	std::string line;
 	auto file = std::ifstream(path);
+	if (!file) {
+		std::println("<gbs-depscan> error: failed to open file '{}'", path.generic_string());
+		return dependencies;
+	}
+
 	while (std::getline(file, line)) {
 		if (line.empty())
 			continue;
@@ -60,11 +79,17 @@ auto extract_module_dependencies(std::filesystem::path path) -> source_dependenc
 		}
 		else if (module_name.contains(':')) {
 			auto const global_module_pos = module_name.find(':');
-			main_module = module_name.substr(0, global_module_pos) + '-';
-			module_name[module_name.find(':')] = '-';
+			if (is_msvc) {
+				main_module = module_name.substr(0, global_module_pos) + '-';
+				module_name[module_name.find(':')] = '-';
+			}
+			else {
+				module_name = module_name.substr(global_module_pos + 1);
+			}
 		}
 		else if (is_export) {
-			main_module = module_name + '-';
+			if (is_msvc)
+				main_module = module_name + '-';
 		}
 
 		if (is_export)

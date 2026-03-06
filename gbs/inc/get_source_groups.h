@@ -25,4 +25,4 @@ bool should_include(std::filesystem::path const& path);
 std::generator<std::filesystem::path> get_source_files(std::filesystem::path const& dir);
 
 // Find the source files and dependencies
-depth_ordered_sources_map get_grouped_source_files(std::filesystem::path const& dir);
+depth_ordered_sources_map get_grouped_source_files(context const& ctx, std::filesystem::path const& dir);

@@ -3,6 +3,8 @@
 #include <set>
 #include <string>
 
+class context;
+
 struct source_dependency {
 	std::filesystem::path path;
 	std::string export_name{};
@@ -13,4 +15,4 @@ struct source_dependency {
 	}
 };
 
-source_dependency extract_module_dependencies(std::filesystem::path path);
+source_dependency extract_module_dependencies(context const& ctx, std::filesystem::path path);

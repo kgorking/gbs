@@ -3,7 +3,7 @@
 
 task_graph::task_graph(size_t threads) : pool(threads) {}
 
-task_ptr task_graph::create_task(std::filesystem::path const& name, std::function<void()> work) {
+task_ptr task_graph::create_task(std::filesystem::path const& name, std::function<bool()> work) {
 	task_ptr t = std::make_shared<task>();
 	if (!name.empty())
 		task_names[name] = t;
@@ -46,7 +46,7 @@ void task_graph::run() {
 }
 
 void task_graph::schedule_ready_tasks() {
-	for (;;) {
+	for (;!abort;) {
 		task_ptr t;
 		{
 			std::lock_guard<std::mutex> lock(ready_mtx);
@@ -58,7 +58,16 @@ void task_graph::schedule_ready_tasks() {
 		}
 			
 		pool.enqueue([this, t] {
-			t->work();
+			if (!t->work()) {
+				abort = true;
+			}
+
+			if (abort) {
+				remaining -= 1;
+				remaining -= (int)t->children.size();
+				done_cv.notify_all();
+				return;
+			}
 
 			for (auto& child : t->children) {
 				int old = child->deps.fetch_sub(1, std::memory_order_acq_rel);

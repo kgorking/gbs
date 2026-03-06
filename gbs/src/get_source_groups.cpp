@@ -52,7 +52,7 @@ std::generator<fs::path> get_source_files(fs::path const& dir) {
 	}
 }
 
-depth_ordered_sources_map get_grouped_source_files(fs::path const& dir) {
+depth_ordered_sources_map get_grouped_source_files(context const& ctx, fs::path const& dir) {
 	file_to_imports_map file_imports;
 
 	// Maps an export module name to its filename
@@ -66,7 +66,7 @@ depth_ordered_sources_map get_grouped_source_files(fs::path const& dir) {
 		if (!is_valid_sourcefile(file_path) || !should_include(file_path))
 			continue;
 
-		source_dependency const sd = extract_module_dependencies(file_path);
+		source_dependency const sd = extract_module_dependencies(ctx, file_path);
 		file_imports[sd.path] = sd.import_names;
 
 		module_name_to_file_map.insert({ sd.export_name, sd.path });
