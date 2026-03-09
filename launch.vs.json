@@ -10,6 +10,16 @@
       "name": "gbs.exe"
     },
     {
+      "name": "GSTD project",
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": "E:\\source\\repos\\gstd",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "cl=msvc config=debug,warnings clean build unittest"
+      ]
+    },
+    {
       "name": "Unittest sample project",
       "type": "default",
       "project": "CMakeLists.txt",
