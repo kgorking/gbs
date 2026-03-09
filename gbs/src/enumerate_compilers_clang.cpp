@@ -71,7 +71,8 @@ static std::optional<std::string> find_std_module_path(compiler const& comp, boo
 			}
 
 			output.close();
-			std::filesystem::remove("compiler_output.txt");
+			std::error_code ec;
+			std::filesystem::remove("compiler_output.txt", ec);
 			if (line != "End of search list.")
 				return line;
 		}
@@ -105,7 +106,8 @@ void enumerate_compilers_clang(environment const& env, std::function<void(compil
 			callback(std::move(comp));
 		}
 	}
-	std::filesystem::remove("clang_version.txt");
+	std::error_code ec;
+	std::filesystem::remove("clang_version.txt", ec);
 
 #ifdef _WIN32
 	// Enumerate WSL installed clang compilers
@@ -142,7 +144,8 @@ void enumerate_compilers_clang(environment const& env, std::function<void(compil
 				callback(std::move(comp));
 			}
 		}
-		std::filesystem::remove("clang_version.txt");
+
+		std::filesystem::remove("clang_version.txt", ec);
 	}
 #endif
 
