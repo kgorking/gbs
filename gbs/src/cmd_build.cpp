@@ -23,6 +23,7 @@ namespace fs = std::filesystem;
 
 using imports_map = std::unordered_map<fs::path, import_set>;  // source -> {imports}
 using module_map = std::unordered_map<std::string, fs::path>;  // import -> source
+std::mutex m;
 
 // Why doesn't this garbage stl have this already???
 static std::string to_upper(std::string const& cstr) {
@@ -156,6 +157,7 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 	if (ctx.get_selected_compiler().std_module) {
 		fs::path const std_module_path = *ctx.get_selected_compiler().std_module;
 		std_module_task = create_build_task(ctx, graph, std_module_path, modmap, impmap);
+		objects.insert((ctx.output_dir() / std_module_path.filename()).replace_extension("obj"));
 	} else {
 		std::println("<gbs> error: selected compiler doesn't provide a standard library module, builds may fail if the standard library is used");
 		return false;
@@ -257,16 +259,16 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 		if (fs::exists(p / "src")) {
 			fs::path const path = p == "." ? fs::current_path() : p;
 			std::string const name = path.string().contains('.') ? path.extension().generic_string().substr(1) : path.stem().generic_string();
-			bool const skip_filtering = path.string().starts_with("s.");
+			//bool const skip_filtering = path.string().starts_with("s.");
 
 			// Create the object list file for the .lib file
 			auto const source_files = get_source_files(p / "src") | std::ranges::to<std::vector>();
-			// TODO fix this filter, and can exclude valid sorce files, like 'string.cppm' in a folder 'string'
 			auto filter_main = std::views::filter([&](fs::path const& path_to_filter) {
 				// Don't include the main source file in the object list, as it contains the 'main' function.
-				return skip_filtering || path_to_filter.filename().string() == name;
+				return /*!skip_filtering &&*/ path_to_filter.filename().stem().generic_string() != name;
 				});
-			objlist_name = create_object_file_list(ctx, name, source_files | filter_main);
+			auto filtered_source_files = source_files | filter_main | std::ranges::to<std::vector>();
+			objlist_name = create_object_file_list(ctx, name, filtered_source_files);
 
 			auto included_source_files = source_files | std::views::filter(should_include);
 			auto const latest_source_time = std::ranges::max(included_source_files | std::views::transform([](fs::path const& src) { return fs::last_write_time(src); }));
@@ -274,7 +276,8 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 			exe_src_task = graph.create_task(p / "src", task_true);
 
 			task_ptr exe_task = graph.create_task(p, [=, &ctx] {
-				std::string const main_obj_name = (ctx.output_dir() / p.filename()).replace_extension("obj").generic_string();
+				std::string const main_obj_name = (ctx.output_dir() / name).replace_extension("obj").generic_string();
+
 				if (path.string().starts_with("s.")) {
 					auto const ext_name = p.extension().generic_string().substr(1);
 
@@ -369,7 +372,7 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 					std::println("<gbs> Linking unittest '{}'...", exe_name);
 					std::string const obj_resp = std::format(" @{} @{} {}/{}.obj", objlist_name.generic_string(), sup_objlist_name.generic_string(), ctx.output_dir().generic_string(), test_name);
 					std::string const cmd = ctx.link_command(exe_name, ctx.output_dir().generic_string()) + obj_resp;
-					/*std::scoped_lock sl(m);*/
+					std::scoped_lock sl(m);
 					return 0 == std::system(cmd.c_str());
 					});
 
