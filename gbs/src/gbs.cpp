@@ -6,8 +6,6 @@
 #include <span>
 #include <unordered_map>
 
-#include "../inc/dep_scan.h"
-
 int main(const int argc, char const* argv[], char const** envp) {
 	auto ctx = context{ envp };
 
