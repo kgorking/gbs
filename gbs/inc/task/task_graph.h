@@ -5,9 +5,20 @@
 #include <filesystem>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <queue>
 #include <thread>
+#include <unordered_set>
 #include <vector>
+
+namespace std {
+	template <>
+	struct hash<std::shared_ptr<task>> {
+		size_t operator()(const std::shared_ptr<task>& ptr) const {
+			return std::hash<task*>()(ptr.get());
+		}
+	};
+}
 
 class task_graph {
 public:
@@ -26,11 +37,13 @@ public:
 
 private:
 	void schedule_ready_tasks();
+	std::optional<std::vector<task_ptr>> find_circular_path(const task_ptr& start, const task_ptr& target, std::unordered_set<task_ptr>& visited, std::vector<task_ptr>& path) const;
 
 private:
 	std::queue<task_ptr> ready;
 	std::vector<task_ptr> tasks;
 	std::unordered_map<std::filesystem::path, task_ptr> task_names;
+	std::unordered_map<task_ptr, std::filesystem::path> task_name_map;
 	std::atomic<int> remaining{ 0 };
 	std::mutex ready_mtx;
 	std::mutex done_mtx;
