@@ -76,7 +76,7 @@
       "currentDir": "${workspaceRoot}",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=msvc config=release build unittest=-ni"
+        "clean cl=msvc config=debug,warnings build unittest=-ni"
       ]
     },
     {

@@ -127,7 +127,7 @@ static task_ptr create_build_task(context const& ctx, task_graph& tg, fs::path c
 	source_dependency const deps = extract_module_dependencies(ctx, path);
 	if (deps.is_export())
 		modmap[deps.export_name] = path;
-	impmap[path] = deps.import_names;
+	impmap[path].insert_range(deps.import_names);
 
 	fs::path const obj = get_object_filepath(path, ctx);
 	if (is_file_out_of_date(path, obj)) {
@@ -164,9 +164,9 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 	}
 
 	// 'lib' directory: process all libraries shared between all the projects
-	auto lib_task = graph.create_task("lib", task_true);
+	auto lib_barrier_task = graph.create_task("lib", task_true);
 	if (std_module_task) {
-		graph.add_dependency(lib_task, std_module_task);
+		graph.add_dependency(std_module_task, lib_barrier_task);
 	}
 	fs::file_time_type latest_lib_time;
 	if (fs::exists("lib")) {
@@ -189,9 +189,13 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 					if (should_include(path)) {
 						latest_lib_time = std::max(latest_lib_time, fs::last_write_time(path));
 						auto task = create_build_task(ctx, graph, path, modmap, impmap);
-						if (task)
-							graph.add_dependency(task, lib_task);
-						objects.insert((ctx.output_dir() / path.filename()).replace_extension("obj"));
+						if (task) {
+							graph.add_dependency(task, lib_barrier_task);
+							objects.insert((ctx.output_dir() / path.filename()).replace_extension("obj"));
+						}
+						else {
+							std::println("<gbs> error: failed to create a build task for {}", path.generic_string());
+						}
 					}
 				}
 			}
@@ -218,15 +222,17 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 					return 0 == std::system(cmd.c_str());
 					});
 
-				graph.add_dependency(dll_task, lib_task);
 				for (fs::path const& path : vec) {
 					if (should_include(path)) {
 						latest_lib_time = std::max(latest_lib_time, fs::last_write_time(path));
 						auto src_task = create_build_task(ctx, graph, path, modmap, impmap, export_define);
 						if (src_task)
 							graph.add_dependency(src_task, dll_task);
+
 					}
 				}
+
+				graph.add_dependency(lib_barrier_task, dll_task);
 			}
 			else {
 				std::println("<gbs> warning: skipping directory '{}' in 'lib' since it doesn't follow naming convention (s.* for static libs, d.* for dynamic libs)", lib.generic_string());
@@ -253,7 +259,6 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 			return false;
 		}
 
-		task_ptr exe_src_task;
 		fs::path objlist_name;
 
 		if (fs::exists(p / "src")) {
@@ -272,8 +277,6 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 
 			auto included_source_files = source_files | std::views::filter(should_include);
 			auto const latest_source_time = std::ranges::max(included_source_files | std::views::transform([](fs::path const& src) { return fs::last_write_time(src); }));
-
-			exe_src_task = graph.create_task(p / "src", task_true);
 
 			task_ptr exe_task = graph.create_task(p, [=, &ctx] {
 				std::string const main_obj_name = (ctx.output_dir() / name).replace_extension("obj").generic_string();
@@ -321,14 +324,11 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 				}
 				});
 
-			graph.add_dependency(lib_task, exe_task);
-			graph.add_dependency(exe_src_task, exe_task);
-
 			for (fs::path const& include_path : included_source_files) {
 				auto src_task = create_build_task(ctx, graph, include_path, modmap, impmap);
 				if (src_task) {
-					graph.add_dependency(src_task, exe_src_task);
-					//graph.add_dependency(src_task, exe_task);
+					graph.add_dependency(lib_barrier_task, src_task);
+					graph.add_dependency(src_task, exe_task);
 				}
 			}
 		}
@@ -357,6 +357,7 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 					}
 				}
 			}
+			graph.add_dependency(lib_barrier_task, support_task);
 
 			// Link each unittest
 			std::vector<task_ptr> unittest_tasks;
@@ -376,16 +377,34 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 					return 0 == std::system(cmd.c_str());
 					});
 
-				graph.add_dependency(lib_task, test_exe_task);
 				graph.add_dependency(support_task, test_exe_task);
+				
+				task_ptr exe_src_task = graph.find_task(p);
 				if (exe_src_task) {
-					graph.add_dependency(exe_src_task, test_exe_task);
+					graph.add_dependency(exe_src_task, support_task);
 				}
 
 				if (auto src_task = create_build_task(ctx, graph, test, modmap, impmap); src_task) {
 					graph.add_dependency(src_task, test_exe_task);
 				}
 			}
+		}
+	}
+
+	// Setup module file dependencies
+	for (auto const& [src, imports] : impmap) {
+		if (imports.empty())
+			continue;
+
+		task_ptr src_task = graph.find_task(src);
+		if (!src_task)
+			continue;
+
+		for (auto const& imp : imports) {
+			auto const& imp_src = modmap[imp];
+			task_ptr imp_task = graph.find_task(imp_src);
+			if (imp_task)
+				graph.add_dependency(imp_task, src_task);
 		}
 	}
 

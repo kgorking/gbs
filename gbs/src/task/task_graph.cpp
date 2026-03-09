@@ -112,10 +112,17 @@ void task_graph::schedule_ready_tasks() {
 			t = ready.front();
 			ready.pop();
 		}
-			
+
 		pool.enqueue([this, t = std::move(t)] {
-			if (!t->work())
+			t->work();
+			/*if (!t->work()) {
+				if (remaining.fetch_sub(1 + (int)t->children.size(), std::memory_order_acq_rel) == 1) {
+					std::lock_guard<std::mutex> lock(done_mtx);
+					std::println("Bailing with {} remaining", remaining.load());
+					done_cv.notify_all();
+				}
 				return;
+			}*/
 
 			for (auto& child : t->children) {
 				int old = child->deps.fetch_sub(1, std::memory_order_acq_rel);

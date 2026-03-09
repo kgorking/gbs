@@ -26,7 +26,7 @@ public:
 
 	task_ptr create_task(std::filesystem::path const& name, std::function<bool()> work);
 
-	// Add edge: parent -> child (child depends on parent)
+	// Add edge: parent -> child (parent runs to completion before child)
 	void add_dependency(const task_ptr& parent, const task_ptr& child);
 
 	task_ptr find_task(std::filesystem::path const& name) const;
