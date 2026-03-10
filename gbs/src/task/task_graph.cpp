@@ -65,8 +65,6 @@ void task_graph::add_dependency(const task_ptr& parent, const task_ptr& child) {
 		// Print the edge that would create the cycle
 		std::string parent_name = task_name_map.contains(parent) ? task_name_map[parent].string() : "<unnamed>";
 		std::println("  '{}' (would create cycle)", parent_name);
-
-		//std::abort();
 	}
 
 	child->deps.fetch_add(1, std::memory_order_relaxed);
@@ -102,7 +100,7 @@ void task_graph::run() {
 }
 
 void task_graph::schedule_ready_tasks() {
-	for (;;) {
+	while (!abort) {
 		task_ptr t;
 		{
 			std::lock_guard<std::mutex> lock(ready_mtx);
@@ -114,30 +112,29 @@ void task_graph::schedule_ready_tasks() {
 		}
 
 		pool.enqueue([this, t = std::move(t)] {
-			t->work();
-			/*if (!t->work()) {
-				if (remaining.fetch_sub(1 + (int)t->children.size(), std::memory_order_acq_rel) == 1) {
-					std::lock_guard<std::mutex> lock(done_mtx);
-					std::println("Bailing with {} remaining", remaining.load());
-					done_cv.notify_all();
-				}
+			if (abort || !t->work()) {
+				abort = true;
+				remaining = 0;
+				std::lock_guard<std::mutex> lock(done_mtx);
+				done_cv.notify_all();
 				return;
-			}*/
+			}
+			else {
+				for (auto& child : t->children) {
+					int old = child->deps.fetch_sub(1, std::memory_order_acq_rel);
+					if (old == 1) {
+						{
+							std::lock_guard<std::mutex> lock(ready_mtx);
+							ready.push(child);
+						}
 
-			for (auto& child : t->children) {
-				int old = child->deps.fetch_sub(1, std::memory_order_acq_rel);
-				if (old == 1) {
-					{
-						std::lock_guard<std::mutex> lock(ready_mtx);
-						ready.push(child);
+						schedule_ready_tasks(); // opportunistically schedule more
 					}
-						
-					schedule_ready_tasks(); // opportunistically schedule more
 				}
 			}
 
 			// Decrement global remaining counter
-			if (remaining.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+			if (remaining.fetch_sub(1, std::memory_order_acq_rel) <= 1) {
 				std::lock_guard<std::mutex> lock(done_mtx);
 				done_cv.notify_all();
 			}
