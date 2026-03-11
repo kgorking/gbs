@@ -97,7 +97,7 @@ void task_graph::run() {
 		
 	// Wait until all tasks are done
 	std::unique_lock<std::mutex> lock(done_mtx);
-	done_cv.wait(lock, [&] { return remaining.load(std::memory_order_acquire) == 0; });
+	done_cv.wait(lock, [&] { return abort || remaining.load(std::memory_order_acquire) == 0; });
 }
 
 void task_graph::schedule_ready_tasks() {
@@ -115,7 +115,6 @@ void task_graph::schedule_ready_tasks() {
 		pool.enqueue([this, t = std::move(t)] {
 			if (abort || !t->work()) {
 				abort = true;
-				remaining = 0;
 				std::lock_guard<std::mutex> lock(done_mtx);
 				done_cv.notify_all();
 				return;

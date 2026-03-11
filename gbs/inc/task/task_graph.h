@@ -49,5 +49,5 @@ private:
 	std::mutex done_mtx;
 	std::condition_variable done_cv;
 	thread_pool pool;
-	bool abort = false;
+	std::atomic_bool abort = false;
 };
