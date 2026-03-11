@@ -65,6 +65,7 @@ void task_graph::add_dependency(const task_ptr& parent, const task_ptr& child) {
 		// Print the edge that would create the cycle
 		std::string parent_name = task_name_map.contains(parent) ? task_name_map[parent].string() : "<unnamed>";
 		std::println("  '{}' (would create cycle)", parent_name);
+		return;
 	}
 
 	child->deps.fetch_add(1, std::memory_order_relaxed);
