@@ -193,9 +193,6 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 							graph.add_dependency(task, lib_barrier_task);
 							objects.insert((ctx.output_dir() / path.filename()).replace_extension("obj"));
 						}
-						else {
-							std::println("<gbs> error: failed to create a build task for {}", path.generic_string());
-						}
 					}
 				}
 			}
