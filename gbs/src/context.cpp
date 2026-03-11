@@ -27,9 +27,9 @@ context::context(char const** envp) : env(envp) {
 			"/w14906 "     // string literal cast to 'LPWSTR' 
 			"/w14928 "     // illegal copy-initialization; more than one user-defined conversion has been implicitly applied 
 		},
-		{"_shared", "/nologo /EHsc /std:c++23preview /sdl /D_MSVC_STL_HARDENING=1 /D_MSVC_STL_DESTRUCTOR_TOMBSTONES=1"},
-		{"debug",   "/Od /MDd"},
-		{"release", "/DNDEBUG /O2 /MD"},
+		{"_shared", "/nologo /EHsc /sdl /std:c++23preview /utf-8 /D_MSVC_STL_HARDENING=1 /D_MSVC_STL_DESTRUCTOR_TOMBSTONES=1"},
+		{"debug",   "/Od /MT"},
+		{"release", "/DNDEBUG /O2 /MT"},
 		{"analyze", "/external:W0 /external:Ilib /external:anglebrackets /analyze:external- /analyze:WX- /analyze:plugin EspXEngine.dll"}
 	};
 
@@ -290,17 +290,18 @@ void context::fill_compiler_collection() {
 	}
 
 	// Patch up clang compilers to use msvc std module on windows
-#if 0//def _MSC_VER
-	if(all_compilers.contains("clang") && all_compilers.contains("msvc")) {
-		// Get the newest msvc compiler
-		compiler const& msvc_compiler = all_compilers["msvc"].front();
-		auto const std_module = std::filesystem::path(*msvc_compiler.std_module);
+	if constexpr (is_host_windows()) {
+		if(all_compilers.contains("clang") && all_compilers.contains("msvc")) {
+			// Get the newest msvc compiler
+			compiler const& msvc_compiler = all_compilers["msvc"].front();
+			auto const std_module = std::filesystem::path(*msvc_compiler.std_module);
 
-		for(compiler& clang : all_compilers["clang"]) {
-			clang.std_module = std_module;
+			for(compiler& clang : all_compilers["clang"]) {
+				if (!clang.std_module && !clang.wsl)
+					clang.std_module = std_module;
+			}
 		}
 	}
-#endif
 }
 
 bool context::set_compiler(std::string_view comp) {
