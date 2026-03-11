@@ -23,7 +23,6 @@ namespace fs = std::filesystem;
 
 using imports_map = std::unordered_map<fs::path, import_set>;  // source -> {imports}
 using module_map = std::unordered_map<std::string, fs::path>;  // import -> source
-std::mutex m;
 
 // Why doesn't this garbage stl have this already???
 static std::string to_upper(std::string const& cstr) {
@@ -369,7 +368,6 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 					std::println("<gbs> Linking unittest '{}'...", exe_name);
 					std::string const obj_resp = std::format(" @{} @{} {}/{}.obj", objlist_name.generic_string(), sup_objlist_name.generic_string(), ctx.output_dir().generic_string(), test_name);
 					std::string const cmd = ctx.link_command(exe_name, ctx.output_dir().generic_string()) + obj_resp;
-					std::scoped_lock sl(m);
 					return 0 == std::system(cmd.c_str());
 					});
 
