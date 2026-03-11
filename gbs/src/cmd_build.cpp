@@ -159,8 +159,7 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 		std_module_task = create_build_task(ctx, graph, std_module_path, modmap, impmap);
 		objects.insert((ctx.output_dir() / std_module_path.filename()).replace_extension("obj"));
 	} else {
-		std::println("<gbs> error: selected compiler doesn't provide a standard library module, builds may fail if the standard library is used");
-		return false;
+		std::println("<gbs> warning: selected compiler doesn't provide a standard library module, builds may fail if the standard library is used");
 	}
 
 	// 'lib' directory: process all libraries shared between all the projects
