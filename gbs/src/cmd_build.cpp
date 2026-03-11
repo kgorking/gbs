@@ -121,7 +121,7 @@ static fs::path create_object_file_list(context& ctx, std::string_view name, Ran
 }
 
 static task_ptr create_build_task(context const& ctx, task_graph& tg, fs::path const& path, module_map& modmap, imports_map& impmap, std::string_view defines = "") {
-	if (!is_valid_sourcefile(path) || !should_include(path))
+	if (!is_valid_sourcefile(path) || !should_include(ctx, path))
 		return {};
 
 	source_dependency const deps = extract_module_dependencies(ctx, path);
@@ -185,8 +185,8 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 			}
 
 			if (lib.stem() == "s") {
-				for (fs::path const& path : get_source_files(lib)) {
-					if (should_include(path)) {
+				for (fs::path const& path : get_source_files(ctx, lib)) {
+					if (should_include(ctx, path)) {
 						latest_lib_time = std::max(latest_lib_time, fs::last_write_time(path));
 						auto task = create_build_task(ctx, graph, path, modmap, impmap);
 						if (task) {
@@ -201,7 +201,7 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 			}
 			else if (lib.stem() == "d") {
 				std::string const export_define = to_upper(lib.extension().generic_string().substr(1)) + "_EXPORTS";
-				auto const vec = get_source_files(lib) | std::ranges::to<std::vector>();
+				auto const vec = get_source_files(ctx, lib) | std::ranges::to<std::vector>();
 
 				// Create the object list file for the .lib file
 				std::string const name = lib.extension().generic_string().substr(1);
@@ -223,7 +223,7 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 					});
 
 				for (fs::path const& path : vec) {
-					if (should_include(path)) {
+					if (should_include(ctx, path)) {
 						latest_lib_time = std::max(latest_lib_time, fs::last_write_time(path));
 						auto src_task = create_build_task(ctx, graph, path, modmap, impmap, export_define);
 						if (src_task)
@@ -250,7 +250,7 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 		if ("lib" == p)
 			continue;
 
-		if (!should_include(p))
+		if (!should_include(ctx, p))
 			continue;
 
 		if ("src" == p) {
@@ -267,7 +267,7 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 			//bool const skip_filtering = path.string().starts_with("s.");
 
 			// Create the object list file for the .lib file
-			auto const source_files = get_source_files(p / "src") | std::ranges::to<std::vector>();
+			auto const source_files = get_source_files(ctx, p / "src") | std::ranges::to<std::vector>();
 			auto filter_main = std::views::filter([&](fs::path const& path_to_filter) {
 				// Don't include the main source file in the object list, as it contains the 'main' function.
 				return /*!skip_filtering &&*/ path_to_filter.filename().stem().generic_string() != name;
@@ -275,7 +275,7 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 			auto filtered_source_files = source_files | filter_main | std::ranges::to<std::vector>();
 			objlist_name = create_object_file_list(ctx, name, filtered_source_files);
 
-			auto included_source_files = source_files | std::views::filter(should_include);
+			auto included_source_files = source_files | std::views::filter([&ctx](fs::path const& p) { return should_include(ctx, p); });
 			auto const latest_source_time = std::ranges::max(included_source_files | std::views::transform([](fs::path const& src) { return fs::last_write_time(src); }));
 
 			task_ptr exe_task = graph.create_task(p, [=, &ctx] {
@@ -334,7 +334,7 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 		}
 
 		if (fs::exists(p / "unittest")) {
-			auto source_files = get_source_files(p / "unittest") | std::ranges::to<std::vector>();
+			auto source_files = get_source_files(ctx, p / "unittest") | std::ranges::to<std::vector>();
 
 			std::string const name = p.stem().generic_string();
 
@@ -350,7 +350,7 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 			// Create the build tasks for the support files
 			task_ptr support_task = graph.create_task(p / "unittest_support", task_true);
 			for (fs::path const& path : supports) {
-				if (should_include(path)) {
+				if (should_include(ctx, path)) {
 					auto src_task = create_build_task(ctx, graph, path, modmap, impmap);
 					if (src_task) {
 						graph.add_dependency(src_task, support_task);

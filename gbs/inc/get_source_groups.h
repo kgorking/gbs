@@ -19,10 +19,11 @@ using source_group = std::map<std::filesystem::path, import_set>;
 // A map of source files grouped by their dependency depth
 using depth_ordered_sources_map = std::map<std::size_t, source_group>;
 
+class context; // Forward declaration
 
-bool should_include(std::filesystem::path const& path);
+bool should_include(context const& ctx, std::filesystem::path const& path);
 
-std::generator<std::filesystem::path> get_source_files(std::filesystem::path const& dir);
+std::generator<std::filesystem::path> get_source_files(context const& ctx, std::filesystem::path const& dir);
 
 // Find the source files and dependencies
 depth_ordered_sources_map get_grouped_source_files(context const& ctx, std::filesystem::path const& dir);
