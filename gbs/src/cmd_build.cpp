@@ -271,7 +271,9 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 			objlist_name = create_object_file_list(ctx, name, filtered_source_files);
 
 			auto included_source_files = source_files | std::views::filter([&ctx](fs::path const& p) { return should_include(ctx, p); });
-			auto const latest_source_time = std::ranges::max(included_source_files | std::views::transform([](fs::path const& src) { return fs::last_write_time(src); }));
+			auto const latest_source_time = included_source_files.empty()
+				? fs::file_time_type::min()
+				: std::ranges::max(included_source_files | std::views::transform([](fs::path const& src) { return fs::last_write_time(src); }));
 
 			task_ptr exe_task = graph.create_task(p, [=, &ctx] {
 				std::string const main_obj_name = (ctx.output_dir() / name).replace_extension("obj").generic_string();
