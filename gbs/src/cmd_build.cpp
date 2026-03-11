@@ -23,6 +23,7 @@ namespace fs = std::filesystem;
 
 using imports_map = std::unordered_map<fs::path, import_set>;  // source -> {imports}
 using module_map = std::unordered_map<std::string, fs::path>;  // import -> source
+std::mutex m;
 
 // Why doesn't this garbage stl have this already???
 static std::string to_upper(std::string const& cstr) {
