@@ -16,7 +16,7 @@ task_ptr task_graph::create_task(std::filesystem::path const& name, std::functio
 	return t;
 }
 
-std::optional<std::vector<task_ptr>> task_graph::find_circular_path(const task_ptr& start, const task_ptr& target, std::unordered_set<task_ptr>& visited, std::vector<task_ptr>& path) const {
+std::optional<std::vector<task_ptr>> task_graph::find_circular_path(const task_ptr& start, const task_ptr& target, std::unordered_set<task_ptr, task_ptr_hash>& visited, std::vector<task_ptr>& path) const {
 	if (!start)
 		return std::nullopt;
 
@@ -43,7 +43,7 @@ std::optional<std::vector<task_ptr>> task_graph::find_circular_path(const task_p
 
 void task_graph::add_dependency(const task_ptr& parent, const task_ptr& child) {
 	// Check for circular dependencies
-	std::unordered_set<task_ptr> visited;
+	std::unordered_set<task_ptr, task_ptr_hash> visited;
 	std::vector<task_ptr> path;
 	auto circular_path = find_circular_path(child, parent, visited, path);
 
