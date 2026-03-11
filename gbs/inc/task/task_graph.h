@@ -8,6 +8,7 @@
 #include <optional>
 #include <queue>
 #include <thread>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -47,5 +48,5 @@ private:
 	std::mutex done_mtx;
 	std::condition_variable done_cv;
 	thread_pool pool;
-	bool abort = false;
+	std::atomic_bool abort = false;
 };

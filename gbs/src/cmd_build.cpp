@@ -159,8 +159,7 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 		std_module_task = create_build_task(ctx, graph, std_module_path, modmap, impmap);
 		objects.insert((ctx.output_dir() / std_module_path.filename()).replace_extension("obj"));
 	} else {
-		std::println("<gbs> error: selected compiler doesn't provide a standard library module, builds may fail if the standard library is used");
-		return false;
+		std::println("<gbs> warning: selected compiler doesn't provide a standard library module, builds may fail if the standard library is used");
 	}
 
 	// 'lib' directory: process all libraries shared between all the projects
@@ -192,9 +191,6 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 						if (task) {
 							graph.add_dependency(task, lib_barrier_task);
 							objects.insert((ctx.output_dir() / path.filename()).replace_extension("obj"));
-						}
-						else {
-							std::println("<gbs> error: failed to create a build task for {}", path.generic_string());
 						}
 					}
 				}
@@ -276,7 +272,9 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 			objlist_name = create_object_file_list(ctx, name, filtered_source_files);
 
 			auto included_source_files = source_files | std::views::filter([&ctx](fs::path const& p) { return should_include(ctx, p); });
-			auto const latest_source_time = std::ranges::max(included_source_files | std::views::transform([](fs::path const& src) { return fs::last_write_time(src); }));
+			auto const latest_source_time = included_source_files.empty()
+				? fs::file_time_type::min()
+				: std::ranges::max(included_source_files | std::views::transform([](fs::path const& src) { return fs::last_write_time(src); }));
 
 			task_ptr exe_task = graph.create_task(p, [=, &ctx] {
 				std::string const main_obj_name = (ctx.output_dir() / name).replace_extension("obj").generic_string();
@@ -373,7 +371,6 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 					std::println("<gbs> Linking unittest '{}'...", exe_name);
 					std::string const obj_resp = std::format(" @{} @{} {}/{}.obj", objlist_name.generic_string(), sup_objlist_name.generic_string(), ctx.output_dir().generic_string(), test_name);
 					std::string const cmd = ctx.link_command(exe_name, ctx.output_dir().generic_string()) + obj_resp;
-					std::scoped_lock sl(m);
 					return 0 == std::system(cmd.c_str());
 					});
 
@@ -401,6 +398,9 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 			continue;
 
 		for (auto const& imp : imports) {
+			if (!modmap.contains(imp))
+				continue;
+
 			auto const& imp_src = modmap[imp];
 			task_ptr imp_task = graph.find_task(imp_src);
 			if (imp_task)
