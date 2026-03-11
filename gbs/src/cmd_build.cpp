@@ -398,6 +398,9 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 			continue;
 
 		for (auto const& imp : imports) {
+			if (!modmap.contains(imp))
+				continue;
+
 			auto const& imp_src = modmap[imp];
 			task_ptr imp_task = graph.find_task(imp_src);
 			if (imp_task)
