@@ -16,6 +16,7 @@ struct task_ptr_hash {
 		return std::hash<task*>()(ptr.get());
 	}
 };
+using tasks_set = std::unordered_set<task_ptr, task_ptr_hash>;
 
 class task_graph {
 public:
@@ -34,7 +35,7 @@ public:
 
 private:
 	void schedule_ready_tasks();
-	std::optional<std::vector<task_ptr>> find_circular_path(const task_ptr& start, const task_ptr& target, std::unordered_set<task_ptr, task_ptr_hash>& visited, std::vector<task_ptr>& path) const;
+	std::optional<std::vector<task_ptr>> find_circular_path(const task_ptr& start, const task_ptr& target, tasks_set& visited, std::vector<task_ptr>& path) const;
 
 private:
 	std::queue<task_ptr> ready;
