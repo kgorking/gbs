@@ -19,15 +19,18 @@ bool should_include(context const& ctx, fs::path const& path) {
 	// Check OS-specific directory constraints
 	auto const target_os = ctx.get_target_os();
 
-	if (generic_path.contains("/windows/") && target_os != operating_system::windows)
-		return false;
+	for (auto const& component : path) {
+		auto const component_str = component.generic_string();
 
-	if (generic_path.contains("/linux/") && target_os != operating_system::linux)
-		return false;
+		if (component_str == "windows" && target_os != operating_system::windows)
+			return false;
 
-	if (generic_path.contains("/macos/") && target_os != operating_system::macos)
-		return false;
+		if (component_str == "linux" && target_os != operating_system::linux)
+			return false;
 
+		if (component_str == "macos" && target_os != operating_system::macos)
+			return false;
+	}
 	return true;
 }
 
