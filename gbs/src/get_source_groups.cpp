@@ -1,15 +1,37 @@
+#include "../inc/context.h"
 #include "../inc/dep_scan.h"
 #include "../inc/get_source_groups.h"
+#include "../inc/os.h"
 #include <array>
 #include <generator>
 #include <set>
 
 namespace fs = std::filesystem;
 
-bool should_include(fs::path const& path) {
-	return
-		!path.generic_string().starts_with("x.") &&
-		!path.filename().stem().generic_string().starts_with("x.");
+bool should_include(context const& ctx, fs::path const& path) {
+	auto const& generic_path = path.generic_string();
+
+	// Check if file or directory name starts with "x."
+	if (generic_path.starts_with("x.") || 
+		path.filename().stem().generic_string().starts_with("x."))
+		return false;
+
+	// Check OS-specific directory constraints
+	auto const target_os = ctx.get_target_os();
+
+	for (auto const& component : path) {
+		auto const component_str = component.generic_string();
+
+		if (component_str == "windows" && target_os != operating_system::windows)
+			return false;
+
+		if (component_str == "linux" && target_os != operating_system::linux)
+			return false;
+
+		if (component_str == "macos" && target_os != operating_system::macos)
+			return false;
+	}
+	return true;
 }
 
 // Recursively merge a files child dependencies with its own dependencies.
@@ -41,18 +63,18 @@ static bool is_valid_sourcefile(fs::path const& file) {
 	return extensions.end() != std::find(extensions.begin(), extensions.end(), file.extension());
 }
 
-std::generator<fs::path> get_source_files(fs::path const& dir) {
+std::generator<fs::path> get_source_files(context const& ctx, fs::path const& dir) {
 	for (auto const& dir_it : fs::recursive_directory_iterator(dir)) {
 		if (!dir_it.is_regular_file())
 			continue;
 		fs::path const file_path = dir_it.path();
-		if (!is_valid_sourcefile(file_path) || !should_include(file_path))
+		if (!is_valid_sourcefile(file_path) || !should_include(ctx, file_path))
 			continue;
 		co_yield file_path;
 	}
 }
 
-depth_ordered_sources_map get_grouped_source_files(fs::path const& dir) {
+depth_ordered_sources_map get_grouped_source_files(context const& ctx, fs::path const& dir) {
 	file_to_imports_map file_imports;
 
 	// Maps an export module name to its filename
@@ -63,10 +85,10 @@ depth_ordered_sources_map get_grouped_source_files(fs::path const& dir) {
 			continue;
 
 		fs::path const file_path = dir_it.path();
-		if (!is_valid_sourcefile(file_path) || !should_include(file_path))
+		if (!is_valid_sourcefile(file_path) || !should_include(ctx, file_path))
 			continue;
 
-		source_dependency const sd = extract_module_dependencies(file_path);
+		source_dependency const sd = extract_module_dependencies(ctx, file_path);
 		file_imports[sd.path] = sd.import_names;
 
 		module_name_to_file_map.insert({ sd.export_name, sd.path });

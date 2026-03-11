@@ -10,6 +10,16 @@
       "name": "gbs.exe"
     },
     {
+      "name": "GSTD project",
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": "E:\\source\\repos\\gstd",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "cl=msvc config=debug,warnings clean build unittest"
+      ]
+    },
+    {
       "name": "Unittest sample project",
       "type": "default",
       "project": "CMakeLists.txt",
@@ -66,7 +76,7 @@
       "currentDir": "${workspaceRoot}",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=msvc build unittest=-ni"
+        "clean cl=msvc config=debug,warnings build unittest=-ni"
       ]
     },
     {
@@ -76,7 +86,7 @@
       "currentDir": "${workspaceRoot}",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=clang:21 build unittest=-ni"
+        "clean cl=clang:21 config=release build unittest=-ni"
       ]
     },
     {
@@ -85,6 +95,15 @@
       "project": "CMakeLists.txt",
       "currentDir": "${workspaceRoot}",
       "projectTarget": "gbs.exe",
+      "args": [
+        "clean cl=clang:22 config=release,warnings build unittest=-ni"
+      ]
+    },
+    {
+      "name": "[clang-WSL] build for linux",
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": "${workspaceRoot}",
       "args": [
         "clean cl=clang:22 config=release,warnings build unittest=-ni"
       ]

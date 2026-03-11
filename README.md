@@ -1,4 +1,4 @@
-﻿# Gorking Build System v0.18.1
+﻿# Gorking Build System v0.19
 
 A rule-based build system to automatically find source files and compile them. No need for build scripts.
 
@@ -88,8 +88,8 @@ The following commands are supported:
 The following compilers can be used by `gbs` to build `gbs`:
 
 - [x] msvc 19.38+
-- [x] clang 21+
-- [ ] gcc 15+ (linking error when using `std::print`)
+- [x] clang 22+
+- [x] gcc 16+ (linking error when using `std::print`)
   - Requires manual edits to `print` and `ostream` std headers to fix linking errors. In the function `vprint_unicode`, in both files, change the line:
 	```cpp
 	#if !defined(_WIN32) || defined(__CYGWIN__)
@@ -102,6 +102,7 @@ The following compilers can be used by `gbs` to build `gbs`:
 # Upcoming versions (not in a specific order)
 - Support package managers (vcpkg, conan, etc.)
 - Use GCC on WSL
+- Concurrent compilations of multiple different compilers
 
 ## Todo
 - [ ] Good documentation for all commands
@@ -151,4 +152,4 @@ The following compilers can be used by `gbs` to build `gbs`:
 
 
 # Note
-Yes, I am aware of the irony of using CMake to make a build system.
+Yes, I am aware of the irony of using CMake to make a build system. I am making this so I hopefully never have to use cmake again.

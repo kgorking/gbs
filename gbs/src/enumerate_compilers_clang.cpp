@@ -17,9 +17,9 @@ static compiler new_compiler(std::string_view version, std::size_t prefix_size) 
 	comp.name_and_version = version;
 	version.remove_prefix(prefix_size); // remove prefix
 	extract_compiler_version(version, comp.major, comp.minor, comp.patch);
-	comp.name_and_version = std::format("{}_{}.{}.{}", comp.name, comp.major, comp.minor, comp.patch);
 
 	comp.name = "clang";
+	comp.name_and_version = std::format("{}_{}.{}.{}", comp.name, comp.major, comp.minor, comp.patch);
 	comp.build_source = " {0:?} -o {1:?} ";
 	comp.build_module = " --language=c++-module {0:?} -o {1:?} -fmodule-output ";
 	comp.build_command_prefix = "call {0} @{1}/SRC_INCLUDES -c ";
@@ -40,7 +40,7 @@ static std::optional<std::string> find_std_module_path(compiler const& comp, boo
 #else
 	std::string_view const null_device = "/dev/null";
 #endif
-	std::string const std_module_file = is_windows ? "\\..\\modules\\std.ixx" : "bits/std.cc";
+	std::string const std_module_file = is_windows ? "\\..\\modules\\std.ixx" : "/bits/std.cc";
 
 	// Create a command to get the include paths from the compiler
 	std::string const command = std::format("{} -v -E -x c++ - < {} > compiler_output.txt 2>&1", comp.executable.generic_string(), null_device);
@@ -57,7 +57,7 @@ static std::optional<std::string> find_std_module_path(compiler const& comp, boo
 			// Read each include path and check for the standard module file.
 			// Include paths start with a space.
 			while (std::getline(output, line) && line[0] == ' ') {
-				line = std::filesystem::path(line.substr(1) + std_module_file).lexically_normal().generic_string();
+				line = std::filesystem::path(line.substr(1) + std_module_file).lexically_normal().string();
 
 				if (comp.wsl) {
 					std::string const path = comp.wsl ? std::format(R"(\\wsl.localhost\{}{})", *comp.wsl, line) : line;
@@ -71,7 +71,8 @@ static std::optional<std::string> find_std_module_path(compiler const& comp, boo
 			}
 
 			output.close();
-			std::filesystem::remove("compiler_output.txt");
+			std::error_code ec;
+			std::filesystem::remove("compiler_output.txt", ec);
 			if (line != "End of search list.")
 				return line;
 		}
@@ -105,10 +106,12 @@ void enumerate_compilers_clang(environment const& env, std::function<void(compil
 			callback(std::move(comp));
 		}
 	}
-	std::filesystem::remove("clang_version.txt");
+	std::error_code ec;
+	std::filesystem::remove("clang_version.txt", ec);
 
+#ifdef _WIN32
 	// Enumerate WSL installed clang compilers
-	/*auto const wsl_distros = get_wsl_distributions();
+	auto const wsl_distros = get_wsl_distributions();
 	for (std::string const& distro : wsl_distros) {
 		std::string const wsl_prefix = "wsl -d " + distro + " ";
 		std::string const command = wsl_prefix + "clang --version > clang_version.txt 2>&1";
@@ -141,8 +144,10 @@ void enumerate_compilers_clang(environment const& env, std::function<void(compil
 				callback(std::move(comp));
 			}
 		}
-		std::filesystem::remove("clang_version.txt");
-	}*/
+
+		std::filesystem::remove("clang_version.txt", ec);
+	}
+#endif
 
 	// Find compilers in ~/.gbs/clang
 	std::filesystem::path const download_dir = env.get_home_dir() / ".gbs" / "clang";

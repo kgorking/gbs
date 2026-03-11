@@ -22,6 +22,25 @@ operating_system os_from_target_triple(std::string_view triple);
 // Get properly named static library for the target platform
 [[nodiscard]] std::string os_get_static_library_name(operating_system const target_os, std::string_view base_name);
 
-consteval bool is_host_windows();
-consteval bool is_host_linux();
-consteval bool is_host_macos();
+consteval bool is_host_windows() {
+#ifdef _WIN32
+	return true;
+#else
+	return false;
+#endif
+}
+
+consteval bool is_host_linux() {
+#ifdef __linux__
+	return true;
+#else
+	return false;
+#endif
+}
+consteval bool is_host_macos() {
+#ifdef __APPLE__
+	return true;
+#else
+	return false;
+#endif
+}
