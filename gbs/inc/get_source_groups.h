@@ -4,8 +4,12 @@
 #include <map>
 #include <set>
 #include <string>
+//#include "module_desc.h"
 
-using import_set = std::set<std::string>;
+class context; // Forward declaration
+struct module_desc; // Forward declaration
+
+using import_set = std::set<module_desc>;
 
 // Holds a single source files module dependencies
 using source_info = std::pair<std::filesystem::path, import_set>;
@@ -13,17 +17,7 @@ using source_info = std::pair<std::filesystem::path, import_set>;
 // A map of source files to their module dependencies
 using file_to_imports_map = std::map<std::filesystem::path, import_set>;
 
-// A single group of source files that can be compiled in parallel
-using source_group = std::map<std::filesystem::path, import_set>;
-
-// A map of source files grouped by their dependency depth
-using depth_ordered_sources_map = std::map<std::size_t, source_group>;
-
-class context; // Forward declaration
 
 bool should_include(context const& ctx, std::filesystem::path const& path);
 
 std::generator<std::filesystem::path> get_source_files(context const& ctx, std::filesystem::path const& dir);
-
-// Find the source files and dependencies
-depth_ordered_sources_map get_grouped_source_files(context const& ctx, std::filesystem::path const& dir);

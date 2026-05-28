@@ -35,7 +35,7 @@ add_executable (gbs
 	"gbs/src/cmd_ide.cpp"
     "gbs/src/cmd_unittest.cpp"
 	"gbs/src/cmd_version.cpp"
-)
+ "gbs/inc/source_file.h" "gbs/inc/module_desc.h")
 
 if(MSVC)
 	target_compile_definitions(gbs PRIVATE _MSVC_STL_HARDENING=1 _MSVC_STL_DESTRUCTOR_TOMBSTONES=1)

@@ -3,6 +3,7 @@
 #include "../inc/get_source_groups.h"
 #include "../inc/os.h"
 #include <array>
+#include <filesystem>
 #include <generator>
 #include <set>
 
@@ -12,8 +13,7 @@ bool should_include(context const& ctx, fs::path const& path) {
 	auto const& generic_path = path.generic_string();
 
 	// Check if file or directory name starts with "x."
-	if (generic_path.starts_with("x.") || 
-		path.filename().stem().generic_string().starts_with("x."))
+	if (generic_path.starts_with("x.") || path.filename().stem().generic_string().starts_with("x."))
 		return false;
 
 	// Check OS-specific directory constraints
@@ -37,7 +37,7 @@ bool should_include(context const& ctx, fs::path const& path) {
 // Recursively merge a files child dependencies with its own dependencies.
 //   Fx. A -> B -> C
 //   Results in A's dependencies being [B, C]
-static source_info recursive_merge(fs::path const&file, import_set const& deps, std::map<std::string, fs::path> const& module_name_to_file_map, file_to_imports_map const& file_imports) {
+/*static source_info recursive_merge(fs::path const& file, import_set const& deps, std::map<std::string, fs::path> const& module_name_to_file_map, file_to_imports_map const& file_imports) {
 	import_set all_merged_deps{ deps };
 
 	for (auto const& dep : deps) {
@@ -49,14 +49,7 @@ static source_info recursive_merge(fs::path const&file, import_set const& deps, 
 	}
 
 	return { file, all_merged_deps };
-}
-
-// Group files according to how deep their dependency chain is
-void group_by_dependency_depth(depth_ordered_sources_map& sources, source_info const& si) {
-	auto [path, imports] = si;
-	std::size_t const dep_size = imports.size();
-	sources[dep_size][path].merge(imports);
-}
+}*/
 
 static bool is_valid_sourcefile(fs::path const& file) {
 	static constexpr std::array<std::string_view, 4> extensions{".cpp", ".c", ".cppm", ".ixx"};
@@ -64,43 +57,23 @@ static bool is_valid_sourcefile(fs::path const& file) {
 }
 
 std::generator<fs::path> get_source_files(context const& ctx, fs::path const& dir) {
+	compiler const& cl = ctx.get_selected_compiler();
+
 	for (auto const& dir_it : fs::recursive_directory_iterator(dir)) {
 		if (!dir_it.is_regular_file())
 			continue;
-		fs::path const file_path = dir_it.path();
+
+		fs::path file_path = dir_it.path();
 		if (!is_valid_sourcefile(file_path) || !should_include(ctx, file_path))
 			continue;
+
+		if (cl.wsl && !std::filesystem::exists(file_path)) {
+			std::string new_path = std::format(R"(\\wsl.localhost\{}{})", *cl.wsl, file_path.string());
+			if (std::filesystem::exists(new_path)) {
+				file_path = new_path;
+			}
+		}
+
 		co_yield file_path;
 	}
-}
-
-depth_ordered_sources_map get_grouped_source_files(context const& ctx, fs::path const& dir) {
-	file_to_imports_map file_imports;
-
-	// Maps an export module name to its filename
-	// and find all immediate dependencies for each file
-	std::map<std::string, fs::path> module_name_to_file_map;
-	for (auto const& dir_it : fs::recursive_directory_iterator(dir)) {
-		if (!dir_it.is_regular_file())
-			continue;
-
-		fs::path const file_path = dir_it.path();
-		if (!is_valid_sourcefile(file_path) || !should_include(ctx, file_path))
-			continue;
-
-		source_dependency const sd = extract_module_dependencies(ctx, file_path);
-		file_imports[sd.path] = sd.import_names;
-
-		module_name_to_file_map.insert({ sd.export_name, sd.path });
-	}
-
-	// Merge all dependencies for each file and
-	// return an ordered map of files grouped by their dependency depth
-	depth_ordered_sources_map sources;
-	for (auto const& [file, imports] : file_imports) {
-		source_info const merged = recursive_merge(file, imports, module_name_to_file_map, file_imports);
-		group_by_dependency_depth(sources, merged);
-	}
-
-	return sources;
 }

@@ -535,8 +535,8 @@ basic_ostream<char, traits>& operator<<(basic_ostream<char, traits>&, const char
 template <class charT, class traits>
 class basic_istream;
 typedef basic_istream<char, char_traits<char>> istream; // NOLINT(modernize-use-using)
-template <class... Types>
-class tuple;
+//template <class... Types>
+//class tuple;
 #if DOCTEST_MSVC >= DOCTEST_COMPILER(19, 20, 0)
 // see this issue on why this is needed: https://github.com/doctest/doctest/issues/183
 template <class Ty>

@@ -22,7 +22,7 @@
 namespace fs = std::filesystem;
 
 using imports_map = std::unordered_map<fs::path, import_set>;  // source -> {imports}
-using module_map = std::unordered_map<std::string, fs::path>;  // import -> source
+using module_map = std::unordered_map<module_desc, fs::path>;  // import -> source
 std::mutex m;
 
 // Why doesn't this garbage stl have this already???
