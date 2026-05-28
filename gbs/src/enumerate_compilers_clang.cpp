@@ -109,7 +109,7 @@ void enumerate_compilers_clang(environment const& env, std::function<void(compil
 	std::error_code ec;
 	std::filesystem::remove("clang_version.txt", ec);
 
-#ifdef _WIN32
+#if 0//def _WIN32
 	// Enumerate WSL installed clang compilers
 	auto const wsl_distros = get_wsl_distributions();
 	for (std::string const& distro : wsl_distros) {

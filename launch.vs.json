@@ -16,7 +16,7 @@
       "currentDir": "E:\\source\\repos\\gstd",
       "projectTarget": "gbs.exe",
       "args": [
-        "cl=msvc config=debug,warnings clean build unittest"
+        "cl=msvc config=debug,warnings,analyze clean build unittest"
       ]
     },
     {

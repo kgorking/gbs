@@ -3,13 +3,7 @@
 
 cmake_minimum_required (VERSION 4.1.0 FATAL_ERROR)
 
-if (CMAKE_VERSION VERSION_GREATER "4.1.0")
-	set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "d0edc3af-4c50-42ea-a356-e2862fe7a444")
-else()
-	message(FATAL_ERROR "Unknown uuid for CMake version: '${CMAKE_VERSION}', check the cmake github for new uuid")
-endif()
-
-
+set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "451f2fe2-a8a2-47c3-bc32-94786d8fc91b")
 set(CMAKE_CXX_MODULE_STD ON)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
