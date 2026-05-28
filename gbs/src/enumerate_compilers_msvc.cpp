@@ -37,17 +37,15 @@ static void enumerate_compiler_msvc(std::filesystem::path msvc_path, std::functi
 
 		std::string const cmd = std::format(R"("{}" 1>nul 2>version)", comp.executable.generic_string());
 		if (0 == std::system(cmd.c_str())) {
-			{
-				std::string version;
-				std::getline(std::ifstream("version"), version);
+			std::string version;
+			std::getline(std::ifstream("version"), version);
 
-				std::string_view sv(version);
-				sv.remove_prefix(sv.find_first_of("0123456789", 0));
-				sv = sv.substr(0, sv.find_first_of(' '));
+			std::string_view sv(version);
+			sv.remove_prefix(sv.find_first_of("0123456789", 0));
+			sv = sv.substr(0, sv.find_first_of(' '));
 
-				extract_compiler_version(sv, comp.major, comp.minor, comp.patch);
-				callback(std::move(comp));
-			}
+			extract_compiler_version(sv, comp.major, comp.minor, comp.patch);
+			callback(std::move(comp));
 			std::filesystem::remove("version");
 		}
 	}

@@ -21,9 +21,12 @@
 
 namespace fs = std::filesystem;
 
+template<typename Range, typename T>
+concept range_of = std::ranges::range<Range> && std::same_as<std::ranges::range_value_t<Range>, T>;
+
 using imports_map = std::unordered_map<fs::path, import_set>;  // source -> {imports}
 using module_map = std::unordered_map<module_desc, fs::path>;  // import -> source
-std::mutex m;
+//std::mutex m;
 
 // Why doesn't this garbage stl have this already???
 static std::string to_upper(std::string const& cstr) {
@@ -107,9 +110,7 @@ static bool is_valid_sourcefile(fs::path const& file) {
 }
 
 // Create the object list file
-template<typename Range>
-	requires std::ranges::range<Range> && std::same_as<std::ranges::range_value_t<Range>, fs::path>
-static fs::path create_object_file_list(context& ctx, std::string_view name, Range&& paths) {
+static fs::path create_object_file_list(context& ctx, std::string_view name, range_of<fs::path> auto&& paths) {
 	fs::path objlist_name = (ctx.output_dir() / name).concat("_OBJLIST");
 	std::ofstream objlist(objlist_name);
 	for(fs::path const& src : paths) {
@@ -124,7 +125,7 @@ static task_ptr create_build_task(context const& ctx, task_graph& tg, fs::path c
 	if (!is_valid_sourcefile(path) || !should_include(ctx, path))
 		return {};
 
-	source_dependency const deps = extract_module_dependencies(ctx, path);
+	source_dependency const deps = extract_module_dependencies(path);
 	if (deps.is_export())
 		modmap[deps.export_name] = path;
 	impmap[path].insert_range(deps.import_names);
@@ -142,14 +143,16 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 	if (!init_build(ctx))
 		return false;
 
-	// Save paths to libraries and objects
+	// Save paths to libraries, objects, includes
 	std::set<fs::path> libs;
 	std::set<fs::path> objects;
-
-	// Containers for all source files, includes, defines and targets
 	std::set<fs::path> includes;
+
+	// Containers module <-> path
 	module_map modmap;
 	imports_map impmap;
+
+	// The task graph to hold all build tasks and their dependencies
 	task_graph graph;
 
 	// Add the std module to the build

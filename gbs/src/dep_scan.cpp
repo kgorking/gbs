@@ -5,25 +5,19 @@
 #include <print>
 
 // Returns a source files module dependencies.
-auto extract_module_dependencies(context const&, std::filesystem::path path) -> source_dependency {
+auto extract_module_dependencies(std::filesystem::path path) -> source_dependency {
 	source_dependency dependencies{ .path = path };
 
 	std::string main_module_name;
-	auto file = std::ifstream(path);
-	if (!file) {
-		std::println("<gbs-depscan> error: failed to open file '{}'", path.generic_string());
-		return dependencies;
-	}
-
 	std::string line;
+	auto file = std::ifstream(path);
 	while (std::getline(file, line)) {
 		if (line.empty())
 			continue;
 
-		// TODO test for {}
-
-		// Simple pattern: look for "\b(import|export module)\s+<module-name>;"
-		//std::string_view const sv = line;
+		// Test for {}
+		if (line.starts_with('{'))
+			break;
 
 		// Skip initial whitespaces
 		std::string_view module_line = line;
@@ -71,23 +65,19 @@ auto extract_module_dependencies(context const&, std::filesystem::path path) -> 
 			continue;
 
 		module_desc module{};
-		if (module_line[0] == ':') { // module :part;
+		if (module_line[0] == ':') {
+			// module :part;
 			module.name = main_module_name;
 			module.partition = module_line.substr(1);
 		}
-		else if (module_line.contains(':')) { // module name:part;
+		else if (module_line.contains(':')) {
+			// module name:part;
 			auto const global_module_pos = module_line.find(':');
 			module.name = module_line.substr(0, global_module_pos);
 			module.partition = module_line.substr(global_module_pos + 1);
-			/*if (is_msvc) {
-				main_module = module_line.substr(0, global_module_pos) + '-';
-				module_line[module_line.find(':')] = '-';
-			}
-			else {
-				module_line = module_line.substr(global_module_pos + 1);
-			}*/
 		}
 		else {
+			// module name;
 			module.name = module_line;
 		}
 

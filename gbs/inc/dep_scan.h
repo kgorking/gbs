@@ -4,8 +4,6 @@
 #include <string>
 #include "module_desc.h"
 
-class context;
-
 struct source_dependency {
 	std::filesystem::path path;
 	module_desc export_name{};
@@ -16,4 +14,4 @@ struct source_dependency {
 	}
 };
 
-source_dependency extract_module_dependencies(context const& ctx, std::filesystem::path path);
+auto extract_module_dependencies(std::filesystem::path path) -> source_dependency;

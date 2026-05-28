@@ -8,6 +8,6 @@
 // A single source file, used to track the path and module dependencies of the file
 struct source_file {
 	std::filesystem::path path;
-	std::set<std::string> imports;
+	std::filesystem::path object_path;
 	std::vector<source_dependency> dependencies;
 };
