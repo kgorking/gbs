@@ -21,8 +21,8 @@
 
 namespace fs = std::filesystem;
 
-template<typename Range, typename T>
-concept range_of = std::ranges::range<Range> && std::same_as<std::ranges::range_value_t<Range>, T>;
+template<typename R, typename T>
+concept range_of = std::ranges::range<R> && std::same_as<std::ranges::range_value_t<R>, T>;
 
 using imports_map = std::unordered_map<fs::path, import_set>;  // source -> {imports}
 using module_map = std::unordered_map<module_desc, fs::path>;  // import -> source
@@ -110,7 +110,7 @@ static bool is_valid_sourcefile(fs::path const& file) {
 }
 
 // Create the object list file
-static fs::path create_object_file_list(context& ctx, std::string_view name, range_of<fs::path> auto&& paths) {
+static fs::path create_object_file_list(context& ctx, std::string_view name, range_of<fs::path> auto const& paths) {
 	fs::path objlist_name = (ctx.output_dir() / name).concat("_OBJLIST");
 	std::ofstream objlist(objlist_name);
 	for(fs::path const& src : paths) {
@@ -188,13 +188,11 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 
 			if (lib.stem() == "s") {
 				for (fs::path const& path : get_source_files(ctx, lib)) {
-					if (should_include(ctx, path)) {
-						latest_lib_time = std::max(latest_lib_time, fs::last_write_time(path));
-						auto task = create_build_task(ctx, graph, path, modmap, impmap);
-						if (task) {
-							graph.add_dependency(task, lib_barrier_task);
-							objects.insert((ctx.output_dir() / path.filename()).replace_extension("obj"));
-						}
+					latest_lib_time = std::max(latest_lib_time, fs::last_write_time(path));
+					auto task = create_build_task(ctx, graph, path, modmap, impmap);
+					if (task) {
+						graph.add_dependency(task, lib_barrier_task);
+						objects.insert((ctx.output_dir() / path.filename()).replace_extension("obj"));
 					}
 				}
 			}
@@ -211,6 +209,7 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 				fs::path const out_lib = ctx.output_dir() / lib_or_dll_name;// os_get_static_library_name(ctx.get_target_os(), name);
 				libs.insert(out_lib);
 
+				// Create the task to build the .dll file for this library
 				auto dll_task = graph.create_task(lib, [&ctx, name, objlist_name] {
 					std::string const lib_name = os_get_static_library_name(ctx.get_target_os(), name);
 					std::string const dll_name = os_get_dynamic_library_name(ctx.get_target_os(), name);
@@ -221,13 +220,13 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 					return 0 == std::system(cmd.c_str());
 					});
 
+				// Create the tasks for the source files and add them as dependencies to the .dll task
 				for (fs::path const& path : vec) {
 					if (should_include(ctx, path)) {
 						latest_lib_time = std::max(latest_lib_time, fs::last_write_time(path));
 						auto src_task = create_build_task(ctx, graph, path, modmap, impmap, export_define);
 						if (src_task)
 							graph.add_dependency(src_task, dll_task);
-
 					}
 				}
 
@@ -263,21 +262,19 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 		if (fs::exists(p / "src")) {
 			fs::path const path = p == "." ? fs::current_path() : p;
 			std::string const name = path.string().contains('.') ? path.extension().generic_string().substr(1) : path.stem().generic_string();
-			//bool const skip_filtering = path.string().starts_with("s.");
 
 			// Create the object list file for the .lib file
 			auto const source_files = get_source_files(ctx, p / "src") | std::ranges::to<std::vector>();
 			auto filter_main = std::views::filter([&](fs::path const& path_to_filter) {
 				// Don't include the main source file in the object list, as it contains the 'main' function.
-				return /*!skip_filtering &&*/ path_to_filter.filename().stem().generic_string() != name;
+				return path_to_filter.filename().stem().generic_string() != name;
 				});
 			auto filtered_source_files = source_files | filter_main | std::ranges::to<std::vector>();
 			objlist_name = create_object_file_list(ctx, name, filtered_source_files);
 
-			auto included_source_files = source_files | std::views::filter([&ctx](fs::path const& p) { return should_include(ctx, p); });
-			auto const latest_source_time = included_source_files.empty()
+			auto const latest_source_time = source_files.empty()
 				? fs::file_time_type::min()
-				: std::ranges::max(included_source_files | std::views::transform([](fs::path const& src) { return fs::last_write_time(src); }));
+				: std::ranges::max(source_files | std::views::transform([](fs::path const& src) { return fs::last_write_time(src); }));
 
 			task_ptr exe_task = graph.create_task(p, [=, &ctx] {
 				std::string const main_obj_name = (ctx.output_dir() / name).replace_extension("obj").generic_string();
@@ -307,7 +304,8 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 					if (fs::exists(dll_path) && latest_source_time < fs::last_write_time(dll_path))
 						return true;
 
-					std::string const cmd = ctx.dynamic_library_command(dll_name, lib_name, ctx.output_dir().generic_string()) + std::format(" @{}", objlist_name.generic_string());
+					std::string const cmd = ctx.dynamic_library_command(dll_name, lib_name, ctx.output_dir().generic_string())
+						                  + std::format(" @{}", objlist_name.generic_string());
 					std::println("<gbs> Linking dynamic library '{}'...", dll_name);
 					return 0 == std::system(cmd.c_str());
 				}
@@ -325,8 +323,8 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 				}
 				});
 
-			for (fs::path const& include_path : included_source_files) {
-				auto src_task = create_build_task(ctx, graph, include_path, modmap, impmap);
+			for (fs::path const& source_path : source_files) {
+				auto src_task = create_build_task(ctx, graph, source_path, modmap, impmap);
 				if (src_task) {
 					graph.add_dependency(lib_barrier_task, src_task);
 					graph.add_dependency(src_task, exe_task);
