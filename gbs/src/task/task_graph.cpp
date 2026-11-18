@@ -42,6 +42,9 @@ std::optional<std::vector<task_ptr>> task_graph::find_circular_path(const task_p
 }
 
 void task_graph::add_dependency(const task_ptr& parent, const task_ptr& child) {
+	if (!parent || !child)
+		return;
+
 	// Check for circular dependencies
 	tasks_set visited;
 	std::vector<task_ptr> path;

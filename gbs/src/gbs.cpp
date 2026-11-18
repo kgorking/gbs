@@ -25,7 +25,7 @@ int main(const int argc, char const* argv[], char const** envp) {
 		{"cl", cmd_cl},
 		{"config", cmd_config},
 		{"clean", cmd_clean},
-		{"build", cmd_build},
+		{"build", cmd_build_v2},
 		{"ide", cmd_ide},
 		{"unittest", cmd_unittest}
 	};

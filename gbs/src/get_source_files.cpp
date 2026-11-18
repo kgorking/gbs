@@ -1,6 +1,6 @@
 #include "../inc/context.h"
 #include "../inc/dep_scan.h"
-#include "../inc/get_source_groups.h"
+#include "../inc/get_source_files.h"
 #include "../inc/os.h"
 #include <array>
 #include <filesystem>
@@ -39,7 +39,7 @@ static bool is_valid_sourcefile(fs::path const& file) {
 	return extensions.end() != std::find(extensions.begin(), extensions.end(), file.extension());
 }
 
-std::generator<fs::path> get_source_files(context const& ctx, fs::path const& dir) {
+std::generator<fs::path> get_source_files(context const& ctx, fs::path dir) {
 	compiler const& cl = ctx.get_selected_compiler();
 
 	for (auto const& dir_it : fs::recursive_directory_iterator(dir)) {

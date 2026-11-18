@@ -8,10 +8,10 @@
 #include <thread>
 #include <vector>
 
-class thread_pool {
+class task_pool {
 public:
-	thread_pool(size_t n = std::thread::hardware_concurrency());
-	~thread_pool();
+	task_pool(size_t n = std::thread::hardware_concurrency());
+	~task_pool();
 
 	void enqueue(std::function<void()> job);
 

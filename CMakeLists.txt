@@ -18,13 +18,13 @@ add_executable (gbs
 	"gbs/src/dep_scan.cpp"
 	"gbs/src/wsl.cpp"
 	"gbs/src/compiler.cpp"
-	"gbs/src/get_source_groups.cpp"
+	"gbs/src/get_source_files.cpp"
     "gbs/src/enumerate_compilers.cpp"
     "gbs/src/enumerate_compilers_clang.cpp"
     "gbs/src/enumerate_compilers_gcc.cpp"
     "gbs/src/enumerate_compilers_msvc.cpp"
 	"gbs/src/task/task_graph.cpp"
-	"gbs/src/task/thread_pool.cpp"
+	"gbs/src/task/task_pool.cpp"
 	"gbs/src/context.cpp"
 	"gbs/src/cmd_build.cpp"
 	"gbs/src/cmd_cl.cpp"
@@ -35,7 +35,7 @@ add_executable (gbs
 	"gbs/src/cmd_ide.cpp"
     "gbs/src/cmd_unittest.cpp"
 	"gbs/src/cmd_version.cpp"
- "gbs/inc/source_file.h" "gbs/inc/module_desc.h")
+ "gbs/inc/source_file.h" "gbs/inc/module_desc.h" "gbs/inc/tool.h")
 
 if(MSVC)
 	target_compile_definitions(gbs PRIVATE _MSVC_STL_HARDENING=1 _MSVC_STL_DESTRUCTOR_TOMBSTONES=1)

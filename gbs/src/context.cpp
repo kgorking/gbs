@@ -27,7 +27,7 @@ context::context(char const** envp) : env(envp) {
 			"/w14906 "     // string literal cast to 'LPWSTR' 
 			"/w14928 "     // illegal copy-initialization; more than one user-defined conversion has been implicitly applied 
 		},
-		{"_shared", "/nologo /EHsc /sdl /std:c++23preview /FC /utf-8 /D_MSVC_STL_HARDENING=1 /D_MSVC_STL_DESTRUCTOR_TOMBSTONES=1"},
+		{"_shared", "/nologo /EHsc /sdl /std:c++23 /FC /utf-8 /D_MSVC_STL_HARDENING=1 /D_MSVC_STL_DESTRUCTOR_TOMBSTONES=1"},
 		{"debug",   "/Zi /FS /Od /MT"},
 		{"release", "/DNDEBUG /O2 /MT"},
 		{"analyze", "/external:W0 /external:Ilib /external:anglebrackets /analyze:external- /analyze:WX- /analyze:plugin EspXEngine.dll"}
@@ -218,8 +218,9 @@ std::string_view context::compiler_name() const noexcept {
 	return selected_cl.name;
 }
 
-std::string context::make_include_path(std::string_view const path) const {
-	return std::vformat(selected_cl.include, std::make_format_args(path));
+std::string context::make_include_path(std::filesystem::path const& path) const {
+	std::string s = path.generic_string();
+	return std::vformat(selected_cl.include, std::make_format_args(s));
 }
 
 // Create build command for the currently selected compiler

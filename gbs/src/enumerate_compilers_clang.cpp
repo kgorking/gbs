@@ -20,12 +20,15 @@ static compiler new_compiler(std::string_view version, std::size_t prefix_size) 
 
 	comp.name = "clang";
 	comp.name_and_version = std::format("{}_{}.{}.{}", comp.name, comp.major, comp.minor, comp.patch);
+
 	comp.build_source = " {0:?} -o {1:?} ";
 	comp.build_module = " --language=c++-module {0:?} -o {1:?} -fmodule-output ";
 	comp.build_command_prefix = "call {0} @{1}/SRC_INCLUDES -c ";
+
 	comp.link_command = "call {0} -o {1}/{2} @{1}/OBJLIST @{1}/LIBLIST";
 	comp.slib_command = "call {0} rcs {1}/{2}.lib @{1}/OBJLIST";
 	comp.dlib_command = "call {0} -shared -fPIC -o {1}/{2} @{1}/OBJLIST";
+
 	comp.define = "-D";
 	comp.include = "-I\"{0}/\"";
 	comp.module_path = " -fprebuilt-module-path={}";
@@ -59,15 +62,11 @@ static std::optional<std::string> find_std_module_path(compiler const& comp, boo
 			while (std::getline(output, line) && line[0] == ' ') {
 				line = std::filesystem::path(line.substr(1) + std_module_file).lexically_normal().string();
 
-				if (comp.wsl) {
-					std::string const path = comp.wsl ? std::format(R"(\\wsl.localhost\{}{})", *comp.wsl, line) : line;
+				if (comp.wsl)
+					line = std::format(R"(\\wsl.localhost\{}{})", *comp.wsl, line);
 
-					if (std::filesystem::exists(path))
-						break;
-				} else {
-					if (std::filesystem::exists(line))
-						break;
-				}
+				if (std::filesystem::exists(line))
+					break;
 			}
 
 			output.close();

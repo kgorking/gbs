@@ -1,6 +1,6 @@
 #pragma once
 #include "task.h"
-#include "thread_pool.h"
+#include "task_pool.h"
 #include <condition_variable>
 #include <filesystem>
 #include <functional>
@@ -47,6 +47,6 @@ private:
 	std::mutex ready_mtx;
 	std::mutex done_mtx;
 	std::condition_variable done_cv;
-	thread_pool pool;
+	task_pool pool;
 	std::atomic_bool abort = false;
 };

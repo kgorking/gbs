@@ -20,4 +20,4 @@ using file_to_imports_map = std::map<std::filesystem::path, import_set>;
 
 bool should_include(context const& ctx, std::filesystem::path const& path);
 
-std::generator<std::filesystem::path> get_source_files(context const& ctx, std::filesystem::path const& dir);
+std::generator<std::filesystem::path> get_source_files(context const& ctx, std::filesystem::path dir);

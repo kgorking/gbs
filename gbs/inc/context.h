@@ -75,7 +75,7 @@ public:
 	[[nodiscard]] compiler const& get_selected_compiler() const noexcept;
 	[[nodiscard]] compiler_collection const& get_compiler_collection() const noexcept;
 	[[nodiscard]] std::string_view compiler_name() const noexcept;
-	[[nodiscard]] std::string make_include_path(std::string_view const path) const;
+	[[nodiscard]] std::string make_include_path(std::filesystem::path const& path) const;
 	[[nodiscard]] std::string build_command_prefix() const;
 	[[nodiscard]] std::string build_define(std::string_view const def) const;
 	[[nodiscard]] std::string build_command(std::string_view file, std::filesystem::path const& obj_file) const;
