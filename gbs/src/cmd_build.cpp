@@ -7,6 +7,7 @@
 #include "../inc/task/task_graph.h"
 #include <algorithm>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <iostream>
 #include <locale>
@@ -141,6 +142,14 @@ static bool init_build(context& ctx) {
 	return true;
 }
 
+static void create_module_map_file(context const& ctx, module_map const& modmap) {
+	std::ofstream modules(ctx.output_dir() / "MODULES");
+	for (auto const& [module, path] : modmap) {
+		fs::path const bmi = (ctx.output_dir() / path.filename()).replace_extension("pcm");
+		modules << std::format("-fmodule-file={}=\"{}\"\n", module, bmi.generic_string());
+	}
+}
+
 // Create the object list file
 static fs::path create_object_file_list(context& ctx, auto const& name, range_of<fs::path> auto const& paths) {
 	fs::path objlist_name = (ctx.output_dir() / name).concat("_OBJLIST");
@@ -199,7 +208,7 @@ static task_ptr create_dynamic_lib(context const& ctx, task_graph& graph, fs::pa
 			return true;
 
 		std::string const cmd = ctx.dynamic_library_command(dll_name, lib_name, ctx.output_dir().generic_string())
-			+ std::format(" @{}", objlist_name.generic_string());
+			+ std::format(" @{}", objlist_name.generic_string()) + ctx.link_libraries();
 		std::println("<gbs> Linking dynamic library '{}'...", dll_name);
 		return 0 == std::system(cmd.c_str());
 		});
@@ -216,7 +225,7 @@ static task_ptr create_executeable(context const& ctx, task_graph& graph, std::s
 
 		std::println("<gbs> Linking executable '{}'...", exe_name);
 		std::string const obj_resp = std::format(" @{} {}", objlist_name.generic_string(), main_obj_name);
-		std::string const cmd = ctx.link_command(exe_name, ctx.output_dir().generic_string()) + obj_resp;
+		std::string const cmd = ctx.link_command(exe_name, ctx.output_dir().generic_string()) + obj_resp + ctx.link_libraries();
 		return 0 == std::system(cmd.c_str());
 		});
 }
@@ -389,7 +398,7 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 				auto test_exe_task = graph.create_task(exe_name, [&ctx, test_name, exe_name, objlist_name, sup_objlist_name] mutable {
 					std::println("<gbs> Linking unittest '{}'...", exe_name);
 					std::string const obj_resp = std::format(" @{} @{} {}/{}.obj", objlist_name.generic_string(), sup_objlist_name.generic_string(), ctx.output_dir().generic_string(), test_name);
-					std::string const cmd = ctx.link_command(exe_name, ctx.output_dir().generic_string()) + obj_resp;
+					std::string const cmd = ctx.link_command(exe_name, ctx.output_dir().generic_string()) + obj_resp + ctx.link_libraries();
 					return 0 == std::system(cmd.c_str());
 					});
 
@@ -434,6 +443,8 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 			objlist << obj.generic_string() << ' ';
 		objlist.close();
 	}
+
+	create_module_map_file(ctx, modmap);
 
 	// Create a response file for all include paths
 	{
@@ -626,6 +637,7 @@ bool cmd_build_v2(context& ctx, std::string_view /*target*/) {
 	}
 
 	// Create the response files for compilation and linking
+	create_module_map_file(ctx, modmap);
 	create_response_file(ctx, "LIBLIST", libs);
 	create_response_file(ctx, "SRC_INCLUDES", include_dirs_it);
 

@@ -76,7 +76,7 @@
       "currentDir": "${workspaceRoot}",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=msvc config=debug,warnings build unittest=-ni"
+        "clean cl=msvc config=debug,warnings build unittest"
       ]
     },
     {
@@ -86,7 +86,7 @@
       "currentDir": "${workspaceRoot}",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=clang config=release build unittest=-ni"
+        "clean cl=clang config=release build unittest"
       ]
     },
     {
@@ -96,7 +96,7 @@
       "currentDir": "${workspaceRoot}",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=clang:22 config=release,warnings build unittest=-ni"
+        "clean cl=clang config=release,warnings build unittest"
       ]
     },
     {
@@ -105,7 +105,7 @@
       "project": "CMakeLists.txt",
       "currentDir": "${workspaceRoot}",
       "args": [
-        "clean cl=clang:22 config=release,warnings build unittest=-ni"
+        "clean cl=clang config=release,warnings build unittest"
       ]
     },
     {
@@ -115,7 +115,7 @@
       "currentDir": "${workspaceRoot}",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=gcc build unittest=-ni"
+        "clean cl=gcc build unittest"
       ]
     },
     {

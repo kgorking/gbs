@@ -80,6 +80,7 @@ public:
 	[[nodiscard]] std::string build_define(std::string_view const def) const;
 	[[nodiscard]] std::string build_command(std::string_view file, std::filesystem::path const& obj_file) const;
 	[[nodiscard]] std::string link_command(std::string_view exe_name, std::string_view const out_dir) const;
+	[[nodiscard]] std::string link_libraries() const noexcept;
 	[[nodiscard]] std::string static_library_command(std::string_view const out_name, std::string_view const out_dir) const;
 	[[nodiscard]] std::string dynamic_library_command(std::string_view const dll_name, std::string_view const lib_name, std::string_view const out_dir) const;
 	[[nodiscard]] auto get_module_directory() const -> std::string;

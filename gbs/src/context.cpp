@@ -246,6 +246,10 @@ std::string context::link_command(std::string_view exe_name, std::string_view co
 	return std::vformat(selected_cl.link_command, std::make_format_args(linker, out_dir, exe_name));
 }
 
+std::string context::link_libraries() const noexcept {
+	return std::string{ selected_cl.link_libraries };
+}
+
 // Create library command for the currently selected compiler
 std::string context::static_library_command(std::string_view const out_name, std::string_view const out_dir) const {
 	auto const lib = selected_cl.slib.generic_string();

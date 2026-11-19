@@ -31,7 +31,7 @@ static compiler new_compiler(std::string_view version, std::size_t prefix_size) 
 
 	comp.define = "-D";
 	comp.include = "-I\"{0}/\"";
-	comp.module_path = " -fprebuilt-module-path={}";
+	comp.module_path = " @{0}/MODULES";
 
 	return comp;
 }

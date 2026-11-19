@@ -11,6 +11,7 @@ struct compiler {
 	std::string_view build_module;
 	std::string_view build_command_prefix;
 	std::string_view link_command;
+	std::string_view link_libraries;
 	std::string_view slib_command;
 	std::string_view dlib_command;
 	std::string_view define;
