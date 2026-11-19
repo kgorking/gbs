@@ -25,9 +25,9 @@ static compiler new_compiler(std::string_view version, std::size_t prefix_size) 
 	comp.build_module = " --language=c++-module {0:?} -o {1:?} -fmodule-output ";
 	comp.build_command_prefix = "call {0} @{1}/SRC_INCLUDES -c ";
 
-	comp.link_command = "call {0} -o {1}/{2} @{1}/OBJLIST @{1}/LIBLIST";
-	comp.slib_command = "call {0} rcs {1}/{2}.lib @{1}/OBJLIST";
-	comp.dlib_command = "call {0} -shared -fPIC -o {1}/{2} @{1}/OBJLIST";
+	comp.link_command = "call {0} -o {1}/{2} @{1}/LIBLIST";
+	comp.slib_command = "call {0} rcs {1}/{2}.lib";
+	comp.dlib_command = "call {0} -shared -fPIC -o {1}/{2}";
 
 	comp.define = "-D";
 	comp.include = "-I\"{0}/\"";
@@ -132,7 +132,7 @@ void enumerate_compilers_clang(environment const& env, std::function<void(compil
 				comp.dlib = wsl_prefix + "clang++-" + str_major;
 				comp.std_module = find_std_module_path(comp, false);
 
-				comp.dlib_command = "call {0} -shared -fPIC -o {1}/{2} @{1}/OBJLIST";
+				comp.dlib_command = "call {0} -shared -fPIC -o {1}/{2}";
 
 				// Get installed dir
 				std::getline(version, line);

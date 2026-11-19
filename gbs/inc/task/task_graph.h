@@ -24,15 +24,10 @@ public:
 	explicit task_graph(size_t threads = std::thread::hardware_concurrency());
 
 	task_ptr create_task(std::filesystem::path const& name, std::function<bool()> work);
-
-	// Add edge: parent -> child (parent runs to completion before child)
-	void add_dependency(const task_ptr& parent, const task_ptr& child);
-
 	task_ptr find_task(std::filesystem::path const& name) const;
-
-	void run();
-
+	void add_dependency(const task_ptr& before, const task_ptr& after);
 	bool was_aborted() const { return abort; }
+	void run();
 
 private:
 	void schedule_ready_tasks();

@@ -22,12 +22,32 @@
 namespace fs = std::filesystem;
 using namespace std::views;
 
+constexpr std::array directories{ ".", "lib" /*, "tests" */ };
+
 template<typename R, typename T>
 concept range_of = std::ranges::range<R> && std::same_as<std::ranges::range_value_t<R>, T>;
 
 using imports_map = std::unordered_map<fs::path, import_set>;	// source -> {imports}
 using module_map = std::unordered_map<module_desc, fs::path>;	// import -> source
 using task_map = std::unordered_map<fs::path, task_ptr>;		// source -> task
+
+enum class project_type {
+	unknown,
+	static_lib,
+	dynamic_lib,
+	executable
+};
+
+static project_type get_project_type(fs::path const& project_dir) {
+	if (!fs::exists(project_dir / "src"))
+		return project_type::unknown;
+	if (project_dir.filename().string().starts_with("s."))
+		return project_type::static_lib;
+	else if (project_dir.filename().string().starts_with("d."))
+		return project_type::dynamic_lib;
+	else
+		return project_type::executable;
+}
 
 // Why doesn't this garbage stl have this already???
 static std::string to_upper(std::string const& cstr) {
@@ -49,10 +69,7 @@ static bool is_valid_sourcefile(fs::path const& file) {
 }
 
 static bool is_valid_project_name(fs::path const& p) {
-	// Ignore temporary directories and the 'out' directory
-	return p.c_str()[0] != '.'
-		&& *p.begin() != "out"
-		&& *p.begin() != "gbs.out";
+	return fs::exists(p / "src");
 }
 
 static void create_response_file(context const& ctx, std::string_view name, std::ranges::range auto&& content) {
@@ -125,7 +142,7 @@ static bool init_build(context& ctx) {
 }
 
 // Create the object list file
-static fs::path create_object_file_list(context& ctx, std::string_view name, range_of<fs::path> auto const& paths) {
+static fs::path create_object_file_list(context& ctx, auto const& name, range_of<fs::path> auto const& paths) {
 	fs::path objlist_name = (ctx.output_dir() / name).concat("_OBJLIST");
 	std::ofstream objlist(objlist_name);
 	for(fs::path const& src : paths) {
@@ -468,71 +485,130 @@ bool cmd_build_v2(context& ctx, std::string_view /*target*/) {
 	if (!init_build(ctx))
 		return false;
 
-	// Save paths to libraries, objects, includes
 	std::set<fs::path> libs;
 	std::set<fs::path> objects;
-
-	// Containers for module <-> path
 	module_map modmap;
 	imports_map impmap;
-	std::unordered_map<fs::path, task_ptr> tasks;
-
-	// The task graph to hold all build tasks and their dependencies
+	task_map tasks;
 	task_graph graph;
+	compiler const& cl = ctx.get_selected_compiler();
+	auto project_it = directories
+		| transform([](std::string_view p) { return fs::directory_iterator(p, fs::directory_options::follow_directory_symlink); })
+		| join
+		| filter([](fs::directory_entry const& e) { return e.is_directory(); })
+		| transform(&fs::directory_entry::path)
+		| transform(&fs::path::lexically_normal)
+		| filter(is_valid_project_name)
+		| filter(std::bind_front(&should_include, std::cref(ctx)));
+	auto source_file_it = [&ctx](fs::path const& dir) { return fs::recursive_directory_iterator(dir, fs::directory_options::follow_directory_symlink)
+		| filter([](fs::directory_entry const& e) { return e.is_regular_file(); })
+		| transform(&fs::directory_entry::path)
+		| transform(&fs::path::lexically_normal)
+		| filter(is_valid_sourcefile)
+		| filter(std::bind_front(&should_include, std::cref(ctx))); };
+	auto include_dirs_it = fs::recursive_directory_iterator(".", fs::directory_options::follow_directory_symlink)
+		| filter([](fs::directory_entry const& e) { return e.is_directory(); })
+		| transform(&fs::directory_entry::path)
+		| transform(&fs::path::lexically_normal)
+		| filter([](fs::path const& p) { return p.filename() == "inc" || p.filename() == "include"; })
+		| transform([&ctx](fs::path const& p) { return ctx.make_include_path(p); });
 
 	// Add the std module to the build
-	compiler const& cl = ctx.get_selected_compiler();
 	if (cl.std_module) {
-		auto const& [obj, _] = objects.insert(get_object_filepath(*cl.std_module, ctx));
-		if (is_file_out_of_date(*cl.std_module, *obj)) {
-			tasks[*cl.std_module] = create_build_task(ctx, graph, *cl.std_module, modmap, impmap);
-		}
+		objects.insert(get_object_filepath(*cl.std_module, ctx));
+		if (task_ptr const std_module_task = create_build_task(ctx, graph, *cl.std_module, modmap, impmap))
+			tasks[*cl.std_module] = std_module_task;
 	}
 	else {
 		std::println("<gbs> warning: '{}' does not provide a standard library module, builds may fail if the standard library is used", cl.name_and_version);
 	}
 
-	// Find all source files
-	auto source_file_it = fs::recursive_directory_iterator(".", fs::directory_options::follow_directory_symlink)
-		| filter([](fs::directory_entry const& e) { return e.is_regular_file(); })
-		| transform(&fs::directory_entry::path)
-		| transform(&fs::path::lexically_normal)
-		| filter(is_valid_project_name)
-		| filter(is_valid_sourcefile)
-		| filter(std::bind_front(&should_include, std::cref(ctx)));
-	for (fs::path path : source_file_it) {
-		// Adjust the path for WSL if necessary
-		if (cl.wsl && !std::filesystem::exists(path)) {
-			std::string new_path = std::format(R"(\\wsl.localhost\{}{})", *cl.wsl, path.string());
-			if (std::filesystem::exists(new_path)) {
-				path = new_path;
+	// Create the barrier task for the 'lib' directory.
+	// Library projects will complete before this task, and all other projects will depend on this task.
+	task_ptr lib_barrier_task = graph.create_task("lib", task_true);
+
+	// Find all project directories and create build tasks for them
+	for (fs::path project_dir : project_it) {
+		// std::println("<gbs> build: processing project '{}'", project_dir.generic_string());
+
+		bool const is_lib_path = *project_dir.begin() == "lib";
+		fs::path const project_name = *std::next(project_dir.begin(), is_lib_path); // get_project_name
+
+		// Create the object list file for the .lib file
+		// TODO function
+		auto const source_files = get_source_files(ctx, project_dir / "src") | std::ranges::to<std::vector>();
+		auto filter_main = filter([&](fs::path const& path_to_filter) {
+			// Don't include the main source file in the object list, as it contains the 'main' function.
+			return path_to_filter.filename().stem().generic_string() != project_name;
+			});
+		auto filtered_source_files = source_files | filter_main | std::ranges::to<std::vector>();
+		fs::path const objlist_name = create_object_file_list(ctx, project_name, filtered_source_files);
+
+		auto const latest_source_time = source_files.empty()
+			? fs::file_time_type::min()
+			: std::ranges::max(source_files | transform([](fs::path const& src) { return fs::last_write_time(src); }));
+
+		task_ptr project_link_task;
+		// TODO merge
+		switch (get_project_type(project_dir)) {
+		case project_type::static_lib:
+			project_link_task = create_static_lib(ctx, graph, project_dir, objlist_name, latest_source_time);
+			break;
+		case project_type::dynamic_lib:
+			project_link_task = create_dynamic_lib(ctx, graph, project_dir, objlist_name, latest_source_time);
+			break;
+		case project_type::executable:
+			project_link_task = create_executeable(ctx, graph, project_name.generic_string(), project_dir, objlist_name, latest_source_time);
+			break;
+		}
+
+		if (is_lib_path) {
+			// This project must complete before the lib barrier
+			std::println("<gbs> build: '{}' -> lib", project_dir.generic_string());
+			graph.add_dependency(project_link_task, lib_barrier_task);
+		}
+		else {
+			// This project can only complete after the lib barrier
+			std::println("<gbs> build: lib -> '{}'", project_dir.generic_string());
+			graph.add_dependency(lib_barrier_task, project_link_task);
+		}
+
+		// Find all source files and create build tasks for them
+		for (fs::path source_path : source_file_it(project_dir / "src")) {
+			//std::println("<gbs>     build: processing source file '{}'", source_path.generic_string());
+
+			// Adjust the path for WSL if necessary
+			if (cl.wsl && !std::filesystem::exists(source_path)) {
+				std::string new_path = std::format(R"(\\wsl.localhost\{}{})", *cl.wsl, source_path.string());
+				if (std::filesystem::exists(new_path)) {
+					source_path = new_path;
+				}
 			}
+
+			// Save library object paths
+			std::string export_define;
+			fs::path const obj = get_object_filepath(source_path, ctx);
+			if (is_lib_path) {
+				objects.insert(obj);
+				if (project_name.has_extension() && project_name.stem() == "d")
+					export_define = to_upper(project_name.extension().generic_string().substr(1)) + "_EXPORTS";
+			}
+
+			// Extract module dependencies
+			source_dependency const deps = extract_module_dependencies(source_path);
+			if (deps.is_export())
+				modmap[deps.export_name] = source_path;
+			impmap[source_path].insert_range(deps.import_names);
+
+			// Don't compile source files that are up to date
+			if (!is_file_out_of_date(source_path, obj))
+				continue;
+
+			// Create the build task for this source file
+			task_ptr task = create_build_task(ctx, graph, source_path, modmap, impmap, export_define);
+			tasks[source_path] = task;
+			graph.add_dependency(task, project_link_task);
 		}
-
-		// Save library object paths
-		std::string export_define;
-		fs::path const obj = get_object_filepath(path, ctx);
-		if (*path.begin() == "lib") {
-			objects.insert(obj);
-
-			fs::path const project_name = *std::next(path.begin());
-			if (project_name.has_extension() && project_name.stem() == "d")
-				export_define = to_upper(project_name.extension().generic_string().substr(1)) + "_EXPORTS";
-		}
-
-		// Extract module dependencies
-		source_dependency const deps = extract_module_dependencies(path);
-		if (deps.is_export())
-			modmap[deps.export_name] = path;
-		impmap[path].insert_range(deps.import_names);
-
-		// Don't compile source files that are up to date
-		if (!is_file_out_of_date(path, obj))
-			continue;
-
-		// Create the build task for this source file
-		if (tasks.contains(path)) throw;
-		tasks[path] = graph.create_task(path, make_build_job(ctx, path, obj, export_define));
 	}
 
 	// Set up the task dependencies for modules
@@ -555,15 +631,12 @@ bool cmd_build_v2(context& ctx, std::string_view /*target*/) {
 		}
 	}
 
+	// for (auto const& [mod, mod_path] : modmap) std::println("module: '{}' from '{}'", mod, mod_path.generic_string());
+
 	// Create the response files for compilation and linking
 	create_response_file(ctx, "OBJLIST", objects);
 	create_response_file(ctx, "LIBLIST", libs);
-	create_response_file(ctx, "SRC_INCLUDES", fs::recursive_directory_iterator(".", fs::directory_options::follow_directory_symlink)
-		| filter([](fs::directory_entry const& e) { return e.is_directory(); })
-		| transform(&fs::directory_entry::path)
-		| transform(&fs::path::lexically_normal)
-		| filter([](fs::path const& p) { return p.filename() == "inc" || p.filename() == "include"; })
-		| transform([&ctx](fs::path const& p) { return ctx.make_include_path(p); }));
+	create_response_file(ctx, "SRC_INCLUDES", include_dirs_it);
 
 	graph.run();
 
