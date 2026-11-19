@@ -486,7 +486,6 @@ bool cmd_build_v2(context& ctx, std::string_view /*target*/) {
 		return false;
 
 	std::set<fs::path> libs;
-	std::set<fs::path> objects;
 	module_map modmap;
 	imports_map impmap;
 	task_map tasks;
@@ -515,7 +514,6 @@ bool cmd_build_v2(context& ctx, std::string_view /*target*/) {
 
 	// Add the std module to the build
 	if (cl.std_module) {
-		objects.insert(get_object_filepath(*cl.std_module, ctx));
 		if (task_ptr const std_module_task = create_build_task(ctx, graph, *cl.std_module, modmap, impmap))
 			tasks[*cl.std_module] = std_module_task;
 	}
@@ -529,8 +527,6 @@ bool cmd_build_v2(context& ctx, std::string_view /*target*/) {
 
 	// Find all project directories and create build tasks for them
 	for (fs::path project_dir : project_it) {
-		// std::println("<gbs> build: processing project '{}'", project_dir.generic_string());
-
 		bool const is_lib_path = *project_dir.begin() == "lib";
 		fs::path const project_name = *std::next(project_dir.begin(), is_lib_path); // get_project_name
 
@@ -560,23 +556,22 @@ bool cmd_build_v2(context& ctx, std::string_view /*target*/) {
 		case project_type::executable:
 			project_link_task = create_executeable(ctx, graph, project_name.generic_string(), project_dir, objlist_name, latest_source_time);
 			break;
+		case project_type::unknown:
+			// Stuff like headers-only libraries, etc. that don't have a 'src' directory
+			break;
 		}
 
 		if (is_lib_path) {
 			// This project must complete before the lib barrier
-			std::println("<gbs> build: '{}' -> lib", project_dir.generic_string());
 			graph.add_dependency(project_link_task, lib_barrier_task);
 		}
 		else {
 			// This project can only complete after the lib barrier
-			std::println("<gbs> build: lib -> '{}'", project_dir.generic_string());
 			graph.add_dependency(lib_barrier_task, project_link_task);
 		}
 
 		// Find all source files and create build tasks for them
 		for (fs::path source_path : source_file_it(project_dir / "src")) {
-			//std::println("<gbs>     build: processing source file '{}'", source_path.generic_string());
-
 			// Adjust the path for WSL if necessary
 			if (cl.wsl && !std::filesystem::exists(source_path)) {
 				std::string new_path = std::format(R"(\\wsl.localhost\{}{})", *cl.wsl, source_path.string());
@@ -589,7 +584,6 @@ bool cmd_build_v2(context& ctx, std::string_view /*target*/) {
 			std::string export_define;
 			fs::path const obj = get_object_filepath(source_path, ctx);
 			if (is_lib_path) {
-				objects.insert(obj);
 				if (project_name.has_extension() && project_name.stem() == "d")
 					export_define = to_upper(project_name.extension().generic_string().substr(1)) + "_EXPORTS";
 			}
@@ -605,7 +599,7 @@ bool cmd_build_v2(context& ctx, std::string_view /*target*/) {
 				continue;
 
 			// Create the build task for this source file
-			task_ptr task = create_build_task(ctx, graph, source_path, modmap, impmap, export_define);
+			task_ptr task = graph.create_task(source_path, make_build_job(ctx, source_path, obj, export_define));
 			tasks[source_path] = task;
 			graph.add_dependency(task, project_link_task);
 		}
@@ -631,10 +625,7 @@ bool cmd_build_v2(context& ctx, std::string_view /*target*/) {
 		}
 	}
 
-	// for (auto const& [mod, mod_path] : modmap) std::println("module: '{}' from '{}'", mod, mod_path.generic_string());
-
 	// Create the response files for compilation and linking
-	create_response_file(ctx, "OBJLIST", objects);
 	create_response_file(ctx, "LIBLIST", libs);
 	create_response_file(ctx, "SRC_INCLUDES", include_dirs_it);
 
