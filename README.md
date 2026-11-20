@@ -1,6 +1,8 @@
-﻿# Gorking Build System v0.19
+﻿# Gorking Build System v0.20
 
 A rule-based build system to automatically find source files and compile them. No need for build scripts.
+
+Can compile itself using clang, gcc, and msvc.
 
 # Rules
 - A root folder holds one-or-more projects.
@@ -16,11 +18,11 @@ A rule-based build system to automatically find source files and compile them. N
   - Other folders are added to the includes list. They are not searched for source files.
   - Include paths for libraries are automatically added to projects.
     - Also includes `inc` and `include` subfolders, if present.
-- `unittest` folder is for unit tests.
+- `tests` folder is for unit tests.
   - Each `test.*.cpp` file is compiled into a unittest executable `test.*.exe`.
   - Other sourcefiles are linked to each unittest executable.
 - Files and folders starting with `x.` are ignored.
-- TODO: Files and folders postfixed with `.win`, `.linux`, `.darwin` are only compiled on matching platforms.
+- Files and folders in subfolders of fx `windows`, `.linux`, or `.darwin` are only compiled on matching platforms.
 
 ## Example folder structure
 ```
@@ -39,7 +41,7 @@ example/
 │   └── src/
 ├── other_executeable/       (another executable)
 │   └── src/
-├── unittest/
+├── tests/
 │   ├── test.example.cpp
 │   └── test.other.cpp
 └── d.some_dll/              (dynamic library)
@@ -102,7 +104,7 @@ The following compilers can be used by `gbs` to build `gbs`:
 # Upcoming versions (not in a specific order)
 - Support package managers (vcpkg, conan, etc.)
 - Use GCC on WSL
-- Concurrent compilations of multiple different compilers
+- Concurrent compilations of multiple different compilers. `cl=gcc,clang,msvc` to compile with all three compilers at once.
 
 ## Todo
 - [ ] Good documentation for all commands

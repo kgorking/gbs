@@ -25,13 +25,17 @@ static compiler new_compiler(std::string_view version, std::size_t prefix_size) 
 	comp.build_module = " --language=c++-module {0:?} -o {1:?} -fmodule-output ";
 	comp.build_command_prefix = "call {0} @{1}/SRC_INCLUDES -c ";
 
-	comp.link_command = "call {0} -o {1}/{2} @{1}/LIBLIST";
-	comp.slib_command = "call {0} rcs {1}/{2}.lib";
+	comp.link_command = "call {0} -o {1}/{2}";
+	comp.slib_command = "call {0} rcs {1}/{2}";
 	comp.dlib_command = "call {0} -shared -fPIC -o {1}/{2}";
 
 	comp.define = "-D";
 	comp.include = "-I\"{0}/\"";
 	comp.module_path = " @{0}/MODULES";
+
+#ifdef _WIN32
+	comp.link_libraries = " -lws2_32 -lwinhttp -lhttpapi";
+#endif
 
 	return comp;
 }

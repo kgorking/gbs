@@ -29,7 +29,7 @@ context::context(char const** envp) : env(envp) {
 		},
 		{"_shared", "/nologo /EHsc /sdl /std:c++23 /FC /utf-8 /D_MSVC_STL_HARDENING=1 /D_MSVC_STL_DESTRUCTOR_TOMBSTONES=1"},
 		{"debug",   "/Zi /FS /Od /MT"},
-		{"release", "/DNDEBUG /O2 /MT"},
+		{"release", "/DNDEBUG /O2 /MT /GL"},
 		{"analyze", "/external:W0 /external:Ilib /external:anglebrackets /analyze:external- /analyze:WX- /analyze:plugin EspXEngine.dll"}
 	};
 
@@ -244,6 +244,10 @@ std::string context::build_command(std::string_view file, std::filesystem::path 
 std::string context::link_command(std::string_view exe_name, std::string_view const out_dir) const {
 	auto const linker = selected_cl.linker.generic_string();
 	return std::vformat(selected_cl.link_command, std::make_format_args(linker, out_dir, exe_name));
+}
+
+std::string context::link_library_list(std::string_view out_dir) const {
+	return std::format(" @{}/LIBLIST", out_dir);
 }
 
 std::string context::link_libraries() const noexcept {

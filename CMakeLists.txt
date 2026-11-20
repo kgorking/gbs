@@ -33,7 +33,7 @@ add_executable (gbs
 	"gbs/src/cmd_enum_cl.cpp"
 	"gbs/src/cmd_get_cl.cpp"
 	"gbs/src/cmd_ide.cpp"
-    "gbs/src/cmd_unittest.cpp"
+    "gbs/src/cmd_tests.cpp"
 	"gbs/src/cmd_version.cpp"
  "gbs/inc/source_file.h" "gbs/inc/module_desc.h" "gbs/inc/tool.h")
 

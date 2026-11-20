@@ -1,6 +1,6 @@
-#include "../inc/os.h"
+#include <os.h>
 import gs;
 
-test can_use_static_lib = [] {
+test can_use_src = [] {
 	test::is_true(is_target_triple_windows("-windows-"));
 	};
