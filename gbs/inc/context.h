@@ -8,7 +8,6 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <print>
 #include <ranges>
 #include <set>
 #include <string_view>
@@ -74,18 +73,7 @@ public:
 	[[nodiscard]] bool is_compiler_selected() const noexcept;
 	[[nodiscard]] compiler const& get_selected_compiler() const noexcept;
 	[[nodiscard]] compiler_collection const& get_compiler_collection() const noexcept;
-	[[nodiscard]] std::string_view compiler_name() const noexcept;
-	[[nodiscard]] std::string make_include_path(std::filesystem::path const& path) const;
-	[[nodiscard]] std::string build_command_prefix() const;
-	[[nodiscard]] std::string build_define(std::string_view const def) const;
-	[[nodiscard]] std::string build_command(std::string_view file, std::filesystem::path const& obj_file) const;
-	[[nodiscard]] std::string link_command(std::string_view exe_name, std::string_view const out_dir) const;
-	[[nodiscard]] std::string link_library_list(std::string_view out_dir) const;
-	[[nodiscard]] std::string link_libraries() const noexcept;
-	[[nodiscard]] std::string static_library_command(std::string_view const out_name, std::string_view const out_dir) const;
-	[[nodiscard]] std::string dynamic_library_command(std::string_view const dll_name, std::string_view const lib_name, std::string_view const out_dir) const;
-	[[nodiscard]] auto get_module_directory() const -> std::string;
-	[[nodiscard]] std::string build_define(std::string_view const def);
+
 	void fill_compiler_collection();
 	bool set_compiler(std::string_view comp);
 	bool ensure_response_file_exists(std::string_view resp) const;

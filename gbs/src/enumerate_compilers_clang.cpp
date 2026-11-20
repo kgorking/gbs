@@ -23,7 +23,7 @@ static compiler new_compiler(std::string_view version, std::size_t prefix_size) 
 
 	comp.build_source = " {0:?} -o {1:?} ";
 	comp.build_module = " --language=c++-module {0:?} -o {1:?} -fmodule-output ";
-	comp.build_command_prefix = "call {0} @{1}/SRC_INCLUDES -c ";
+	comp.build_prefix = "call {0} @{1}/SRC_INCLUDES -c ";
 
 	comp.link_command = "call {0} -o {1}/{2}";
 	comp.slib_command = "call {0} rcs {1}/{2}";

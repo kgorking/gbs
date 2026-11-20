@@ -49,7 +49,7 @@ void enumerate_compilers_gcc(environment const& env, std::function<void(compiler
 
 			comp.build_source = " {0:?} -o {1:?} ";
 			comp.build_module = " -xc++ {0:?} -o {1:?} ";
-			comp.build_command_prefix = "call {0:?} @{1}/SRC_INCLUDES -c -fPIC "
+			comp.build_prefix = "call {0:?} @{1}/SRC_INCLUDES -c -fPIC "
 				// Fixes/hacks for pthread in gcc
 				"-DWINPTHREAD_CLOCK_DECL=WINPTHREADS_ALWAYS_INLINE "
 				"-DWINPTHREAD_COND_DECL=WINPTHREADS_ALWAYS_INLINE "

@@ -24,7 +24,7 @@ static void enumerate_compiler_msvc(std::filesystem::path msvc_path, std::functi
 
 		comp.build_source = " {0:?} ";
 		comp.build_module = " {0:?} ";
-		comp.build_command_prefix = "call {0:?} @{1}/INCLUDE @{1}/SRC_INCLUDES /c /interface /TP /ifcOutput {1}/ /Fo:{1}/ ";
+		comp.build_prefix = "call {0:?} @{1}/INCLUDE @{1}/SRC_INCLUDES /c /interface /TP /ifcOutput {1}/ /Fo:{1}/ ";
 		comp.link_command = "call {0:?} /NOLOGO /OUT:{1}/{2} @{1}/LIBPATH";
 		comp.slib_command = "call {0:?} /NOLOGO /OUT:{1}/{2} @{1}/LIBPATH";
 		comp.dlib_command = "call {0:?} /NOLOGO /DLL /OUT:{1}/{2} @{1}/LIBPATH";

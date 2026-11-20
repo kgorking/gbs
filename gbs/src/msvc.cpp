@@ -15,7 +15,8 @@ bool init_msvc([[maybe_unused]] context const& ctx) {
 		constexpr std::string_view include_cmd = R"(echo /I"%INCLUDE:;=" /I"%")";
 		constexpr std::string_view libpath_cmd = R"(echo /LIBPATH:"%LIB:;=" /LIBPATH:"%" /LIBPATH:"%LIBPATH:;=" /LIBPATH:"%")";
 
-		auto const dir = (ctx.compiler_name() == "msvc") ? ctx.get_selected_compiler().dir : ctx.get_compiler_collection().at("msvc").front().dir;
+		compiler const& cl = ctx.get_selected_compiler();
+		auto const& dir = (cl.name == "msvc") ? cl.dir : ctx.get_compiler_collection().at("msvc").front().dir;
 		auto const vcvars = dir / "../../../../Common7/Tools/VsDevCmd.bat";
 
 		std::string const vcvars_cmd = std::format(R"("cd {0} && {1:?} -no_logo -arch=amd64 -host_arch=amd64 && call {2} >INCLUDE && call {3} >LIBPATH")",

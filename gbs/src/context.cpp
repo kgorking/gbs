@@ -1,5 +1,6 @@
 #include "../inc/context.h"
 #include "../inc/enumerate_compilers.h"
+#include <print>
 
 context::context(char const** envp) : env(envp) {
 	// Default response files
@@ -211,72 +212,6 @@ compiler const& context::get_selected_compiler() const noexcept {
 
 compiler_collection const& context::get_compiler_collection() const noexcept {
 	return all_compilers;
-}
-
-// Returns the name of the currently selected compiler
-std::string_view context::compiler_name() const noexcept {
-	return selected_cl.name;
-}
-
-std::string context::make_include_path(std::filesystem::path const& path) const {
-	std::string s = path.generic_string();
-	return std::vformat(selected_cl.include, std::make_format_args(s));
-}
-
-// Create build command for the currently selected compiler
-std::string context::build_command_prefix() const {
-	auto const compiler = selected_cl.executable.generic_string();
-	auto const out = output_dir().generic_string();
-	return std::vformat(selected_cl.build_command_prefix, std::make_format_args(compiler, out));
-}
-
-// Create build args for a single file
-std::string context::build_command(std::string_view file, std::filesystem::path const& obj_file) const {
-	std::string_view const build_cmd = (file.ends_with(".cppm") || file.ends_with(".ixx") || file.ends_with(".cc"))
-		? selected_cl.build_module
-		: selected_cl.build_source;
-
-	auto const str = obj_file.generic_string();
-	return std::vformat(build_cmd, std::make_format_args(file, str));
-}
-
-// Create link command for the currently selected compiler
-std::string context::link_command(std::string_view exe_name, std::string_view const out_dir) const {
-	auto const linker = selected_cl.linker.generic_string();
-	return std::vformat(selected_cl.link_command, std::make_format_args(linker, out_dir, exe_name));
-}
-
-std::string context::link_library_list(std::string_view out_dir) const {
-	return std::format(" @{}/LIBLIST", out_dir);
-}
-
-std::string context::link_libraries() const noexcept {
-	return std::string{ selected_cl.link_libraries };
-}
-
-// Create library command for the currently selected compiler
-std::string context::static_library_command(std::string_view const out_name, std::string_view const out_dir) const {
-	auto const lib = selected_cl.slib.generic_string();
-	return std::vformat(selected_cl.slib_command, std::make_format_args(lib, out_dir, out_name));
-}
-
-// Create dynamic library command for the currently selected compiler
-std::string context::dynamic_library_command(std::string_view const dll_name, std::string_view const lib_name, std::string_view const out_dir) const {
-	auto const lib = selected_cl.dlib.generic_string();
-	return std::vformat(selected_cl.dlib_command, std::make_format_args(lib, out_dir, dll_name, lib_name));
-}
-
-// Create a reference to a module
-auto context::get_module_directory() const -> std::string {
-	if (!selected_cl.module_path.empty()) {
-		auto const out = output_dir().generic_string();
-		return std::vformat(selected_cl.module_path, std::make_format_args(out));
-	}
-	return std::string{};
-}
-
-std::string context::build_define(std::string_view const def) const {
-	return std::format(" {}{}", selected_cl.define, def);
 }
 
 void context::fill_compiler_collection() {
