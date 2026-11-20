@@ -51,9 +51,7 @@ static fs::path adjust_for_wsl(compiler const& cl, fs::path source_path) {
 	return source_path;
 }
 
-std::generator<fs::path> get_source_files(context const& ctx, fs::path dir) {
-	compiler const& cl = ctx.get_selected_compiler();
-
+std::generator<fs::path> get_source_files(context const& ctx, compiler const& cl, fs::path dir) {
 	for (auto const& dir_it : fs::recursive_directory_iterator(dir, fs::directory_options::follow_directory_symlink)) {
 		if (!dir_it.is_regular_file())
 			continue;

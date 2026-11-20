@@ -7,6 +7,7 @@
 //#include "module_desc.h"
 
 class context; // Forward declaration
+struct compiler; // Forward declaration
 struct module_desc; // Forward declaration
 
 using import_set = std::set<module_desc>;
@@ -20,4 +21,4 @@ using file_to_imports_map = std::map<std::filesystem::path, import_set>;
 
 bool should_include(context const& ctx, std::filesystem::path const& path);
 
-std::generator<std::filesystem::path> get_source_files(context const& ctx, std::filesystem::path dir);
+std::generator<std::filesystem::path> get_source_files(context const& ctx, compiler const& cl, std::filesystem::path dir);
