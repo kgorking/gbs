@@ -52,7 +52,7 @@ example/
 # Usage
 `gbs [command, ...]`
 
-Calling `gbs` without any commands will do a debug build of the current directory and run all unittests.
+Calling `gbs` without any commands will do a debug build of the current directory and run any tests.
 
 The following commands are supported:
 

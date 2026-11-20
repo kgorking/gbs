@@ -15,11 +15,6 @@ bool cmd_unittest(context& ctx, std::string_view args) {
 
 	auto const& unittests = ctx.get_unittests();
 	if (unittests.empty()) {
-		if (!fs::exists(ctx.output_dir())) {
-			std::println(std::cerr, "<gbs> Build directory is missing. Build the project before running tests.");
-			return false;
-		}
-
 		std::println("<gbs> No tests found to run.");
 		return true;
 	}

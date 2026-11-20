@@ -37,9 +37,6 @@ class context {
 	// All available compilers
 	compiler_collection all_compilers{};
 
-	// The currently selected compiler (used by commands that expect one)
-	compiler selected_cl;
-
 	// All compilers selected by 'cl=...'
 	std::vector<compiler> selected_compilers{};
 
@@ -70,23 +67,20 @@ public:
 	[[nodiscard]] std::filesystem::path get_home_dir() const;
 	[[nodiscard]] std::filesystem::path const& get_gbs_internal() const noexcept;
 	[[nodiscard]] std::filesystem::path const& get_gbs_out() const noexcept;
-	void set_config(std::string_view const cfg);
+	void set_config(compiler const& cl, std::string_view const cfg);
 	[[nodiscard]] std::string_view get_config() const noexcept;
 	void set_response_args(std::string&& resp) noexcept;
 	[[nodiscard]] std::string_view get_response_args() const noexcept;
-	[[nodiscard]] auto output_dir() const -> std::filesystem::path;
-	[[nodiscard]] auto response_dir() const -> std::filesystem::path;
-	[[nodiscard]] bool has_response_map() const;
-	[[nodiscard]] compiler_response_map get_response_map() const;
+	[[nodiscard]] auto output_dir(compiler const& cl) const -> std::filesystem::path;
+	[[nodiscard]] auto response_dir(compiler const& cl) const -> std::filesystem::path;
+	[[nodiscard]] bool has_response_map(compiler const& cl) const;
+	[[nodiscard]] compiler_response_map get_response_map(compiler const& cl) const;
 	void select_first_compiler() noexcept;
-	[[nodiscard]] bool is_compiler_selected() const noexcept;
-	[[nodiscard]] compiler const& get_selected_compiler() const noexcept;
 	[[nodiscard]] std::vector<compiler> const& get_selected_compilers() const noexcept;
-	void set_active_compiler(compiler const& cl) noexcept;
 	[[nodiscard]] compiler_collection const& get_compiler_collection() const noexcept;
 
 	void fill_compiler_collection();
 	bool set_compiler(std::string_view comp);
-	bool ensure_response_file_exists(std::string_view resp) const;
-	bool check_response_files(std::string_view args);
+	bool ensure_response_file_exists(compiler const& cl, std::string_view resp) const;
+	bool check_response_files(compiler const& cl, std::string_view args);
 };

@@ -12,7 +12,8 @@ int main(const int argc, char const* argv[], char const** envp) {
 	if (argc == 1) {
 		ctx.fill_compiler_collection();
 		ctx.select_first_compiler();
-		if(cmd_config(ctx, "debug"))
+		auto const& compilers = ctx.get_selected_compilers();
+		if (!compilers.empty() && cmd_config(ctx, compilers.front(), "debug"))
 			if(cmd_build(ctx, ""))
 				cmd_unittest(ctx, "");
 		return 0;
