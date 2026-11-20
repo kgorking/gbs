@@ -82,20 +82,20 @@ static bool is_valid_project_name(fs::path const& p) {
 	return fs::exists(p / "src");
 }
 
-static void create_response_file(context const& ctx, std::string_view name, std::ranges::range auto&& content) {
-	std::ofstream objlist(ctx.output_dir() / name);
+static void create_response_file(context const& ctx, compiler const& cl, std::string_view name, std::ranges::range auto&& content) {
+	std::ofstream objlist(ctx.output_dir(cl) / name);
 	for (auto const& obj : content)
 		objlist << obj << ' ';
 	objlist.close();
 }
 
-static fs::path get_object_filepath(fs::path const& path, context const& ctx) {
-	fs::path const obj = (ctx.output_dir() / path.filename()).replace_extension("obj");
+static fs::path get_object_filepath(fs::path const& path, context const& ctx, compiler const& cl) {
+	fs::path const obj = (ctx.output_dir(cl) / path.filename()).replace_extension("obj");
 	return obj;
 }
 
 static auto make_build_job(context const& ctx, compiler const& cl, fs::path const& path, fs::path const& obj, std::string_view defines) {
-	std::string const out = ctx.output_dir().generic_string();
+	std::string const out = ctx.output_dir(cl).generic_string();
 	auto cmd =
 		cl.build_command_prefix(out) +
 		cl.build_command(path.generic_string(), obj) +
@@ -115,7 +115,7 @@ static bool init_build(context& ctx, compiler const& cl) {
 
 	// Set the default build configuration if not specified
 	if (ctx.get_config().empty())
-		if (!cmd_config(ctx, "debug,warnings"))
+		if (!cmd_config(ctx, cl, "debug,warnings"))
 			return false;
 
 	// Set the target operating system in the context
@@ -124,7 +124,7 @@ static bool init_build(context& ctx, compiler const& cl) {
 	}
 	else {
 		std::string const base_name = fs::current_path().stem().generic_string();
-		auto const cmd = cl.build_command_prefix(ctx.output_dir().generic_string()) + ctx.get_response_args().data() + " -dumpmachine > arch.txt";
+		auto const cmd = cl.build_command_prefix(ctx.output_dir(cl).generic_string()) + ctx.get_response_args().data() + " -dumpmachine > arch.txt";
 		std::string arch;
 		if (0 == std::system(cmd.c_str()) && std::getline(std::ifstream("arch.txt"), arch)) {
 			std::filesystem::remove("arch.txt");
@@ -137,13 +137,13 @@ static bool init_build(context& ctx, compiler const& cl) {
 	}
 
 	// Make sure the output and response directories exist
-	fs::create_directories(ctx.output_dir());
+	fs::create_directories(ctx.output_dir(cl));
 
 #ifdef _MSC_VER
 	// Initialize msvc environment
 	if (cl.name == "msvc" /*|| cl.unittest_name == "clang"*/) {
-		extern bool init_msvc(context const&);
-		if (!init_msvc(ctx))
+		extern bool init_msvc(context const&, compiler const&);
+		if (!init_msvc(ctx, cl))
 			return false;
 	}
 #endif
@@ -151,17 +151,17 @@ static bool init_build(context& ctx, compiler const& cl) {
 	return true;
 }
 
-static void create_module_map_file(context const& ctx, module_map const& modmap) {
-	std::ofstream modules(ctx.output_dir() / "MODULES");
+static void create_module_map_file(context const& ctx, compiler const& cl, module_map const& modmap) {
+	std::ofstream modules(ctx.output_dir(cl) / "MODULES");
 	for (auto const& [module, path] : modmap) {
-		fs::path const bmi = (ctx.output_dir() / path.filename()).replace_extension("pcm");
+		fs::path const bmi = (ctx.output_dir(cl) / path.filename()).replace_extension("pcm");
 		modules << std::format("-fmodule-file={}=\"{}\"\n", module, bmi.generic_string());
 	}
 }
 
 // Create the object list file
-static std::pair<fs::path, fs::file_time_type> create_object_file_list(context& ctx, auto const& name, std::ranges::range auto& paths) {
-	fs::path objlist_name = (ctx.output_dir() / name).concat("_OBJLIST");
+static std::pair<fs::path, fs::file_time_type> create_object_file_list(context const& ctx, compiler const& cl, auto const& name, std::ranges::range auto& paths) {
+	fs::path objlist_name = (ctx.output_dir(cl) / name).concat("_OBJLIST");
 	std::ofstream objlist(objlist_name);
 	fs::file_time_type latest_source_time = fs::file_time_type::min();
 
@@ -171,7 +171,7 @@ static std::pair<fs::path, fs::file_time_type> create_object_file_list(context& 
 			continue;
 
 		latest_source_time = std::max(latest_source_time, fs::last_write_time(src));
-		fs::path const obj = get_object_filepath(src, ctx);
+		fs::path const obj = get_object_filepath(src, ctx, cl);
 		objlist << obj.generic_string() << ' ';
 	}
 	objlist.close();
@@ -188,7 +188,7 @@ static task_ptr create_build_task(context const& ctx, compiler const& cl, task_g
 		modmap[deps.export_name] = path;
 	impmap[path].insert_range(deps.import_names);
 
-	fs::path const obj = get_object_filepath(path, ctx);
+	fs::path const obj = get_object_filepath(path, ctx, cl);
 	if (is_file_out_of_date(path, obj)) {
 		return tg.create_task(make_task_name(prefix, path), make_build_job(ctx, cl, path, obj, defines));
 	}
@@ -196,7 +196,7 @@ static task_ptr create_build_task(context const& ctx, compiler const& cl, task_g
 }
 
 static task_ptr create_static_lib(context const& ctx, compiler const& cl, task_graph& graph, fs::path const& prefix, fs::path project_dir, fs::path objlist_name, fs::file_time_type latest_source_time) {
-	std::string const out_dir = ctx.output_dir().generic_string();
+	std::string const out_dir = ctx.output_dir(cl).generic_string();
 	operating_system const target_os = ctx.get_target_os();
 
 	return graph.create_task(make_task_name(prefix, project_dir), [=] {
@@ -216,7 +216,7 @@ static task_ptr create_static_lib(context const& ctx, compiler const& cl, task_g
 }
 
 static task_ptr create_dynamic_lib(context const& ctx, compiler const& cl, task_graph& graph, fs::path const& prefix, fs::path project_dir, fs::path objlist_name, fs::file_time_type latest_source_time) {
-	std::string const out_dir = ctx.output_dir().generic_string();
+	std::string const out_dir = ctx.output_dir(cl).generic_string();
 	operating_system const target_os = ctx.get_target_os();
 
 	return graph.create_task(make_task_name(prefix, project_dir), [=] {
@@ -238,7 +238,7 @@ static task_ptr create_dynamic_lib(context const& ctx, compiler const& cl, task_
 }
 
 static task_ptr create_executeable(context const& ctx, compiler const& cl, task_graph& graph, fs::path const& prefix, std::string name, fs::path project_dir, fs::path objlist_name, fs::file_time_type latest_source_time, fs::path extra_objlist_name = {}) {
-	std::string const out_dir = ctx.output_dir().generic_string();
+	std::string const out_dir = ctx.output_dir(cl).generic_string();
 	operating_system const target_os = ctx.get_target_os();
 
 	return graph.create_task(make_task_name(prefix, project_dir), [=] {
@@ -299,8 +299,8 @@ static bool add_build_tasks(context& ctx, compiler const& cl, task_graph& graph,
 		fs::path const project_name = *std::next(project_dir.begin(), is_lib_path); // get_project_name
 
 		// Create the object list file for the .lib file
-		auto source_files = get_source_files(ctx, project_dir / "src") | std::ranges::to<std::vector>();
-		auto const [objlist_name, latest_source_time] = create_object_file_list(ctx, project_name, source_files);
+		auto source_files = get_source_files(ctx, cl, project_dir / "src") | std::ranges::to<std::vector>();
+		auto const [objlist_name, latest_source_time] = create_object_file_list(ctx, cl, project_name, source_files);
 
 		std::string const lib_base_name = is_lib_path && project_name.has_extension()
 			? project_name.extension().generic_string().substr(1)
@@ -311,7 +311,7 @@ static bool add_build_tasks(context& ctx, compiler const& cl, task_graph& graph,
 		switch (get_project_type(project_dir)) {
 		case project_type::static_lib:
 			project_link_task = create_static_lib(ctx, cl, graph, prefix, project_dir, objlist_name, latest_source_time);
-			libs.insert(ctx.output_dir() / os_get_static_library_name(ctx.get_target_os(), lib_base_name));
+			libs.insert(ctx.output_dir(cl) / os_get_static_library_name(ctx.get_target_os(), lib_base_name));
 			break;
 		case project_type::dynamic_lib:
 			project_link_task = create_dynamic_lib(ctx, cl, graph, prefix, project_dir, objlist_name, latest_source_time);
@@ -319,7 +319,7 @@ static bool add_build_tasks(context& ctx, compiler const& cl, task_graph& graph,
 				auto const lib_or_dll_name = ctx.get_target_os() != operating_system::windows
 					? os_get_dynamic_library_name(ctx.get_target_os(), lib_base_name)
 					: os_get_static_library_name(ctx.get_target_os(), lib_base_name);
-				libs.insert(ctx.output_dir() / lib_or_dll_name);
+				libs.insert(ctx.output_dir(cl) / lib_or_dll_name);
 			}
 			break;
 		case project_type::executable:
@@ -353,12 +353,12 @@ static bool add_build_tasks(context& ctx, compiler const& cl, task_graph& graph,
 
 		// Create tests
 		if (fs::exists(project_dir / "tests")) {
-			auto tests_files = get_source_files(ctx, project_dir / "tests") | std::ranges::to<std::vector>();
-			auto const [tests_objlist_name, _] = create_object_file_list(ctx, "tests", tests_files);
+			auto tests_files = get_source_files(ctx, cl, project_dir / "tests") | std::ranges::to<std::vector>();
+			auto const [tests_objlist_name, _] = create_object_file_list(ctx, cl, "tests", tests_files);
 
 			std::string const test_name = "tests." + project_name.generic_string();
 			task_ptr tests_task = create_executeable(ctx, cl, graph, prefix, test_name, project_dir, objlist_name, latest_source_time, tests_objlist_name);
-			ctx.add_unittest(ctx.output_dir() / os_get_executable_name(ctx.get_target_os(), test_name), cl.wsl);
+			ctx.add_unittest(ctx.output_dir(cl) / os_get_executable_name(ctx.get_target_os(), test_name), cl.wsl);
 
 			for (fs::path source_path : tests_files) {
 				task_ptr task = create_build_task(ctx, cl, graph, prefix, source_path, modmap, impmap);
@@ -389,9 +389,9 @@ static bool add_build_tasks(context& ctx, compiler const& cl, task_graph& graph,
 	}
 
 	// Create the response files for compilation and linking
-	create_module_map_file(ctx, modmap);
-	create_response_file(ctx, "LIBLIST", libs);
-	create_response_file(ctx, "SRC_INCLUDES", include_dirs_it);
+	create_module_map_file(ctx, cl, modmap);
+	create_response_file(ctx, cl, "LIBLIST", libs);
+	create_response_file(ctx, cl, "SRC_INCLUDES", include_dirs_it);
 
 	return true;
 }
@@ -399,13 +399,10 @@ static bool add_build_tasks(context& ctx, compiler const& cl, task_graph& graph,
 bool cmd_build(context& ctx, std::string_view /*target*/) {
 	std::println("<gbs> Building (v2) ...");
 
-	std::vector<compiler> compilers = ctx.get_selected_compilers();
+	std::vector<compiler> const compilers = ctx.get_selected_compilers();
 	if (compilers.empty()) {
-		if (!ctx.is_compiler_selected()) {
-			std::println(std::cerr, "<gbs> No compiler selected/found.");
-			return false;
-		}
-		compilers.push_back(ctx.get_selected_compiler());
+		std::println(std::cerr, "<gbs> No compiler selected/found.");
+		return false;
 	}
 
 	if (compilers.size() > 1)
@@ -415,21 +412,10 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 		? std::string{ "debug,warnings" }
 		: std::string{ ctx.get_config() };
 
-	// Building switches the active compiler while creating each compiler's tasks.
-	// Restore the original selection when the build is done.
-	struct restore_active_compiler {
-		context& ctx;
-		compiler original;
-
-		~restore_active_compiler() { ctx.set_active_compiler(original); }
-	} restore{ ctx, ctx.get_selected_compiler() };
-
 	task_graph graph;
 
 	for (compiler const& cl : compilers) {
-		ctx.set_active_compiler(cl);
-
-		if (!cmd_config(ctx, config))
+		if (!cmd_config(ctx, cl, config))
 			return false;
 
 		if (!init_build(ctx, cl))

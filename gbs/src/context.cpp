@@ -145,20 +145,21 @@ std::filesystem::path const& context::get_gbs_out() const noexcept {
 }
 
 // Set the compile configuration
-void context::set_config(std::string_view const cfg) {
-	auto const old = config;
+void context::set_config(compiler const& cl, std::string_view const cfg) {
+	std::string const old = config_dir;
 	config = cfg;
+	config_dir = config;
+	std::replace(config_dir.begin(), config_dir.end(), ',', '_');
 
 	std::error_code error_code{};
-	std::filesystem::create_directories(output_dir(), error_code);
+	std::filesystem::create_directories(output_dir(cl), error_code);
 	if (error_code) {
 		config = old;
+		config_dir = config;
+		std::replace(config_dir.begin(), config_dir.end(), ',', '_');
 		std::println(std::cerr, "<gbs> Error: could not create output build directory: '{}'", error_code.message());
 	}
 	else {
-		config_dir = config;
-		std::replace(config_dir.begin(), config_dir.end(), ',', '_');
-		//config_dir = as_monad(config).replace(',', '_').to<std::string>();
 	}
 }
 
@@ -175,24 +176,24 @@ std::string_view context::get_response_args() const noexcept {
 }
 
 // Determine output dir, eg. 'gbs.out/msvc/debug
-auto context::output_dir() const -> std::filesystem::path {
-	return gbs_out / selected_cl.name_and_version / config_dir;
+auto context::output_dir(compiler const& cl) const -> std::filesystem::path {
+	return gbs_out / cl.name_and_version / config_dir;
 }
 
 // Determine response directory
-auto context::response_dir() const -> std::filesystem::path {
-	return gbs_internal / selected_cl.name;
+auto context::response_dir(compiler const& cl) const -> std::filesystem::path {
+	return gbs_internal / cl.name;
 }
 
 // Returns true if the compiler has a response map
-bool context::has_response_map() const {
-	return response_map.contains(selected_cl.name);
+bool context::has_response_map(compiler const& cl) const {
+	return response_map.contains(cl.name);
 }
 
-// Returns the response map for the selected compiler
-compiler_response_map context::get_response_map() const {
-	if (response_map.contains(selected_cl.name))
-		return response_map.at(selected_cl.name);
+// Returns the response map for the compiler
+compiler_response_map context::get_response_map(compiler const& cl) const {
+	if (response_map.contains(cl.name))
+		return response_map.at(cl.name);
 	else
 		return {};
 }
@@ -200,26 +201,12 @@ compiler_response_map context::get_response_map() const {
 // Selects the first compiler in the list
 void context::select_first_compiler() noexcept {
 	selected_compilers.clear();
-	if (!all_compilers.empty()) {
-		selected_cl = all_compilers.begin()->second.front();
-		selected_compilers.push_back(selected_cl);
-	}
-}
-
-bool context::is_compiler_selected() const noexcept {
-	return !selected_cl.name.empty();
-}
-
-compiler const& context::get_selected_compiler() const noexcept {
-	return selected_cl;
+	if (!all_compilers.empty())
+		selected_compilers.push_back(all_compilers.begin()->second.front());
 }
 
 std::vector<compiler> const& context::get_selected_compilers() const noexcept {
 	return selected_compilers;
-}
-
-void context::set_active_compiler(compiler const& cl) noexcept {
-	selected_cl = cl;
 }
 
 compiler_collection const& context::get_compiler_collection() const noexcept {
@@ -322,26 +309,25 @@ bool context::set_compiler(std::string_view comp) {
 		return false;
 
 	selected_compilers = std::move(found);
-	selected_cl = selected_compilers.front();
 	return true;
 }
 
-bool context::ensure_response_file_exists(std::string_view resp) const {
+bool context::ensure_response_file_exists(compiler const& cl, std::string_view resp) const {
 	if (resp.empty()) {
 		std::println("<gbs> Error: bad build-arguments. Trailing comma?");
 		return false;
 	}
 
-	auto const& map = get_response_map();
+	auto const& map = get_response_map(cl);
 
 	// Check that it is a valid response file
-	if (!std::filesystem::exists(response_dir() / resp)) {
+	if (!std::filesystem::exists(response_dir(cl) / resp)) {
 		if (!map.contains(resp)) {
 			std::println("<gbs> Error: unknown response file {}", resp);
 			return false;
 		}
 		else {
-			std::ofstream file(response_dir() / resp);
+			std::ofstream file(response_dir(cl) / resp);
 			file << map.at(resp);
 		}
 	}
@@ -349,30 +335,30 @@ bool context::ensure_response_file_exists(std::string_view resp) const {
 	return true;
 }
 
-bool context::check_response_files(std::string_view args) {
-	if (!is_compiler_selected()) {
+bool context::check_response_files(compiler const& cl, std::string_view args) {
+	if (cl.name.empty()) {
 		std::println("<gbs> Error: select a compiler");
 		std::exit(1);
 	}
 
-	if (!has_response_map()) {
-		std::println("<gbs> Error: selected compiler does not have any default response files");
+	if (!has_response_map(cl)) {
+		std::println("<gbs> Error: compiler '{}' does not have any default response files", cl.name);
 		std::exit(1);
 	}
 
-	if (!std::filesystem::exists(response_dir())) {
+	if (!std::filesystem::exists(response_dir(cl))) {
 		std::error_code ec{};
-		if (!std::filesystem::create_directories(response_dir(), ec)) {
-			std::println("<gbs> Error: could not create response file directory {}/{}: '{}'", std::filesystem::current_path().generic_string(), response_dir().generic_string(), ec.message());
+		if (!std::filesystem::create_directories(response_dir(cl), ec)) {
+			std::println("<gbs> Error: could not create response file directory {}/{}: '{}'", std::filesystem::current_path().generic_string(), response_dir(cl).generic_string(), ec.message());
 			return false;
 		}
 	}
 
-	if (!ensure_response_file_exists("_shared"))
+	if (!ensure_response_file_exists(cl, "_shared"))
 		return false;
 
 	for (auto subrange : args | std::views::split(',')) {
-		if (!ensure_response_file_exists(std::string_view{ subrange }))
+		if (!ensure_response_file_exists(cl, std::string_view{ subrange }))
 			return false;
 	}
 
