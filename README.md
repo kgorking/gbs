@@ -18,9 +18,9 @@ Can compile itself using clang, gcc, and msvc.
   - Other folders are added to the includes list. They are not searched for source files.
   - Include paths for libraries are automatically added to projects.
     - Also includes `inc` and `include` subfolders, if present.
-- `tests` folder is for unit tests.
-  - Each `test.*.cpp` file is compiled into a unittest executable `test.*.exe`.
-  - Other sourcefiles are linked to each unittest executable.
+- `tests` folder is for tests.
+  - Compiled into a executable `tests.<root folder name>.exe`.
+  - Can be launched using `tests` command.
 - Files and folders starting with `x.` are ignored.
 - Files and folders in subfolders of fx `windows`, `.linux`, or `.darwin` are only compiled on matching platforms.
 
@@ -42,8 +42,8 @@ example/
 ├── other_executeable/       (another executable)
 │   └── src/
 ├── tests/
-│   ├── test.example.cpp
-│   └── test.other.cpp
+│   ├── tests.cpp            (contains main() function)
+│   └── test.stuff.cpp
 └── d.some_dll/              (dynamic library)
     ├── inc/
     └── src/
@@ -63,8 +63,9 @@ The following commands are supported:
 		* Response files are simple text files containing command line arguments for the selected compiler.
 		* They can be created manually or you can use the auto generated ones. You are free to change them as you see fit.
 	* Example: `gbs config=release,analyze build` will do an analyzed release build.
-* `cl=<compiler>:<major.minor.patch>` Selects the compiler to use for subsequent commands.
+* `cl=<compiler>[:<major.minor.patch>][,<compiler>...]` Selects one or more compilers for subsequent commands.
 	* `gbs cl=msvc build cl=clang:17.3.1 build` will first build with latest msvc, then build with clang 17.3.1.
+	* `gbs cl=clang:21,gcc:16 build` will build with both clang 21 and gcc 16 concurrently.
 * `build` Builds the current directory.
 	* If no configuration is specified (via `config` command), `debug,warnings` is used by default.
 * `clean` cleans the build output folder (`gbs.out`).
@@ -104,9 +105,9 @@ The following compilers can be used by `gbs` to build `gbs`:
 # Upcoming versions (not in a specific order)
 - Support package managers (vcpkg, conan, etc.)
 - Use GCC on WSL
-- Concurrent compilations of multiple different compilers. `cl=gcc,clang,msvc` to compile with all three compilers at once.
 
 ## Todo
+- [x] Concurrent compilations of multiple different compilers. `cl=gcc,clang,msvc` compiles with all three compilers at once.
 - [ ] Good documentation for all commands
 - [x] Compiling/running unit tests
 - [ ] Use package managers

@@ -1,5 +1,6 @@
 #include "../inc/context.h"
 #include "../inc/enumerate_compilers.h"
+#include <algorithm>
 #include <print>
 
 context::context(char const** envp) : env(envp) {
@@ -100,11 +101,11 @@ context::context(char const** envp) : env(envp) {
 	};
 }
 
-void context::add_unittest(std::filesystem::path const& test_executable) {
-	unittests.push_back(test_executable);
+void context::add_unittest(std::filesystem::path const& test_executable, std::optional<std::string> wsl) {
+	unittests.push_back({ test_executable, std::move(wsl) });
 }
 
-std::vector<std::filesystem::path> const& context::get_unittests() const noexcept {
+std::vector<unittest_info> const& context::get_unittests() const noexcept {
 	return unittests;
 }
 
@@ -198,8 +199,11 @@ compiler_response_map context::get_response_map() const {
 
 // Selects the first compiler in the list
 void context::select_first_compiler() noexcept {
-	if (!all_compilers.empty())
+	selected_compilers.clear();
+	if (!all_compilers.empty()) {
 		selected_cl = all_compilers.begin()->second.front();
+		selected_compilers.push_back(selected_cl);
+	}
 }
 
 bool context::is_compiler_selected() const noexcept {
@@ -208,6 +212,14 @@ bool context::is_compiler_selected() const noexcept {
 
 compiler const& context::get_selected_compiler() const noexcept {
 	return selected_cl;
+}
+
+std::vector<compiler> const& context::get_selected_compilers() const noexcept {
+	return selected_compilers;
+}
+
+void context::set_active_compiler(compiler const& cl) noexcept {
+	selected_cl = cl;
 }
 
 compiler_collection const& context::get_compiler_collection() const noexcept {
@@ -248,58 +260,69 @@ void context::fill_compiler_collection() {
 	}
 }
 
-bool context::set_compiler(std::string_view comp) {
-	auto split = comp | std::views::split(':'); // cl:version
-	std::string_view cl, version;
+namespace {
+compiler const* find_compiler(compiler_collection const& all_compilers, std::string_view name, std::string_view version) {
+	if (name.empty() || !all_compilers.contains(name))
+		return nullptr;
 
-	switch (std::ranges::distance(split)) {
-	case 2:
-		// Version requested
-		version = std::string_view{ *std::next(split.begin()) }; [[fallthrough]];
-	case 1:
-		// No version requested, returns newest
-		cl = std::string_view{ *split.begin() };
-		break;
+	auto const& named_compilers = all_compilers.at(name);
+	if (named_compilers.empty())
+		return nullptr;
 
-	default:
-		std::println("<gbs>   Error: ill-formed compiler descriptor: '{}'", comp);
-		std::exit(1);
-	}
+	if (version.empty())
+		return &named_compilers.front();
 
-	if (!all_compilers.contains(cl)) {
-		// A missing compiler is a hard error
-		return false;
-	}
-
-	// Select the compiler
-	auto const& named_compilers = all_compilers.at(cl);
-	if (version.empty()) {
-		selected_cl = named_compilers.front();
-		return true;
-	}
-
-	// Select the version
 	int major = 0, minor = 0, patch = 0;
 	auto const dots = std::count(version.begin(), version.end(), '.');
+	if (dots > 2)
+		return nullptr;
+
 	extract_compiler_version(version, major, minor, patch);
 
-	auto version_compilers = named_compilers | std::views::filter([&](compiler const& c) {
-		bool match = true;
+	auto const it = std::ranges::find_if(named_compilers, [&](compiler const& c) {
 		switch (dots) {
-		default: throw std::runtime_error("<gbs>   Error: ill-formed compiler version: " + std::string{ version });
-		case 2: match = match && (c.patch == patch); [[fallthrough]];
-		case 1: match = match && (c.minor == minor); [[fallthrough]];
-		case 0: match = match && (c.major == major);
+		default: return false;
+		case 2: return c.major == major && c.minor == minor && c.patch == patch;
+		case 1: return c.major == major && c.minor == minor;
+		case 0: return c.major == major;
 		}
-		return match;
 		});
 
-	if (version_compilers.empty()) {
-		std::println("<gbs>   Error: requested version not found");
-		return {};
+	return it == named_compilers.end() ? nullptr : &*it;
+}
+} // namespace
+
+bool context::set_compiler(std::string_view comp) {
+	std::vector<compiler> found;
+
+	for (auto descriptor_range : comp | std::views::split(',')) {
+		std::string_view const descriptor{ descriptor_range };
+		if (descriptor.empty()) {
+			std::println("<gbs>   Error: ill-formed compiler descriptor: '{}'", comp);
+			return false;
+		}
+
+		auto const colon = descriptor.find(':');
+		std::string_view const name = descriptor.substr(0, colon);
+		std::string_view const version = colon == std::string_view::npos
+			? std::string_view{}
+			: descriptor.substr(colon + 1);
+
+		compiler const* match = find_compiler(all_compilers, name, version);
+		if (!match) {
+			std::println("<gbs>   Error: could not find compiler '{}'", descriptor);
+			return false;
+		}
+
+		if (std::ranges::none_of(found, [&](compiler const& c) { return c.name_and_version == match->name_and_version; }))
+			found.push_back(*match);
 	}
 
-	selected_cl = version_compilers.front();
+	if (found.empty())
+		return false;
+
+	selected_compilers = std::move(found);
+	selected_cl = selected_compilers.front();
 	return true;
 }
 

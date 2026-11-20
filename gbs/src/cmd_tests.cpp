@@ -13,27 +13,30 @@ bool cmd_unittest(context& ctx, std::string_view args) {
 		return false;
 	}
 
-	if (!fs::exists(ctx.output_dir())) {
-		std::println(std::cerr, "<gbs> Build directory is missing. Build the project before running tests.");
-		return false;
-	}
-
-	int num_tests_run = 0;
-	auto test = fs::current_path();
-
-	std::println("<gbs> Running tests...");
-	for (auto const& unittest : ctx.get_unittests()) {
-		std::string const wsl = get_wsl_command(ctx.get_selected_compiler().wsl);
-		auto const cmd = std::format("{}\"{}\" {}", wsl, unittest.generic_string(), args);
-		if (0 != std::system(cmd.c_str())) {
+	auto const& unittests = ctx.get_unittests();
+	if (unittests.empty()) {
+		if (!fs::exists(ctx.output_dir())) {
+			std::println(std::cerr, "<gbs> Build directory is missing. Build the project before running tests.");
 			return false;
 		}
 
-		num_tests_run += 1;
+		std::println("<gbs> No tests found to run.");
+		return true;
 	}
 
-	if (num_tests_run == 0) {
-		std::println("<gbs> No tests found to run.");
+	std::println("<gbs> Running tests...");
+	for (auto const& unittest : unittests) {
+		if (!fs::exists(unittest.executable)) {
+			std::println(std::cerr, "<gbs> Test executable '{}' is missing. Build the project before running tests.", unittest.executable.generic_string());
+			return false;
+		}
+
+		std::string const wsl = get_wsl_command(unittest.wsl);
+		auto const cmd = std::format("{}\"{}\" {}", wsl, unittest.executable.generic_string(), args);
+		if (0 != std::system(cmd.c_str())) {
+			return false;
+		}
 	}
+
 	return true;
 }

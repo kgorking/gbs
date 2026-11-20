@@ -32,6 +32,15 @@ using imports_map = std::unordered_map<fs::path, import_set>;	// source -> {impo
 using module_map = std::unordered_map<module_desc, fs::path>;	// import -> source
 using task_map = std::unordered_map<fs::path, task_ptr>;		// source -> task
 
+// Task names must be unique across all compilers sharing the same graph.
+static fs::path make_task_name(fs::path const& prefix, fs::path const& name) {
+	return fs::path{ std::format("{}/{}", prefix.generic_string(), name.generic_string()) };
+}
+
+static fs::path compiler_task_prefix(compiler const& cl) {
+	return fs::path{ cl.name_and_version };
+}
+
 enum class project_type {
 	unknown,
 	static_lib,
@@ -170,7 +179,7 @@ static std::pair<fs::path, fs::file_time_type> create_object_file_list(context& 
 	return { objlist_name, latest_source_time };
 }
 
-static task_ptr create_build_task(context const& ctx, compiler const& cl, task_graph& tg, fs::path const& path, module_map& modmap, imports_map& impmap, std::string_view defines = {}) {
+static task_ptr create_build_task(context const& ctx, compiler const& cl, task_graph& tg, fs::path const& prefix, fs::path const& path, module_map& modmap, imports_map& impmap, std::string_view defines = {}) {
 	if (!is_valid_sourcefile(path) || !should_include(ctx, path))
 		return {};
 
@@ -181,58 +190,66 @@ static task_ptr create_build_task(context const& ctx, compiler const& cl, task_g
 
 	fs::path const obj = get_object_filepath(path, ctx);
 	if (is_file_out_of_date(path, obj)) {
-		return tg.create_task(path, make_build_job(ctx, cl, path, obj, defines));
+		return tg.create_task(make_task_name(prefix, path), make_build_job(ctx, cl, path, obj, defines));
 	}
 	return {};
 }
 
-static task_ptr create_static_lib(context const& ctx, compiler const& cl, task_graph& graph, fs::path project_dir, fs::path objlist_name, fs::file_time_type latest_source_time) {
-	return graph.create_task(project_dir, [=, &ctx] {
+static task_ptr create_static_lib(context const& ctx, compiler const& cl, task_graph& graph, fs::path const& prefix, fs::path project_dir, fs::path objlist_name, fs::file_time_type latest_source_time) {
+	std::string const out_dir = ctx.output_dir().generic_string();
+	operating_system const target_os = ctx.get_target_os();
+
+	return graph.create_task(make_task_name(prefix, project_dir), [=] {
 		auto const ext_name = project_dir.extension().generic_string().substr(1);
 
 		// static library, create the .lib
-		std::string const lib_name = os_get_static_library_name(ctx.get_target_os(), ext_name);
+		std::string const lib_name = os_get_static_library_name(target_os, ext_name);
 
-		auto const lib_path = ctx.output_dir() / lib_name;
+		auto const lib_path = fs::path{ out_dir } / lib_name;
 		if (fs::exists(lib_path) && latest_source_time < fs::last_write_time(lib_path))
 			return true;
 
-		std::string const cmd = cl.static_library_command(lib_name, ctx.output_dir().generic_string()) + std::format(" @{}", objlist_name.generic_string());
+		std::string const cmd = cl.static_library_command(lib_name, out_dir) + std::format(" @{}", objlist_name.generic_string());
 		std::println("<gbs> Linking static library '{}'...", lib_name);
 		return 0 == std::system(cmd.c_str());
 		});
 }
 
-static task_ptr create_dynamic_lib(context const& ctx, compiler const& cl, task_graph& graph, fs::path project_dir, fs::path objlist_name, fs::file_time_type latest_source_time) {
-	return graph.create_task(project_dir, [=, &ctx] {
+static task_ptr create_dynamic_lib(context const& ctx, compiler const& cl, task_graph& graph, fs::path const& prefix, fs::path project_dir, fs::path objlist_name, fs::file_time_type latest_source_time) {
+	std::string const out_dir = ctx.output_dir().generic_string();
+	operating_system const target_os = ctx.get_target_os();
+
+	return graph.create_task(make_task_name(prefix, project_dir), [=] {
 		auto const ext_name = project_dir.extension().generic_string().substr(1);
 
 		// dynamic library, link the .dll
-		std::string const lib_name = os_get_static_library_name(ctx.get_target_os(), ext_name);
-		std::string const dll_name = os_get_dynamic_library_name(ctx.get_target_os(), ext_name);
+		std::string const lib_name = os_get_static_library_name(target_os, ext_name);
+		std::string const dll_name = os_get_dynamic_library_name(target_os, ext_name);
 
-		auto const dll_path = ctx.output_dir() / dll_name;
+		auto const dll_path = fs::path{ out_dir } / dll_name;
 		if (fs::exists(dll_path) && latest_source_time < fs::last_write_time(dll_path))
 			return true;
 
-		std::string const cmd = cl.dynamic_library_command(dll_name, lib_name, ctx.output_dir().generic_string())
+		std::string const cmd = cl.dynamic_library_command(dll_name, lib_name, out_dir)
 			+ std::format(" @{}", objlist_name.generic_string()) + cl.create_link_libraries();
 		std::println("<gbs> Linking dynamic library '{}'...", dll_name);
 		return 0 == std::system(cmd.c_str());
 		});
 }
 
-static task_ptr create_executeable(context const& ctx, compiler const& cl, task_graph& graph, std::string name, fs::path project_dir, fs::path objlist_name, fs::file_time_type latest_source_time, fs::path extra_objlist_name = {}) {
-	return graph.create_task(project_dir, [=, &ctx] {
-		std::string const main_obj_name = (ctx.output_dir() / name).replace_extension("obj").generic_string();
-		std::string const exe_name = os_get_executable_name(ctx.get_target_os(), name);
+static task_ptr create_executeable(context const& ctx, compiler const& cl, task_graph& graph, fs::path const& prefix, std::string name, fs::path project_dir, fs::path objlist_name, fs::file_time_type latest_source_time, fs::path extra_objlist_name = {}) {
+	std::string const out_dir = ctx.output_dir().generic_string();
+	operating_system const target_os = ctx.get_target_os();
 
-		auto const exe_path = ctx.output_dir() / exe_name;
+	return graph.create_task(make_task_name(prefix, project_dir), [=] {
+		std::string const main_obj_name = (fs::path{ out_dir } / name).replace_extension("obj").generic_string();
+		std::string const exe_name = os_get_executable_name(target_os, name);
+
+		auto const exe_path = fs::path{ out_dir } / exe_name;
 		if (fs::exists(exe_path) && latest_source_time < fs::last_write_time(exe_path))
 			return true;
 
 		std::println("<gbs> Linking executable '{}'...", exe_name);
-		std::string const out_dir = ctx.output_dir().generic_string();
 		std::string obj_resp = std::format(" @{}", objlist_name.generic_string());
 		if (!extra_objlist_name.empty())
 			obj_resp += std::format(" @{}", extra_objlist_name.generic_string());
@@ -242,18 +259,12 @@ static task_ptr create_executeable(context const& ctx, compiler const& cl, task_
 		});
 }
 
-bool cmd_build(context& ctx, std::string_view /*target*/) {
-	std::println("<gbs> Building (v2) ...");
-
-	compiler const& cl = ctx.get_selected_compiler();
-	if (!init_build(ctx, cl))
-		return false;
-
+static bool add_build_tasks(context& ctx, compiler const& cl, task_graph& graph, fs::path const& prefix) {
 	std::set<fs::path> libs;
 	module_map modmap;
 	imports_map impmap;
 	task_map tasks;
-	task_graph graph;
+
 	auto project_it = directories
 		| transform([](std::string_view p) { return fs::directory_iterator(p, fs::directory_options::follow_directory_symlink); })
 		| join
@@ -271,7 +282,7 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 
 	// Add the std module to the build
 	if (cl.std_module) {
-		if (task_ptr const std_module_task = create_build_task(ctx, cl, graph, *cl.std_module, modmap, impmap))
+		if (task_ptr const std_module_task = create_build_task(ctx, cl, graph, prefix, *cl.std_module, modmap, impmap))
 			tasks[*cl.std_module] = std_module_task;
 	}
 	else {
@@ -280,7 +291,7 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 
 	// Create the barrier task for the 'lib' directory.
 	// Library projects will complete before this task, and all other projects will depend on this task.
-	task_ptr lib_barrier_task = graph.create_task("lib", task_true);
+	task_ptr lib_barrier_task = graph.create_task(make_task_name(prefix, "lib"), task_true);
 
 	// Find all project directories and create build tasks for them
 	for (fs::path project_dir : project_it) {
@@ -299,11 +310,11 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 		// TODO merge
 		switch (get_project_type(project_dir)) {
 		case project_type::static_lib:
-			project_link_task = create_static_lib(ctx, cl, graph, project_dir, objlist_name, latest_source_time);
+			project_link_task = create_static_lib(ctx, cl, graph, prefix, project_dir, objlist_name, latest_source_time);
 			libs.insert(ctx.output_dir() / os_get_static_library_name(ctx.get_target_os(), lib_base_name));
 			break;
 		case project_type::dynamic_lib:
-			project_link_task = create_dynamic_lib(ctx, cl, graph, project_dir, objlist_name, latest_source_time);
+			project_link_task = create_dynamic_lib(ctx, cl, graph, prefix, project_dir, objlist_name, latest_source_time);
 			{
 				auto const lib_or_dll_name = ctx.get_target_os() != operating_system::windows
 					? os_get_dynamic_library_name(ctx.get_target_os(), lib_base_name)
@@ -312,7 +323,7 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 			}
 			break;
 		case project_type::executable:
-			project_link_task = create_executeable(ctx, cl, graph, project_name.generic_string(), project_dir, objlist_name, latest_source_time);
+			project_link_task = create_executeable(ctx, cl, graph, prefix, project_name.generic_string(), project_dir, objlist_name, latest_source_time);
 			break;
 		case project_type::unknown:
 			// Stuff like headers-only libraries, etc. that don't have a 'src' directory
@@ -335,7 +346,7 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 
 		// Find all source files and create build tasks for them
 		for (fs::path source_path : source_files) {
-			task_ptr task = create_build_task(ctx, cl, graph, source_path, modmap, impmap, export_define);
+			task_ptr task = create_build_task(ctx, cl, graph, prefix, source_path, modmap, impmap, export_define);
 			tasks[source_path] = task;
 			graph.add_dependency(task, project_link_task);
 		}
@@ -346,11 +357,11 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 			auto const [tests_objlist_name, _] = create_object_file_list(ctx, "tests", tests_files);
 
 			std::string const test_name = "tests." + project_name.generic_string();
-			task_ptr tests_task = create_executeable(ctx, cl, graph, test_name, project_dir, objlist_name, latest_source_time, tests_objlist_name);
-			ctx.add_unittest(ctx.output_dir() / os_get_executable_name(ctx.get_target_os(), test_name));
+			task_ptr tests_task = create_executeable(ctx, cl, graph, prefix, test_name, project_dir, objlist_name, latest_source_time, tests_objlist_name);
+			ctx.add_unittest(ctx.output_dir() / os_get_executable_name(ctx.get_target_os(), test_name), cl.wsl);
 
 			for (fs::path source_path : tests_files) {
-				task_ptr task = create_build_task(ctx, cl, graph, source_path, modmap, impmap);
+				task_ptr task = create_build_task(ctx, cl, graph, prefix, source_path, modmap, impmap);
 				tasks[source_path] = task;
 				graph.add_dependency(task, tests_task);
 			}
@@ -359,11 +370,11 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 
 	// Set up the task dependencies for modules
 	for (auto const& [path, impset] : impmap) {
-		if (task_ptr const& task = graph.find_task(path); task) {
+		if (task_ptr const& task = graph.find_task(make_task_name(prefix, path)); task) {
 			for (auto const& imp : impset) {
 				if (modmap.contains(imp)) {
 					fs::path const& dep_path = modmap.at(imp);
-					task_ptr const& dep_task = graph.find_task(dep_path);
+					task_ptr const& dep_task = graph.find_task(make_task_name(prefix, dep_path));
 					graph.add_dependency(dep_task, task);
 				}
 				else {
@@ -381,6 +392,52 @@ bool cmd_build(context& ctx, std::string_view /*target*/) {
 	create_module_map_file(ctx, modmap);
 	create_response_file(ctx, "LIBLIST", libs);
 	create_response_file(ctx, "SRC_INCLUDES", include_dirs_it);
+
+	return true;
+}
+
+bool cmd_build(context& ctx, std::string_view /*target*/) {
+	std::println("<gbs> Building (v2) ...");
+
+	std::vector<compiler> compilers = ctx.get_selected_compilers();
+	if (compilers.empty()) {
+		if (!ctx.is_compiler_selected()) {
+			std::println(std::cerr, "<gbs> No compiler selected/found.");
+			return false;
+		}
+		compilers.push_back(ctx.get_selected_compiler());
+	}
+
+	if (compilers.size() > 1)
+		std::println("<gbs> Building with {} compilers...", compilers.size());
+
+	std::string const config = ctx.get_config().empty()
+		? std::string{ "debug,warnings" }
+		: std::string{ ctx.get_config() };
+
+	// Building switches the active compiler while creating each compiler's tasks.
+	// Restore the original selection when the build is done.
+	struct restore_active_compiler {
+		context& ctx;
+		compiler original;
+
+		~restore_active_compiler() { ctx.set_active_compiler(original); }
+	} restore{ ctx, ctx.get_selected_compiler() };
+
+	task_graph graph;
+
+	for (compiler const& cl : compilers) {
+		ctx.set_active_compiler(cl);
+
+		if (!cmd_config(ctx, config))
+			return false;
+
+		if (!init_build(ctx, cl))
+			return false;
+
+		if (!add_build_tasks(ctx, cl, graph, compiler_task_prefix(cl)))
+			return false;
+	}
 
 	graph.run();
 

@@ -34,8 +34,8 @@ std::string compiler::make_include_path(std::filesystem::path const& path) const
 
 // Create build command for the currently selected compiler
 std::string compiler::build_command_prefix(std::string_view out) const {
-	auto const compiler = executable.generic_string();
-	return std::vformat(build_prefix, std::make_format_args(compiler, out));
+	auto const exe = executable.generic_string();
+	return std::vformat(build_prefix, std::make_format_args(exe, out));
 }
 
 // Create build args for a single file

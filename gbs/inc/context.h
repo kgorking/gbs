@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <ranges>
 #include <set>
 #include <string_view>
@@ -16,6 +17,11 @@
 
 using compiler_collection = std::unordered_map<std::string_view, std::vector<compiler>>;
 using compiler_response_map = std::unordered_map<std::string_view, std::string_view>;
+
+struct unittest_info {
+	std::filesystem::path executable;
+	std::optional<std::string> wsl;
+};
 
 class context {
 	// Configuration of compile ('debug,analyze', etc...)
@@ -31,8 +37,11 @@ class context {
 	// All available compilers
 	compiler_collection all_compilers{};
 
-	// The currently selected compiler
+	// The currently selected compiler (used by commands that expect one)
 	compiler selected_cl;
+
+	// All compilers selected by 'cl=...'
+	std::vector<compiler> selected_compilers{};
 
 	// Maps a compiler name to its response files
 	std::unordered_map<std::string_view, compiler_response_map> response_map{};
@@ -44,7 +53,7 @@ class context {
 	operating_system target_os = operating_system::linux;
 
 	// All the unittests created during last build
-	std::vector<std::filesystem::path> unittests;
+	std::vector<unittest_info> unittests;
 
 	// Environment variables
 	environment env;
@@ -52,8 +61,8 @@ class context {
 public:
 	explicit context(char const** envp);
 
-	void add_unittest(std::filesystem::path const& test_executable);
-	[[nodiscard]] std::vector<std::filesystem::path> const& get_unittests() const noexcept;
+	void add_unittest(std::filesystem::path const& test_executable, std::optional<std::string> wsl = {});
+	[[nodiscard]] std::vector<unittest_info> const& get_unittests() const noexcept;
 	void clear_unittests() noexcept;
 	void set_target_os(operating_system const os) noexcept;
 	[[nodiscard]] operating_system get_target_os() const noexcept;
@@ -72,6 +81,8 @@ public:
 	void select_first_compiler() noexcept;
 	[[nodiscard]] bool is_compiler_selected() const noexcept;
 	[[nodiscard]] compiler const& get_selected_compiler() const noexcept;
+	[[nodiscard]] std::vector<compiler> const& get_selected_compilers() const noexcept;
+	void set_active_compiler(compiler const& cl) noexcept;
 	[[nodiscard]] compiler_collection const& get_compiler_collection() const noexcept;
 
 	void fill_compiler_collection();
