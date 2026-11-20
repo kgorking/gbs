@@ -1,6 +1,6 @@
 #pragma once
 #include "task.h"
-#include "thread_pool.h"
+#include "task_pool.h"
 #include <condition_variable>
 #include <filesystem>
 #include <functional>
@@ -24,15 +24,10 @@ public:
 	explicit task_graph(size_t threads = std::thread::hardware_concurrency());
 
 	task_ptr create_task(std::filesystem::path const& name, std::function<bool()> work);
-
-	// Add edge: parent -> child (parent runs to completion before child)
-	void add_dependency(const task_ptr& parent, const task_ptr& child);
-
 	task_ptr find_task(std::filesystem::path const& name) const;
-
-	void run();
-
+	void add_dependency(const task_ptr& before, const task_ptr& after);
 	bool was_aborted() const { return abort; }
+	void run();
 
 private:
 	void schedule_ready_tasks();
@@ -47,6 +42,6 @@ private:
 	std::mutex ready_mtx;
 	std::mutex done_mtx;
 	std::condition_variable done_cv;
-	thread_pool pool;
+	task_pool pool;
 	std::atomic_bool abort = false;
 };

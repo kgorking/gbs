@@ -41,16 +41,19 @@ std::optional<std::vector<task_ptr>> task_graph::find_circular_path(const task_p
 	return std::nullopt;
 }
 
-void task_graph::add_dependency(const task_ptr& parent, const task_ptr& child) {
+void task_graph::add_dependency(const task_ptr& before, const task_ptr& after) {
+	if (!before || !after)
+		return;
+
 	// Check for circular dependencies
 	tasks_set visited;
 	std::vector<task_ptr> path;
-	auto circular_path = find_circular_path(child, parent, visited, path);
+	auto circular_path = find_circular_path(after, before, visited, path);
 
 	if (circular_path.has_value()) {
 		std::println("<gbs> error: Circular dependency detected! Dependency chain:\n             ");
 					               
-		// Print the chain from child to parent
+		// Print the chain from after to before
 		for (size_t i = 0; i < circular_path->size(); ++i) {
 			const auto& task = (*circular_path)[i];
 			std::string task_name = task_name_map.contains(task) ? task_name_map[task].string() : "<unnamed>";
@@ -63,12 +66,13 @@ void task_graph::add_dependency(const task_ptr& parent, const task_ptr& child) {
 		}
 
 		// Print the edge that would create the cycle
-		std::string parent_name = task_name_map.contains(parent) ? task_name_map[parent].string() : "<unnamed>";
+		std::string parent_name = task_name_map.contains(before) ? task_name_map[before].string() : "<unnamed>";
 		std::println("  '{}' (would create cycle)", parent_name);
+		return;
 	}
 
-	child->deps.fetch_add(1, std::memory_order_relaxed);
-	parent->children.push_back(child);
+	after->deps.fetch_add(1, std::memory_order_relaxed);
+	before->children.push_back(after);
 }
 
 task_ptr task_graph::find_task(std::filesystem::path const& name) const {

@@ -8,7 +8,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <print>
+#include <optional>
 #include <ranges>
 #include <set>
 #include <string_view>
@@ -17,6 +17,11 @@
 
 using compiler_collection = std::unordered_map<std::string_view, std::vector<compiler>>;
 using compiler_response_map = std::unordered_map<std::string_view, std::string_view>;
+
+struct unittest_info {
+	std::filesystem::path executable;
+	std::optional<std::string> wsl;
+};
 
 class context {
 	// Configuration of compile ('debug,analyze', etc...)
@@ -32,8 +37,11 @@ class context {
 	// All available compilers
 	compiler_collection all_compilers{};
 
-	// The currently selected compiler
+	// The currently selected compiler (used by commands that expect one)
 	compiler selected_cl;
+
+	// All compilers selected by 'cl=...'
+	std::vector<compiler> selected_compilers{};
 
 	// Maps a compiler name to its response files
 	std::unordered_map<std::string_view, compiler_response_map> response_map{};
@@ -45,7 +53,7 @@ class context {
 	operating_system target_os = operating_system::linux;
 
 	// All the unittests created during last build
-	std::vector<std::filesystem::path> unittests;
+	std::vector<unittest_info> unittests;
 
 	// Environment variables
 	environment env;
@@ -53,8 +61,8 @@ class context {
 public:
 	explicit context(char const** envp);
 
-	void add_unittest(std::filesystem::path const& test_executable);
-	[[nodiscard]] std::vector<std::filesystem::path> const& get_unittests() const noexcept;
+	void add_unittest(std::filesystem::path const& test_executable, std::optional<std::string> wsl = {});
+	[[nodiscard]] std::vector<unittest_info> const& get_unittests() const noexcept;
 	void clear_unittests() noexcept;
 	void set_target_os(operating_system const os) noexcept;
 	[[nodiscard]] operating_system get_target_os() const noexcept;
@@ -73,17 +81,10 @@ public:
 	void select_first_compiler() noexcept;
 	[[nodiscard]] bool is_compiler_selected() const noexcept;
 	[[nodiscard]] compiler const& get_selected_compiler() const noexcept;
+	[[nodiscard]] std::vector<compiler> const& get_selected_compilers() const noexcept;
+	void set_active_compiler(compiler const& cl) noexcept;
 	[[nodiscard]] compiler_collection const& get_compiler_collection() const noexcept;
-	[[nodiscard]] std::string_view compiler_name() const noexcept;
-	[[nodiscard]] std::string make_include_path(std::string_view const path) const;
-	[[nodiscard]] std::string build_command_prefix() const;
-	[[nodiscard]] std::string build_define(std::string_view const def) const;
-	[[nodiscard]] std::string build_command(std::string_view file, std::filesystem::path const& obj_file) const;
-	[[nodiscard]] std::string link_command(std::string_view exe_name, std::string_view const out_dir) const;
-	[[nodiscard]] std::string static_library_command(std::string_view const out_name, std::string_view const out_dir) const;
-	[[nodiscard]] std::string dynamic_library_command(std::string_view const dll_name, std::string_view const lib_name, std::string_view const out_dir) const;
-	[[nodiscard]] auto get_module_directory() const -> std::string;
-	[[nodiscard]] std::string build_define(std::string_view const def);
+
 	void fill_compiler_collection();
 	bool set_compiler(std::string_view comp);
 	bool ensure_response_file_exists(std::string_view resp) const;

@@ -49,7 +49,7 @@ void enumerate_compilers_gcc(environment const& env, std::function<void(compiler
 
 			comp.build_source = " {0:?} -o {1:?} ";
 			comp.build_module = " -xc++ {0:?} -o {1:?} ";
-			comp.build_command_prefix = "call {0:?} @{1}/SRC_INCLUDES -c -fPIC "
+			comp.build_prefix = "call {0:?} @{1}/SRC_INCLUDES -c -fPIC "
 				// Fixes/hacks for pthread in gcc
 				"-DWINPTHREAD_CLOCK_DECL=WINPTHREADS_ALWAYS_INLINE "
 				"-DWINPTHREAD_COND_DECL=WINPTHREADS_ALWAYS_INLINE "
@@ -60,13 +60,14 @@ void enumerate_compilers_gcc(environment const& env, std::function<void(compiler
 				"-DWINPTHREAD_THREAD_DECL=WINPTHREADS_ALWAYS_INLINE "
 				;
 #ifdef _MSC_VER
-			comp.link_command = "call {0:?} -static -Wl,--allow-multiple-definition -lstdc++exp  @{1}/OBJLIST @{1}/LIBLIST -o {1}/{2}";
-			comp.dlib_command = "call {0:?} -shared -Wl,--out-implib,{1}/{3} -lstdc++exp @{1}/OBJLIST -o {1}/{2}";
+			comp.link_command = "call {0:?} -static -Wl,--allow-multiple-definition -o {1}/{2}";
+			comp.dlib_command = "call {0:?} -shared -Wl,--out-implib,{1}/{3} -o {1}/{2}";
+			comp.link_libraries = " -lstdc++exp -lws2_32 -lwinhttp -lhttpapi";
 #else
-			comp.link_command = "call {0:?} -static -o {1}/{2} @{1}/OBJLIST @{1}/LIBLIST";
-			comp.dlib_command = "call {0:?} -shared -o {1}/{2} @{1}/OBJLIST";
+			comp.link_command = "call {0:?} -static -o {1}/{2}";
+			comp.dlib_command = "call {0:?} -shared -o {1}/{2}";
 #endif
-			comp.slib_command = "call {0:?} rcs {1}/{2} @{1}/OBJLIST";
+			comp.slib_command = "call {0:?} rcs {1}/{2}";
 			comp.define = "-D";
 			comp.include = "-I{0}";
 			comp.module_path = " -fmodule-mapper=\"|@g++-mapper-server --root {}\"";

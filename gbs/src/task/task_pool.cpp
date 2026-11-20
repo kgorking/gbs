@@ -1,6 +1,6 @@
-#include "../../inc/task/thread_pool.h"
+#include "../../inc/task/task_pool.h"
 
-thread_pool::thread_pool(size_t n) {
+task_pool::task_pool(size_t n) {
 	for (size_t i = 0; i < n; ++i) {
 		workers.emplace_back([this] {
 			for (; !stop;) {
@@ -23,7 +23,7 @@ thread_pool::thread_pool(size_t n) {
 	}
 }
 
-thread_pool::~thread_pool() {
+task_pool::~task_pool() {
 	{
 		std::scoped_lock lock(mtx);
 		stop = true;
@@ -33,7 +33,7 @@ thread_pool::~thread_pool() {
 		t.join();
 }
 
-void thread_pool::enqueue(std::function<void()> job) {
+void task_pool::enqueue(std::function<void()> job) {
 	{
 		std::lock_guard lock(mtx);
 		jobs.push(std::move(job));

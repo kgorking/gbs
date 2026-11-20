@@ -24,30 +24,29 @@ static void enumerate_compiler_msvc(std::filesystem::path msvc_path, std::functi
 
 		comp.build_source = " {0:?} ";
 		comp.build_module = " {0:?} ";
-		comp.build_command_prefix = "call {0:?} @{1}/INCLUDE @{1}/SRC_INCLUDES /c /interface /TP /ifcOutput {1}/ /Fo:{1}/ ";
-		comp.link_command = "call {0:?} /NOLOGO /OUT:{1}/{2} @{1}/LIBPATH @{1}/OBJLIST @{1}/LIBLIST";
-		comp.slib_command = "call {0:?} /NOLOGO /OUT:{1}/{2} @{1}/LIBPATH @{1}/OBJLIST";
-		comp.dlib_command = "call {0:?} /NOLOGO /DLL /OUT:{1}/{2} @{1}/LIBPATH @{1}/OBJLIST";
+		comp.build_prefix = "call {0:?} @{1}/INCLUDE @{1}/SRC_INCLUDES /c /interface /TP /ifcOutput {1}/ /Fo:{1}/ ";
+		comp.link_command = "call {0:?} /NOLOGO /OUT:{1}/{2} @{1}/LIBPATH";
+		comp.slib_command = "call {0:?} /NOLOGO /OUT:{1}/{2} @{1}/LIBPATH";
+		comp.dlib_command = "call {0:?} /NOLOGO /DLL /OUT:{1}/{2} @{1}/LIBPATH";
 		comp.define = "/D";
 		comp.include = "/I{0}";
 		comp.module_path = " /ifcSearchDir {}";
+		comp.link_libraries = " ws2_32.lib winhttp.lib httpapi.lib";
 
 		if (!std::filesystem::exists(comp.executable))
 			continue;
 
 		std::string const cmd = std::format(R"("{}" 1>nul 2>version)", comp.executable.generic_string());
 		if (0 == std::system(cmd.c_str())) {
-			{
-				std::string version;
-				std::getline(std::ifstream("version"), version);
+			std::string version;
+			std::getline(std::ifstream("version"), version);
 
-				std::string_view sv(version);
-				sv.remove_prefix(sv.find_first_of("0123456789", 0));
-				sv = sv.substr(0, sv.find_first_of(' '));
+			std::string_view sv(version);
+			sv.remove_prefix(sv.find_first_of("0123456789", 0));
+			sv = sv.substr(0, sv.find_first_of(' '));
 
-				extract_compiler_version(sv, comp.major, comp.minor, comp.patch);
-				callback(std::move(comp));
-			}
+			extract_compiler_version(sv, comp.major, comp.minor, comp.patch);
+			callback(std::move(comp));
 			std::filesystem::remove("version");
 		}
 	}
