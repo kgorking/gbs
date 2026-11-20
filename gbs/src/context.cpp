@@ -266,8 +266,8 @@ bool context::set_compiler(std::string_view comp) {
 		std::exit(1);
 	}
 
-
 	if (!all_compilers.contains(cl)) {
+		// A missing compiler is a hard error
 		return false;
 	}
 

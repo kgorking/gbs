@@ -6,7 +6,6 @@ bool cmd_cl(context& ctx, std::string_view args);
 bool cmd_clean(context& ctx, std::string_view args);
 bool cmd_config(context& ctx, std::string_view args);
 bool cmd_build(context& ctx, std::string_view);
-bool cmd_build_v2(context& ctx, std::string_view);
 bool cmd_enum_cl(context& ctx, std::string_view args);
 bool cmd_get_cl(context& ctx, std::string_view args);
 bool cmd_ide(context&, std::string_view args);
