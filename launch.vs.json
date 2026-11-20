@@ -70,6 +70,16 @@
       ]
     },
     {
+      "name": "[WSL] build",
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": "${workspaceRoot}",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "clean cl=gcc/Ubuntu config=debug,warnings build unittest"
+      ]
+    },
+    {
       "name": "[msvc] build",
       "type": "default",
       "project": "CMakeLists.txt",

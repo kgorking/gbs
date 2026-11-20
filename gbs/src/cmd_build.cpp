@@ -85,7 +85,7 @@ static bool is_valid_project_name(fs::path const& p) {
 static void create_response_file(context const& ctx, compiler const& cl, std::string_view name, std::ranges::range auto&& content) {
 	std::ofstream objlist(ctx.output_dir(cl) / name);
 	for (auto const& obj : content)
-		objlist << obj << ' ';
+		objlist << std::filesystem::path{ obj }.generic_string() << ' ';
 	objlist.close();
 }
 
@@ -183,7 +183,7 @@ static task_ptr create_build_task(context const& ctx, compiler const& cl, task_g
 	if (!is_valid_sourcefile(path) || !should_include(ctx, path))
 		return {};
 
-	source_dependency const deps = extract_module_dependencies(path);
+	source_dependency const deps = extract_module_dependencies(cl, path);
 	if (deps.is_export())
 		modmap[deps.export_name] = path;
 	impmap[path].insert_range(deps.import_names);
@@ -231,7 +231,7 @@ static task_ptr create_dynamic_lib(context const& ctx, compiler const& cl, task_
 			return true;
 
 		std::string const cmd = cl.dynamic_library_command(dll_name, lib_name, out_dir)
-			+ std::format(" @{}", objlist_name.generic_string()) + cl.create_link_libraries();
+			+ std::format(" @{}", objlist_name.generic_string()) + cl.create_link_libraries(target_os);
 		std::println("<gbs> Linking dynamic library '{}'...", dll_name);
 		return 0 == std::system(cmd.c_str());
 		});
@@ -254,7 +254,7 @@ static task_ptr create_executeable(context const& ctx, compiler const& cl, task_
 		if (!extra_objlist_name.empty())
 			obj_resp += std::format(" @{}", extra_objlist_name.generic_string());
 		obj_resp += std::format(" {}", main_obj_name);
-		std::string const cmd = cl.create_link_command(exe_name, out_dir) + obj_resp + cl.create_link_library_list(out_dir) + cl.create_link_libraries();
+		std::string const cmd = cl.create_link_command(exe_name, out_dir) + obj_resp + cl.create_link_library_list(out_dir) + cl.create_link_libraries(target_os);
 		return 0 == std::system(cmd.c_str());
 		});
 }
@@ -299,7 +299,7 @@ static bool add_build_tasks(context& ctx, compiler const& cl, task_graph& graph,
 		fs::path const project_name = *std::next(project_dir.begin(), is_lib_path); // get_project_name
 
 		// Create the object list file for the .lib file
-		auto source_files = get_source_files(ctx, cl, project_dir / "src") | std::ranges::to<std::vector>();
+		auto source_files = get_source_files(ctx, project_dir / "src") | std::ranges::to<std::vector>();
 		auto const [objlist_name, latest_source_time] = create_object_file_list(ctx, cl, project_name, source_files);
 
 		std::string const lib_base_name = is_lib_path && project_name.has_extension()
@@ -353,7 +353,7 @@ static bool add_build_tasks(context& ctx, compiler const& cl, task_graph& graph,
 
 		// Create tests
 		if (fs::exists(project_dir / "tests")) {
-			auto tests_files = get_source_files(ctx, cl, project_dir / "tests") | std::ranges::to<std::vector>();
+			auto tests_files = get_source_files(ctx, project_dir / "tests") | std::ranges::to<std::vector>();
 			auto const [tests_objlist_name, _] = create_object_file_list(ctx, cl, "tests", tests_files);
 
 			std::string const test_name = "tests." + project_name.generic_string();

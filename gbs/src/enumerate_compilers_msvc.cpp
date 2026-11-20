@@ -31,7 +31,7 @@ static void enumerate_compiler_msvc(std::filesystem::path msvc_path, std::functi
 		comp.define = "/D";
 		comp.include = "/I{0}";
 		comp.module_path = " /ifcSearchDir {}";
-		comp.link_libraries = " ws2_32.lib winhttp.lib httpapi.lib";
+		comp.windows_link_libraries = " ws2_32.lib winhttp.lib httpapi.lib";
 
 		if (!std::filesystem::exists(comp.executable))
 			continue;

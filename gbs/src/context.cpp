@@ -67,7 +67,6 @@ context::context(char const** envp) : env(envp) {
 		{"release", "-O3"},
 		{"analyze", "--analyze -Wno-unused-command-line-argument"} // ignore -c
 	};
-	response_map["clang.wsl"] = response_map["clang"];
 
 	response_map["gcc"] = {
 		{"warnings",
@@ -182,18 +181,18 @@ auto context::output_dir(compiler const& cl) const -> std::filesystem::path {
 
 // Determine response directory
 auto context::response_dir(compiler const& cl) const -> std::filesystem::path {
-	return gbs_internal / cl.name;
+	return gbs_internal / cl.compiler_name();
 }
 
 // Returns true if the compiler has a response map
 bool context::has_response_map(compiler const& cl) const {
-	return response_map.contains(cl.name);
+	return response_map.contains(cl.compiler_name());
 }
 
 // Returns the response map for the compiler
 compiler_response_map context::get_response_map(compiler const& cl) const {
-	if (response_map.contains(cl.name))
-		return response_map.at(cl.name);
+	if (response_map.contains(cl.compiler_name()))
+		return response_map.at(cl.compiler_name());
 	else
 		return {};
 }
@@ -248,7 +247,7 @@ void context::fill_compiler_collection() {
 }
 
 namespace {
-compiler const* find_compiler(compiler_collection const& all_compilers, std::string_view name, std::string_view version) {
+compiler const* find_compiler(compiler_collection const& all_compilers, std::string const& name, std::string_view version) {
 	if (name.empty() || !all_compilers.contains(name))
 		return nullptr;
 
@@ -290,7 +289,7 @@ bool context::set_compiler(std::string_view comp) {
 		}
 
 		auto const colon = descriptor.find(':');
-		std::string_view const name = descriptor.substr(0, colon);
+		std::string const name{ descriptor.substr(0, colon) };
 		std::string_view const version = colon == std::string_view::npos
 			? std::string_view{}
 			: descriptor.substr(colon + 1);

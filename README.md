@@ -1,4 +1,4 @@
-﻿# Gorking Build System v0.20
+﻿# Gorking Build System v0.21
 
 A rule-based build system to automatically find source files and compile them. No need for build scripts.
 

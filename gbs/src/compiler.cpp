@@ -23,8 +23,8 @@ void extract_compiler_version(std::string_view sv, int& major, int& minor, int& 
 }
 
 // Returns the name of the currently selected compiler
-std::string_view compiler::compiler_name() const noexcept {
-	return name;
+std::string compiler::compiler_name() const noexcept {
+	return wsl ? name.substr(0, name.size() - (wsl->size() + 1)) : name;
 }
 
 std::string compiler::make_include_path(std::filesystem::path const& path) const {
@@ -58,8 +58,11 @@ std::string compiler::create_link_library_list(std::string_view out_dir) const {
 	return std::format(" @{}/LIBLIST", out_dir);
 }
 
-std::string compiler::create_link_libraries() const noexcept {
-	return std::string{ link_libraries };
+std::string compiler::create_link_libraries(operating_system target_os) const noexcept {
+	std::string libs{ link_libraries };
+	if (target_os == operating_system::windows)
+		libs += windows_link_libraries;
+	return libs;
 }
 
 // Create library command for the currently selected compiler

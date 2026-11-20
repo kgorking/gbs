@@ -21,15 +21,9 @@ bool should_include(context const& ctx, fs::path const& path) {
 
 	for (auto const& component : path) {
 		auto const component_str = component.generic_string();
-
-		if (component_str == "windows" && target_os != operating_system::windows)
-			return false;
-
-		if (component_str == "linux" && target_os != operating_system::linux)
-			return false;
-
-		if (component_str == "macos" && target_os != operating_system::macos)
-			return false;
+		if (component_str == "windows" && target_os != operating_system::windows) return false;
+		if (component_str == "linux" && target_os != operating_system::linux) return false;
+		if (component_str == "macos" && target_os != operating_system::macos) return false;
 	}
 	return true;
 }
@@ -40,7 +34,7 @@ static bool is_valid_sourcefile(fs::path const& file) {
 }
 
 // Adjust the path for WSL if necessary
-static fs::path adjust_for_wsl(compiler const& cl, fs::path source_path) {
+fs::path adjust_for_wsl(compiler const& cl, fs::path source_path) {
 	if (cl.wsl && !std::filesystem::exists(source_path)) {
 		std::string new_path = std::format(R"(\\wsl.localhost\{}{})", *cl.wsl, source_path.string());
 		if (std::filesystem::exists(new_path)) {
@@ -51,12 +45,12 @@ static fs::path adjust_for_wsl(compiler const& cl, fs::path source_path) {
 	return source_path;
 }
 
-std::generator<fs::path> get_source_files(context const& ctx, compiler const& cl, fs::path dir) {
+std::generator<fs::path> get_source_files(context const& ctx, fs::path dir) {
 	for (auto const& dir_it : fs::recursive_directory_iterator(dir, fs::directory_options::follow_directory_symlink)) {
 		if (!dir_it.is_regular_file())
 			continue;
 
-		fs::path file_path = adjust_for_wsl(cl, dir_it.path());
+		fs::path file_path = dir_it.path();
 		if (is_valid_sourcefile(file_path) && should_include(ctx, file_path)) {
 			co_yield file_path;
 		}

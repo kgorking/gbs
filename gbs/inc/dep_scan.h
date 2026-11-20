@@ -14,4 +14,4 @@ struct source_dependency {
 	}
 };
 
-auto extract_module_dependencies(std::filesystem::path path) -> source_dependency;
+auto extract_module_dependencies(compiler const& cl, std::filesystem::path path) -> source_dependency;

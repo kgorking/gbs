@@ -1,12 +1,17 @@
 #include "../inc/context.h"
+#include "../inc/compiler.h"
 #include "../inc/dep_scan.h"
+#include "../inc/get_source_files.h"
 #include <format>
 #include <fstream>
 #include <print>
 
 // Returns a source files module dependencies.
-auto extract_module_dependencies(std::filesystem::path path) -> source_dependency {
+auto extract_module_dependencies(compiler const& cl, std::filesystem::path path) -> source_dependency {
 	source_dependency dependencies{ .path = path };
+
+	if (cl.wsl)
+		path = adjust_for_wsl(cl, path);
 
 	std::string main_module_name;
 	std::string line;

@@ -7,6 +7,7 @@
 #include <fstream>
 #include <functional>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -33,9 +34,7 @@ static compiler new_compiler(std::string_view version, std::size_t prefix_size) 
 	comp.include = "-I\"{0}/\"";
 	comp.module_path = " @{0}/MODULES";
 
-#ifdef _WIN32
-	comp.link_libraries = " -lws2_32 -lwinhttp -lhttpapi";
-#endif
+	comp.windows_link_libraries = " -lws2_32 -lwinhttp -lhttpapi";
 
 	return comp;
 }
@@ -66,10 +65,11 @@ static std::optional<std::string> find_std_module_path(compiler const& comp, boo
 			while (std::getline(output, line) && line[0] == ' ') {
 				line = std::filesystem::path(line.substr(1) + std_module_file).lexically_normal().string();
 
-				if (comp.wsl)
-					line = std::format(R"(\\wsl.localhost\{}{})", *comp.wsl, line);
-
-				if (std::filesystem::exists(line))
+				if (comp.wsl) {
+					if (std::filesystem::exists(std::format(R"(\\wsl.localhost\{}{})", *comp.wsl, line)))
+						break;
+				}
+				else if (std::filesystem::exists(line))
 					break;
 			}
 
@@ -112,12 +112,13 @@ void enumerate_compilers_clang(environment const& env, std::function<void(compil
 	std::error_code ec;
 	std::filesystem::remove("clang_version.txt", ec);
 
-#if 0//def _WIN32
+#ifdef _WIN32
 	// Enumerate WSL installed clang compilers
 	auto const wsl_distros = get_wsl_distributions();
 	for (std::string const& distro : wsl_distros) {
 		std::string const wsl_prefix = "wsl -d " + distro + " ";
 		std::string const command = wsl_prefix + "clang --version > clang_version.txt 2>&1";
+		std::string default_version;
 
 		if (0 == std::system(command.c_str())) {
 			std::ifstream version("clang_version.txt");
@@ -125,8 +126,9 @@ void enumerate_compilers_clang(environment const& env, std::function<void(compil
 			std::getline(version, line);
 			if (!line.empty()) {
 				compiler comp = new_compiler(line, std::string_view{ line }.find_first_of("0123456789"));
+				default_version = comp.name_and_version;
 
-				comp.name = "clang";
+				comp.name = "clang/" + distro;
 				comp.wsl = distro;
 
 				std::string const str_major = std::to_string(comp.major);
@@ -149,6 +151,65 @@ void enumerate_compilers_clang(environment const& env, std::function<void(compil
 		}
 
 		std::filesystem::remove("clang_version.txt", ec);
+
+		// Enumerate versioned WSL clang++ compilers (clang++-24, ...).
+		std::string const list_command = wsl_prefix
+			+ R"(bash -lc "ls /usr/bin/clang++-[0-9]* /usr/local/bin/clang++-[0-9]* 2>/dev/null || true")"
+			+ " > clang_versions.txt 2>nul";
+
+		if (0 == std::system(list_command.c_str())) {
+			std::set<std::string> seen;
+			if (std::ifstream versions("clang_versions.txt"); versions) {
+				std::string line;
+				while (std::getline(versions, line)) {
+					if (line.empty())
+						continue;
+
+					std::string const executable_name = std::filesystem::path{ line }.filename().generic_string();
+					std::string_view const executable_version = executable_name;
+					if (!executable_version.starts_with("clang++-"))
+						continue;
+
+					std::string const version_suffix = std::string{ executable_version.substr(std::string_view{ "clang++-" }.size()) };
+					if (!seen.insert(version_suffix).second)
+						continue;
+
+					std::string const version_command = wsl_prefix + executable_name + " --version > clang_version.txt 2>&1";
+					if (0 != std::system(version_command.c_str()))
+						continue;
+
+					std::ifstream version("clang_version.txt");
+					std::string first_line;
+					std::getline(version, first_line);
+					if (first_line.empty())
+						continue;
+
+					compiler comp = new_compiler(first_line, std::string_view{ first_line }.find_first_of("0123456789"));
+					if (comp.name_and_version == default_version)
+						continue;
+
+					comp.name = "clang/" + distro;
+					comp.wsl = distro;
+					comp.executable = wsl_prefix + executable_name;
+					comp.linker = comp.executable;
+					comp.slib = wsl_prefix + "llvm-ar-" + std::to_string(comp.major);
+					comp.dlib = comp.executable;
+					comp.std_module = find_std_module_path(comp, false);
+					comp.dlib_command = "call {0} -shared -fPIC -o {1}/{2}";
+
+					// Get installed dir
+					std::getline(version, line);
+					std::getline(version, line);
+					std::getline(version, line);
+					if (line.starts_with("InstalledDir: "))
+						comp.dir = std::filesystem::path{ line.substr(std::string_view{ "InstalledDir: " }.size()) }.generic_string();
+
+					callback(std::move(comp));
+				}
+			}
+		}
+
+		std::filesystem::remove("clang_versions.txt", ec);
 	}
 #endif
 
