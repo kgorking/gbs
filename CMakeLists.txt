@@ -3,7 +3,16 @@
 
 cmake_minimum_required (VERSION 4.1.0 FATAL_ERROR)
 
-set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "451f2fe2-a8a2-47c3-bc32-94786d8fc91b")
+# CMAKE_EXPERIMENTAL_CXX_IMPORT_STD is an experimental-feature gate whose UUID
+# changes with the CMake behavior. CMake 4.5+ no longer uses the gate.
+if(CMAKE_VERSION VERSION_LESS "4.3.0")
+	set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "d0edc3af-4c50-42ea-a356-e2862fe7a444") # 4.1.0 - 4.2.x
+elseif(CMAKE_VERSION VERSION_LESS "4.4.0")
+	set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "451f2fe2-a8a2-47c3-bc32-94786d8fc91b") # 4.3.x
+elseif(CMAKE_VERSION VERSION_LESS "4.5.0")
+	set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "f35a9ac6-8463-4d38-8eec-5d6008153e7d") # 4.4.x
+endif()
+
 set(CMAKE_CXX_MODULE_STD ON)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -35,7 +44,9 @@ add_executable (gbs
 	"gbs/src/cmd_ide.cpp"
     "gbs/src/cmd_tests.cpp"
 	"gbs/src/cmd_version.cpp"
- "gbs/inc/source_file.h" "gbs/inc/module_desc.h" "gbs/inc/tool.h")
+	"gbs/inc/source_file.h"
+	"gbs/inc/module_desc.h"
+	"gbs/inc/tool.h")
 
 if(MSVC)
 	target_compile_definitions(gbs PRIVATE _MSVC_STL_HARDENING=1 _MSVC_STL_DESTRUCTOR_TOMBSTONES=1)
