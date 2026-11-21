@@ -1,4 +1,4 @@
-﻿# Gorking Build System v0.20
+﻿# Gorking Build System v0.21
 
 A rule-based build system to automatically find source files and compile them. No need for build scripts.
 
@@ -21,8 +21,8 @@ Can compile itself using clang, gcc, and msvc.
 - `tests` folder is for tests.
   - Compiled into a executable `tests.<root folder name>.exe`.
   - Can be launched using `tests` command.
-- Files and folders starting with `x.` are ignored.
-- Files and folders in subfolders of fx `windows`, `.linux`, or `.darwin` are only compiled on matching platforms.
+- Files and folders starting with `x.` are excluded from builds.
+- Files and folders in subfolders of fx `windows`, `linux`, or `darwin` are only compiled on matching platforms.
 
 ## Example folder structure
 ```
@@ -114,7 +114,7 @@ The following compilers can be used by `gbs` to build `gbs`:
 - [ ] Add a `get_cl=compiler:?` option to list versions available for download
 - [ ] Allow matrix builds, eg. `gbs build=[debug,release] run` results in 2 builds and 2 runs
 - [ ] Support for running custom build steps before/after compilation
-- [x] WSL support
+- [x] WSL support for clang and gcc
 - [x] Create a simple build system
 - [x] Automatic compilation without build scripts
 	- [x] Find source files automatically

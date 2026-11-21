@@ -15,7 +15,7 @@
 #include <unordered_map>
 #include <vector>
 
-using compiler_collection = std::unordered_map<std::string_view, std::vector<compiler>>;
+using compiler_collection = std::unordered_map<std::string, std::vector<compiler>>;
 using compiler_response_map = std::unordered_map<std::string_view, std::string_view>;
 
 struct unittest_info {

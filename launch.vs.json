@@ -16,7 +16,7 @@
       "currentDir": "E:\\source\\repos\\gstd",
       "projectTarget": "gbs.exe",
       "args": [
-        "cl=msvc config=debug,warnings clean build"
+        "cl=msvc config=debug,warnings clean build unittest"
       ]
     },
     {
@@ -70,6 +70,16 @@
       ]
     },
     {
+      "name": "[WSL] build",
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": "${workspaceRoot}",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "clean cl=gcc/Ubuntu config=debug,warnings build unittest"
+      ]
+    },
+    {
       "name": "[msvc] build",
       "type": "default",
       "project": "CMakeLists.txt",
@@ -86,17 +96,7 @@
       "currentDir": "${workspaceRoot}",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=clang config=release build unittest"
-      ]
-    },
-    {
-      "name": "[clang] build for linux",
-      "type": "default",
-      "project": "CMakeLists.txt",
-      "currentDir": "${workspaceRoot}",
-      "projectTarget": "gbs.exe",
-      "args": [
-        "clean cl=clang config=release,warnings build unittest"
+        "clean cl=clang config=debug,warnings build unittest"
       ]
     },
     {
@@ -105,7 +105,7 @@
       "project": "CMakeLists.txt",
       "currentDir": "${workspaceRoot}",
       "args": [
-        "clean cl=clang config=release,warnings build unittest"
+        "clean cl=clang/Ubuntu config=debug,warnings build unittest"
       ]
     },
     {
@@ -115,7 +115,17 @@
       "currentDir": "${workspaceRoot}",
       "projectTarget": "gbs.exe",
       "args": [
-        "clean cl=gcc build unittest"
+        "clean cl=gcc config=debug,warnings build unittest"
+      ]
+    },
+    {
+      "name": "[gcc-WSL] build",
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "currentDir": "${workspaceRoot}",
+      "projectTarget": "gbs.exe",
+      "args": [
+        "clean cl=gcc/Ubuntu config=debug,warnings build unittest"
       ]
     },
     {
