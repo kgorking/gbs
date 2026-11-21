@@ -1,6 +1,6 @@
 #include "../../inc/task/task_pool.h"
 
-task_pool::task_pool(size_t n) {
+task_pool::task_pool(size_t n) noexcept {
 	for (size_t i = 0; i < n; ++i) {
 		workers.emplace_back([this] {
 			for (; !stop;) {
@@ -23,14 +23,12 @@ task_pool::task_pool(size_t n) {
 	}
 }
 
-task_pool::~task_pool() {
+task_pool::~task_pool() noexcept {
 	{
 		std::scoped_lock lock(mtx);
 		stop = true;
 	}
 	cv.notify_all();
-	for (auto& t : workers)
-		t.join();
 }
 
 void task_pool::enqueue(std::function<void()> job) {

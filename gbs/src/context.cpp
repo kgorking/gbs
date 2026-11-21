@@ -82,7 +82,6 @@ context::context(char const** envp) : env(envp) {
 			"-Wpedantic "               // warn if non-standard C++ is used
 			//"-Wconversion "             // warn on type conversions that may lose data
 			//"-Wsign-conversion "        // warn on sign conversions
-			"-Wnull-dereference "       // warn if a null dereference is detected
 			//"-Wdouble-promotion "       // warn if float is implicit promoted to double
 			"-Wformat=2 "               // warn on security issues around functions that format output (ie printf)
 			"-Wimplicit-fallthrough "   // warn on statements that fallthrough without an explicit annotation
@@ -92,6 +91,8 @@ context::context(char const** envp) : env(envp) {
 			"-Wlogical-op "             // warn about logical operations being used where bitwise were probably wanted
 			"-Wuseless-cast "           // warn if you perform a cast to the same type
 			"-Wsuggest-override "       // warn if an overridden member function is not marked 'override' or 'final'
+			// GCC 16.2 reports false positives from inlined libstdc++ headers (std::generator, std::format).
+			"-Wno-null-dereference "
 		},
 		{"_shared", "-std=c++23 -fmodules"},
 		{"debug", "-O0 -g3"},

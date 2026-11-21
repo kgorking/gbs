@@ -195,16 +195,12 @@ static task_ptr create_build_task(context const& ctx, compiler const& cl, task_g
 	return {};
 }
 
-static task_ptr create_static_lib(context const& ctx, compiler const& cl, task_graph& graph, fs::path const& prefix, fs::path project_dir, fs::path objlist_name, fs::file_time_type latest_source_time) {
+static task_ptr create_static_lib(context const& ctx, compiler const& cl, task_graph& graph, fs::path const& prefix, fs::path project_dir, fs::path objlist_name, fs::file_time_type latest_source_time, std::string_view lib_base_name) {
 	std::string const out_dir = ctx.output_dir(cl).generic_string();
 	operating_system const target_os = ctx.get_target_os();
+	std::string const lib_name = os_get_static_library_name(target_os, lib_base_name);
 
 	return graph.create_task(make_task_name(prefix, project_dir), [=] {
-		auto const ext_name = project_dir.extension().generic_string().substr(1);
-
-		// static library, create the .lib
-		std::string const lib_name = os_get_static_library_name(target_os, ext_name);
-
 		auto const lib_path = fs::path{ out_dir } / lib_name;
 		if (fs::exists(lib_path) && latest_source_time < fs::last_write_time(lib_path))
 			return true;
@@ -215,17 +211,13 @@ static task_ptr create_static_lib(context const& ctx, compiler const& cl, task_g
 		});
 }
 
-static task_ptr create_dynamic_lib(context const& ctx, compiler const& cl, task_graph& graph, fs::path const& prefix, fs::path project_dir, fs::path objlist_name, fs::file_time_type latest_source_time) {
+static task_ptr create_dynamic_lib(context const& ctx, compiler const& cl, task_graph& graph, fs::path const& prefix, fs::path project_dir, fs::path objlist_name, fs::file_time_type latest_source_time, std::string_view lib_base_name) {
 	std::string const out_dir = ctx.output_dir(cl).generic_string();
 	operating_system const target_os = ctx.get_target_os();
+	std::string const lib_name = os_get_static_library_name(target_os, lib_base_name);
+	std::string const dll_name = os_get_dynamic_library_name(target_os, lib_base_name);
 
 	return graph.create_task(make_task_name(prefix, project_dir), [=] {
-		auto const ext_name = project_dir.extension().generic_string().substr(1);
-
-		// dynamic library, link the .dll
-		std::string const lib_name = os_get_static_library_name(target_os, ext_name);
-		std::string const dll_name = os_get_dynamic_library_name(target_os, ext_name);
-
 		auto const dll_path = fs::path{ out_dir } / dll_name;
 		if (fs::exists(dll_path) && latest_source_time < fs::last_write_time(dll_path))
 			return true;
@@ -237,7 +229,7 @@ static task_ptr create_dynamic_lib(context const& ctx, compiler const& cl, task_
 		});
 }
 
-static task_ptr create_executeable(context const& ctx, compiler const& cl, task_graph& graph, fs::path const& prefix, std::string name, fs::path project_dir, fs::path objlist_name, fs::file_time_type latest_source_time, fs::path extra_objlist_name = {}) {
+static task_ptr create_executeable(context const& ctx, compiler const& cl, task_graph& graph, fs::path const& prefix, std::string name, fs::path project_dir, fs::path objlist_name, fs::file_time_type latest_source_time, fs::path extra_objlist_name = {}, bool append_main_object = true) {
 	std::string const out_dir = ctx.output_dir(cl).generic_string();
 	operating_system const target_os = ctx.get_target_os();
 
@@ -253,7 +245,8 @@ static task_ptr create_executeable(context const& ctx, compiler const& cl, task_
 		std::string obj_resp = std::format(" @{}", objlist_name.generic_string());
 		if (!extra_objlist_name.empty())
 			obj_resp += std::format(" @{}", extra_objlist_name.generic_string());
-		obj_resp += std::format(" {}", main_obj_name);
+		if (append_main_object)
+			obj_resp += std::format(" {}", main_obj_name);
 		std::string const cmd = cl.create_link_command(exe_name, out_dir) + obj_resp + cl.create_link_library_list(out_dir) + cl.create_link_libraries(target_os);
 		return 0 == std::system(cmd.c_str());
 		});
@@ -266,6 +259,7 @@ static bool add_build_tasks(context& ctx, compiler const& cl, task_graph& graph,
 	task_map tasks;
 
 	auto project_it = directories
+		| filter([](std::string_view p) { return fs::exists(p); })
 		| transform([](std::string_view p) { return fs::directory_iterator(p, fs::directory_options::follow_directory_symlink); })
 		| join
 		| filter([](fs::directory_entry const& e) { return e.is_directory(); })
@@ -310,11 +304,11 @@ static bool add_build_tasks(context& ctx, compiler const& cl, task_graph& graph,
 		// TODO merge
 		switch (get_project_type(project_dir)) {
 		case project_type::static_lib:
-			project_link_task = create_static_lib(ctx, cl, graph, prefix, project_dir, objlist_name, latest_source_time);
+			project_link_task = create_static_lib(ctx, cl, graph, prefix, project_dir, objlist_name, latest_source_time, lib_base_name);
 			libs.insert(ctx.output_dir(cl) / os_get_static_library_name(ctx.get_target_os(), lib_base_name));
 			break;
 		case project_type::dynamic_lib:
-			project_link_task = create_dynamic_lib(ctx, cl, graph, prefix, project_dir, objlist_name, latest_source_time);
+			project_link_task = create_dynamic_lib(ctx, cl, graph, prefix, project_dir, objlist_name, latest_source_time, lib_base_name);
 			{
 				auto const lib_or_dll_name = ctx.get_target_os() != operating_system::windows
 					? os_get_dynamic_library_name(ctx.get_target_os(), lib_base_name)
@@ -354,10 +348,10 @@ static bool add_build_tasks(context& ctx, compiler const& cl, task_graph& graph,
 		// Create tests
 		if (fs::exists(project_dir / "tests")) {
 			auto tests_files = get_source_files(ctx, project_dir / "tests") | std::ranges::to<std::vector>();
-			auto const [tests_objlist_name, _] = create_object_file_list(ctx, cl, "tests", tests_files);
-
 			std::string const test_name = "tests." + project_name.generic_string();
-			task_ptr tests_task = create_executeable(ctx, cl, graph, prefix, test_name, project_dir, objlist_name, latest_source_time, tests_objlist_name);
+			auto const [tests_objlist_name, _] = create_object_file_list(ctx, cl, test_name, tests_files);
+
+			task_ptr tests_task = create_executeable(ctx, cl, graph, prefix, test_name, project_dir, objlist_name, latest_source_time, tests_objlist_name, false);
 			ctx.add_unittest(ctx.output_dir(cl) / os_get_executable_name(ctx.get_target_os(), test_name), cl.wsl);
 
 			for (fs::path source_path : tests_files) {
